@@ -9,6 +9,9 @@ router.get("/",userController.loadHomepage)
 router.get("/signup",userController.loadSignup)
 router.post("/signup",userController.Signup)
 router.post("/resendotp",userController.resendOtp)
+router.get("/login",userController.loadLogin);
+router.post("/login",userController.login);
+router.get("/logout",userController.logout);
 
 
 

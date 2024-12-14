@@ -1,6 +1,6 @@
 const User = require("../../models/userSchema");
 const Category = require("../../models/categorySchema");
-const Product = require("../../models/productSchma");
+const Product = require("../../models/productSchema");
 const env = require("dotenv").config();
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcrypt");
