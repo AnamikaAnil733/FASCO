@@ -59,6 +59,6 @@ status :{
 },{timestamps:true});
 
 
-const product = mongoose.modelNames("Product",productSchema);
+const Product = mongoose.modelNames("Product",productSchema);
 
 module.exports = Product;

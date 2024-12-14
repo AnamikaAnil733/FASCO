@@ -7,6 +7,9 @@ router.get("/pageNotFound",userController.pageNotFound)
 router.get("/",userController.loadHomepage)
 // router.get("/shop",userController.loadHomepage)
 router.get("/signup",userController.loadSignup)
+router.post("/signup",userController.Signup)
+router.post("/resendotp",userController.resendOtp)
+
 
 
 
