@@ -1,0 +1,117 @@
+<%- include("../../views/partials/user/header") %>
+
+
+    <div class="container">
+      <div class="card" style="margin-top:100px; margin-bottom: 100px; margin-left: 370px; margin-right: 370px;">
+        <div class="card-body login-section">
+          <div class="login-form mt-5">
+            <h3 class="card-title text-center">Log In</h3>
+            <form id="loginform" method="post" action="/login">
+              <div class="form-group mt-3px">
+                <label for="email">Email address</label>
+                <input
+                  type="email"
+                  class="form-control"
+                  name="email"
+                  id="email"
+                  placeholder="Enter email"
+                />
+                <div id="error1" class="error-message"></div>
+              </div>
+              <div class="form-group">
+                <label for="password">Password</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  name="password"
+                  id="password"
+                  placeholder="Password"
+                />
+                <div id="error2" class="error-message"></div>
+              </div>
+              <%if(locals.message && message.length>0){%>
+              <div class="alert alert-danger text-center">
+                <%=message%>
+              </div>
+              <%}%>
+              <div class="d-flex justify-content-between align-items-center">
+                <button type="submit" class="btn btn-primary">Log In</button>
+                <div class="mt-2px">
+                  <p>or log in with</p>
+                </div>
+                <div class="social-btns">
+                  <a href="/auth/google" class="btn btn-outline-danger">
+                    <img
+                      src="img/googlesignup.png"
+                      alt="Google Logo"
+                      style="width: 24px; height: 24px"
+                    />
+                  </a>
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="login-image">
+            <a href="/">
+              <img src="img/signup.svg" alt="Shopping Site" />
+            </a>
+            <div class="text-center mt-2">
+              <a href="/signup" class="sign-up-link">Not registered? Sign up</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+   
+
+    <script>
+      const emailid = document.getElementById("email");
+      const passid = document.getElementById("password");
+      const error1 = document.getElementById("error1");
+      const error2 = document.getElementById("error2");
+      const loginform = document.getElementById("loginform");
+
+      function emailValidateChecking(e) {
+        const emailval = emailid.value;
+        const emailpattern =
+          /^[a-zA-Z0-9._-]+@([a-zA-Z0-9.-]+)\.([a-zA-Z]{2,4})$/;
+
+        if (!emailpattern.test(emailval)) {
+          error1.style.display = "block";
+          error1.innerHTML = "Invalid Format";
+        } else {
+          error1.style.display = "none";
+          error1.innerHTML = "";
+        }
+      }
+
+      function passValidateChecking(e) {
+        const passval = passid.value;
+        if (passval.length < 8) {
+          error2.style.display = "block";
+          error2.innerHTML = "Should contain at least 8 characters";
+        } else {
+          error2.style.display = "none";
+          error2.innerHTML = "";
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        loginform.addEventListener("submit", function (e) {
+          emailValidateChecking();
+          passValidateChecking();
+
+          if (!emailid || !passid || !error1 || !error2 || !loginform) {
+            console.error("One or more elements not found");
+          }
+
+          if (error1.innerHTML || error2.innerHTML) {
+            e.preventDefault();
+          }
+        });
+      });
+    </script>
+
+
+<%- include("../../views/partials/user/footer") %>

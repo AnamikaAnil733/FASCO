@@ -34,6 +34,45 @@
 	<link rel="stylesheet" type="text/css" href="css/util.css">
 	<link rel="stylesheet" type="text/css" href="css/main.css">
 <!--===============================================================================================-->
+<style>
+	.dropdown {
+position: relative;
+display: inline-block;
+	}
+
+	.dropdown-content {
+		display: none;
+		position: absolute;
+		background-color: white;
+		min-width: 160px;
+		box-shadow: 0px 8px 16px 0px rgba(0,0,0, 0.2);
+		z-index: 1000;
+		right: 0;
+	}
+
+	.dropdown-content a {
+		color: black;
+		padding: 12px 16px;
+		text-decoration: none;
+		display: block;
+		width: 100%;
+	}
+
+	.dropdown-content a:hover{
+		background-color: #f1f1f1;
+	}
+	.dropdown:hover .dropdown-content{
+		display: block;
+	}
+	.header {
+		position: relative;
+		z-index: 500;
+	}
+
+
+
+
+</style>
 </head>
 <body class="animsition">
 	
@@ -87,22 +126,14 @@
 									<li><a href="home-03.html">Homepage 3</a></li>
 								</ul>
 							</li>
+							
 
 							<li>
 								<a href="product.html">Shop</a>
 							</li>
+							
 
-							<li class="label1" data-label1="hot">
-								<a href="shoping-cart.html">Sign Up</a>
-							</li>
-
-							<!-- <li>
-								<a href="blog.html">Sig</a>
-							</li> -->
-
-							<li>
-								<a href="">Sign in</a>
-							</li>
+							
 							<li>
 								<a href="about.html">About</a>
 							</li>
@@ -126,6 +157,29 @@
 						<a href="#" class="dis-block icon-header-item cl2 hov-cl1 trans-04 p-l-22 p-r-11 icon-header-noti" data-notify="0">
 							<i class="zmdi zmdi-favorite-outline"></i>
 						</a>
+						<%if(locals.user){%>
+							<div class="dropdown">
+								<a href="#" class="sign-in-link"><%=locals.user.name%></a>
+								<div class="dropdown-content">
+									<a href="/userProfile">Profile</a>
+									<a href="/logout">Logout</a>
+		
+								</div>
+		 
+		
+							</div>
+							<%}else{%>
+								<div>
+									<a href="/signup" class="p-l-22 p-r-11">Sign Up</a>
+								</div>
+	
+	
+								<div>
+									<a href="/login" class="p-l-22 p-r-11">Login</a>
+								</div>
+	
+								<%}%>
+
 					</div>
 				</nav>
 			</div>	
@@ -214,7 +268,7 @@
 				</li>
 
 				<li>
-					<a href="">Sign in</a>
+					<a href="/login">Login</a>
 				</li>
 
 				<li>

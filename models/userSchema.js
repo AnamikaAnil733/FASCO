@@ -17,7 +17,8 @@ const userSchema = new Schema({
     },
     googleId: {
         type: String,
-        unique: true
+        unique: true,
+        sparse: true // Prevents duplicate key error for null values
     },
     password: {
         type: String,
@@ -48,10 +49,12 @@ const userSchema = new Schema({
         default: Date.now
     },
     referalCode: {
-        type: String
+        type: String,
+        default: null
     },
     redeemed: {
-        type: Boolean
+        type: Boolean,
+        default: false
     },
     redeemedUsers: [{
         type: Schema.Types.ObjectId,
