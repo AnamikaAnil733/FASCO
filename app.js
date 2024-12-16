@@ -5,6 +5,7 @@ const env = require("dotenv").config();
 const session = require("express-session")
 const db = require("./config/db");
 const userRouter = require("./routes/userRouter")
+const adminRouter = require("./routes/adminRouter")
 db();
 
 
@@ -30,6 +31,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 
 app.use("/",userRouter);
+app.use('/admin',adminRouter)
 
 
 
