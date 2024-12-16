@@ -38,16 +38,16 @@ const login = async(req,res)=>{
 
 
 const loadDashbord = async(req,res)=>{
-    if(req.session.admin){
-        try {
+    try{
+        if(req.session.admin){
             res.render("dashboard")
-
-        } catch (error) {
-            res.redirect("/pageerror")
-            
+        }else{
+            res.redirect("/admin/pageerror")
         }
+    }catch(error){
+        console.error(error)
     }
-}
+};
 
 const logout = async(req,res)=>{
     try {
