@@ -26,7 +26,6 @@ const adminAuth =(req,res,next)=>{
     
     .then(data=>{
         if(data){
-            console.log("hi")
             next()
         }else{
             res.redirect("admin/login")
