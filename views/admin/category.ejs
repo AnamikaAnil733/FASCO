@@ -1,0 +1,509 @@
+<%- include("../../views/partials/admin/header") %>
+
+  <head>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.css" />
+    <style>
+      body {
+        background: linear-gradient(135deg, #E3F2FD, #BBDEFB);
+        font-family: 'Poppins', sans-serif;
+      }
+
+      .content-main {
+        padding: 20px;
+      }
+
+      .content-header {
+        margin-bottom: 30px;
+      }
+
+      .content-title {
+        color: #1976D2;
+        font-weight: 600;
+        font-size: 1.8rem;
+      }
+
+      .card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(10px);
+        border: none;
+        margin-bottom: 20px;
+        padding: 20px;
+      }
+
+      .col-md-3 {
+        padding: 25px;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        margin: 10px;
+        transition: transform 0.3s ease;
+      }
+
+      .col-md-3:hover {
+        transform: translateY(-5px);
+      }
+
+      .form-label {
+        color: #546E7A;
+        font-weight: 500;
+        margin-bottom: 0.8rem;
+      }
+
+      .form-control {
+        width: 100%;
+        padding: 12px;
+        margin-bottom: 15px;
+        border: 2px solid #E3F2FD;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        font-size: 0.95rem;
+      }
+
+      .form-control:focus {
+        border-color: #90CAF9;
+        box-shadow: 0 0 0 0.2rem rgba(144, 202, 249, 0.25);
+        outline: none;
+      }
+
+      .d-grid {
+        margin-top: 25px;
+      }
+
+      .btn-primary {
+        background: linear-gradient(45deg, #64B5F6, #42A5F5);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 12px 24px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+      }
+
+      .btn-primary:hover {
+        background: linear-gradient(45deg, #42A5F5, #2196F3);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(66, 165, 245, 0.4);
+      }
+
+      .table {
+        background: white;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      }
+
+      .table th {
+        background: #E3F2FD;
+        color: #1976D2;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        padding: 15px;
+        border: none;
+      }
+
+      .table td {
+        padding: 15px;
+        border-color: #E3F2FD;
+        vertical-align: middle;
+      }
+
+      .table tr:hover {
+        background-color: #F5F9FF;
+      }
+
+      .pagination-container {
+        margin-top: 30px;
+        text-align: center;
+      }
+
+      .pagination {
+        display: inline-flex;
+        background: white;
+        padding: 8px;
+        border-radius: 50px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      }
+
+      .pagination a {
+        color: #1976D2;
+        padding: 8px 16px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border-radius: 25px;
+        margin: 0 4px;
+      }
+
+      .pagination a:hover {
+        background-color: #E3F2FD;
+      }
+
+      .pagination .active {
+        background: linear-gradient(45deg, #64B5F6, #42A5F5);
+        color: white;
+      }
+
+      /* Sweet Alert Customization */
+      .swal2-popup {
+        border-radius: 20px;
+        padding: 20px;
+      }
+
+      .swal2-title {
+        color: #1976D2;
+      }
+
+      .swal2-confirm {
+        background: linear-gradient(45deg, #64B5F6, #42A5F5) !important;
+        border-radius: 10px !important;
+      }
+
+      .swal2-cancel {
+        border-radius: 10px !important;
+      }
+
+      /* Status badges */
+      .badge {
+        padding: 8px 12px;
+        border-radius: 20px;
+        font-weight: 500;
+        font-size: 0.85rem;
+      }
+
+      .badge-success {
+        background-color: #E8F5E9;
+        color: #2E7D32;
+      }
+
+      .badge-warning {
+        background-color: #FFF3E0;
+        color: #EF6C00;
+      }
+
+      /* Action buttons */
+      .btn-action {
+        width: 35px;
+        height: 35px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        margin: 0 5px;
+      }
+
+      .btn-edit {
+        background-color: #E3F2FD;
+        color: #1976D2;
+      }
+
+      .btn-delete {
+        background-color: #FFEBEE;
+        color: #C62828;
+      }
+
+      .btn-action:hover {
+        transform: translateY(-2px);
+      }
+
+      .error-message {
+        color: red;
+      }
+    </style>
+  </head>
+
+  <body>
+    <section class="content-main">
+      <div class="content-header">
+        <div>
+          <h2 class="content-title card-title">Category</h2>
+        </div>
+      </div>
+      <header class="card-header text-center mb-20">
+        <form action="/admin/category/" method="get" onsubmit="return false" class="d-inline">
+          <div class="input-group input-group-sm border border-1 border-grey rounded-pill"
+            style="width: 500px; margin-left: 230px">
+            <input type="text" class="form-control border-0 rounded-pill mt-3" placeholder="Search categories"
+              name="search" />
+            <button class="btn" type="submit">Search</button>
+          </div>
+        </form>
+      </header>
+      <div class="card">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-3">
+              <form method="post" action="/admin/addCategory" onsubmit="return false" id="categoryForm">
+                <div class="mb-4">
+                  <label for="categoryName" class="form-label">Name</label>
+                  <input type="text" name="name" placeholder="Type here" class="form-control" id="categoryName" />
+                  <div id="categoryName-error" class="error-message"></div>
+                </div>
+                <div class="mb-4">
+                  <label class="form-label">Description</label>
+                  <textarea placeholder="Type here" name="description" class="form-control" id="description"></textarea>
+                  <div id="description-error" class="error-message"></div>
+                </div>
+                <div class="d-grid">
+                  <button class="btn btn-primary" type="submit">
+                    Create category
+                  </button>
+                </div>
+              </form>
+            </div>
+            <div class="col-md-8 ml-10">
+              <div class="table-responsive">
+                <table class="table table-hover">
+                  <thead>
+                    <tr>
+                      <th class="text-center"></th>
+                      <th>Name</th>
+                      <th>Description</th>
+                      <th>Offer Price</th>
+                      <th>Offer</th>
+                      <th>Status</th>
+                      <th>List/Unlist</th>
+                      <th class="text-start">Edit</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <%cat.reverse().forEach((category,index)=>{%>
+                      <tr>
+                        <td></td>
+                        <td class="text-start">
+                          <%=category.name%>
+                        </td>
+                        <td class="text-start">
+                          <%=category.description%>
+                        </td>
+                        <td>
+                          <%if(category.categoryOffer){%>
+                            <%=category.categoryOffer%>
+                              <%}else{%>
+                                0%
+                                <%}%>
+                        </td>
+                        <td class="text-start">
+                          <%if(category.categoryOffer===0){%>
+                            <button class="btn btn-info" style="width: 100px">
+                              <a href="#" class="text-white" onclick="addOffer('<%=category._id%>')">Add Offer</a>
+                            </button>
+                            <%}else{%>
+                              <button class="btn btn-info" style="width: 100px">
+                                <a href="#" class="text-white" onclick="removeOffer('<%=category._id%>')">Remove</a>
+                              </button>
+                              <%}%>
+                        </td>
+                        <td class="text-start">
+                          <%if(category.isListed){%>
+                            <span class="badge rounded-pill alert-success" style="width: 60px">Listed</span>
+                            <%}else{%>
+                              <span class="badge rounded-pill alert-danger" style="width: 60px">Unlisted</span>
+                              <%}%>
+                        </td>
+                        <td class="text-start">
+                          <%if(category.isListed){%>
+                            <button class="btn btn-danger" style="width: 70px">
+                              <a href="/admin/listCategory?id=<%=category._id%>" class="text-white">Unlist</a>
+                            </button>
+                            <%}else{%>
+                              <button class="btn btn-success" style="width: 70px">
+                                <a href="/admin/unlistCategory?id=<%=category._id%>" class="text-white">List</a>
+                              </button>
+                              <%}%>
+                        </td>
+                        <td class="text-start">
+                          <a href="/admin/editCategory?id=<%=category._id%>" class="btn btn-info text-white">Edit</a>
+                        </td>
+                      </tr>
+                      <%})%>
+
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pagination-container">
+        <a href="#">&laquo; Previous</a>
+        <span class="current-page"></span>
+        <a href="#"></a>
+        <a href="#">Next &raquo;</a>
+      </div>
+    </section>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+
+    <script>
+
+      function validateCategoryForm() {
+        const categoryName = document.getElementById('categoryName').value.trim();
+        const description = document.getElementById('description').value.trim();
+
+        let isValid = true;
+        let errors = [];
+
+        // Reset previous error states
+        resetErrorStates();
+
+        // Category Name validation
+        if (!categoryName) {
+          showError('categoryName', 'Category name is required');
+          errors.push('Category name is required');
+          isValid = false;
+        } else if (categoryName.length < 3) {
+          showError('categoryName', 'Category name must be at least 3 characters');
+          errors.push('Category name must be at least 3 characters');
+          isValid = false;
+        } else if (categoryName.length > 50) {
+          showError('categoryName', 'Category name must not exceed 50 characters');
+          errors.push('Category name must not exceed 50 characters');
+          isValid = false;
+        }
+
+        // Description validation
+        if (!description) {
+          showError('description', 'Description is required');
+          errors.push('Description is required');
+          isValid = false;
+        } else if (description.length < 10) {
+          showError('description', 'Description must be at least 10 characters');
+          errors.push('Description must be at least 10 characters');
+          isValid = false;
+        } else if (description.length > 500) {
+          showError('description', 'Description must not exceed 500 characters');
+          errors.push('Description must not exceed 500 characters');
+          isValid = false;
+        }
+
+        return { isValid, errors };
+      }
+
+      function showError(fieldId, message) {
+        const field = document.getElementById(fieldId);
+        field.classList.add('is-invalid');
+        field.classList.remove('is-valid');
+
+        // Create or update error message
+        let errorDiv = field.nextElementSibling;
+        if (!errorDiv || !errorDiv.classList.contains('invalid-feedback')) {
+          errorDiv = document.createElement('div');
+          errorDiv.className = 'invalid-feedback';
+          field.parentNode.insertBefore(errorDiv, field.nextSibling);
+        }
+        errorDiv.textContent = message;
+      }
+
+      function showSuccess(fieldId) {
+        const field = document.getElementById(fieldId);
+        field.classList.remove('is-invalid');
+        field.classList.add('is-valid');
+
+        // Remove error message if exists
+        const errorDiv = field.nextElementSibling;
+        if (errorDiv && errorDiv.classList.contains('invalid-feedback')) {
+          errorDiv.remove();
+        }
+      }
+
+      function resetErrorStates() {
+        const fields = ['categoryName', 'description'];
+        fields.forEach(fieldId => {
+          const field = document.getElementById(fieldId);
+          field.classList.remove('is-invalid', 'is-valid');
+
+          const errorDiv = field.nextElementSibling;
+          if (errorDiv && errorDiv.classList.contains('invalid-feedback')) {
+            errorDiv.remove();
+          }
+        });
+      }
+
+      // Real-time validation
+      document.getElementById('categoryName').addEventListener('input', function () {
+        const value = this.value.trim();
+        if (value.length >= 3 && value.length <= 50) {
+          showSuccess('categoryName');
+        } else {
+          showError('categoryName', value.length < 3 ? 'Category name must be at least 3 characters' : 'Category name must not exceed 50 characters');
+        }
+      });
+
+      document.getElementById('description').addEventListener('input', function () {
+        const value = this.value.trim();
+        if (value.length >= 10 && value.length <= 500) {
+          showSuccess('description');
+        } else {
+          showError('description', value.length < 10 ? 'Description must be at least 10 characters' : 'Description must not exceed 500 characters');
+        }
+      });
+
+      function handleFormSubmit(event) {
+        event.preventDefault();
+
+        const { isValid, errors } = validateCategoryForm();
+
+        if (!isValid) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Validation Error',
+            html: errors.join('<br>'),
+            confirmButtonColor: '#1976D2'
+          });
+          return;
+        }
+
+        // If validation passes, proceed with form submission
+
+        const formData = new FormData(document.getElementById('categoryForm'))
+        const urlEncodedData = new URLSearchParams();
+        for (let [key, value] of formData.entries()) {
+          urlEncodedData.append(key, value);
+        }
+        fetch('/admin/addCategory', {
+          method: 'POST',
+          body: urlEncodedData
+
+        })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: 'Category added successfully',
+                confirmButtonColor: '#1976D2'
+              }).then(() => {
+                window.location.reload();
+              });
+            } else {
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.message || 'Failed to add category',
+                confirmButtonColor: '#1976D2'
+              });
+            }
+          })
+          .catch(error => {
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: 'An unexpected error occurred',
+              confirmButtonColor: '#1976D2'
+            });
+          });
+      }
+
+      // Add form submit event listener
+      document.getElementById('categoryForm').addEventListener('submit', handleFormSubmit);
+
+    </script>
+
+
+    <%- include("../../views/partials/admin/footer") %>

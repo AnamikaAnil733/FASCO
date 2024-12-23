@@ -1,0 +1,260 @@
+<%- include("../../views/partials/admin/header") %>
+<style>
+    /* Modern Customer Page Styling */
+    :root {
+        --primary-color: #4A90E2;
+        --secondary-color: #F5F7FA;
+        --accent-color: #2ECC71;
+        --danger-color: #E74C3C;
+        --text-primary: #2C3E50;
+        --text-secondary: #7F8C8D;
+        --border-color: #E5E9F2;
+    }
+
+    .content-wrapper {
+        padding: 2rem;
+        background: var(--secondary-color);
+        min-height: 100vh;
+    }
+
+    .content-header {
+        margin-bottom: 2rem;
+        background: white;
+        padding: 1.5rem;
+        border-radius: 15px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .content-title {
+        color: var(--text-primary);
+        font-size: 1.8rem;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    /* Search Bar Styling */
+    .search-wrapper {
+        margin: 2rem 0;
+        display: flex;
+        justify-content: center;
+    }
+
+    .search-container {
+        width: 100%;
+        max-width: 600px;
+        position: relative;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 1rem 1.5rem;
+        border: 2px solid var(--border-color);
+        border-radius: 50px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .search-input:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+        outline: none;
+    }
+
+    .search-button {
+        position: absolute;
+        right: 5px;
+        top: 50%;
+        transform: translateY(-50%);
+        padding: 0.5rem 1.5rem;
+        border: none;
+        border-radius: 50px;
+        background: var(--primary-color);
+        color: white;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .search-button:hover {
+        background: #357ABD;
+    }
+
+    /* Table Styling */
+    .table-container {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        margin: 2rem 0;
+    }
+
+    .table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin-bottom: 0;
+    }
+
+    .table thead th {
+        background: var(--secondary-color);
+        padding: 1.2rem 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        border: none;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+    }
+
+    .table tbody tr {
+        transition: all 0.3s ease;
+    }
+
+    .table tbody tr:hover {
+        background: rgba(74, 144, 226, 0.05);
+    }
+
+    .table td {
+        padding: 1rem;
+        vertical-align: middle;
+        border-top: 1px solid var(--border-color);
+        color: var(--text-secondary);
+    }
+
+    /* Button Styling */
+    .btn-action {
+        padding: 0.5rem 1.5rem;
+        border-radius: 50px;
+        border: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+        min-width: 100px;
+    }
+
+    .btn-block {
+        background: var(--danger-color);
+        color: white;
+    }
+
+    .btn-block:hover {
+        background: #C0392B;
+        transform: translateY(-1px);
+    }
+
+    .btn-unblock {
+        background: var(--accent-color);
+        color: white;
+    }
+
+    .btn-unblock:hover {
+        background: #27AE60;
+        transform: translateY(-1px);
+    }
+
+    /* Pagination Styling */
+    .pagination {
+        margin: 2rem 0;
+        gap: 0.5rem;
+    }
+
+    .page-item .page-link {
+        border: none;
+        padding: 0.5rem 1rem;
+        color: var(--text-secondary);
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .page-item:not(.active) .page-link:hover {
+        background: var(--border-color);
+        color: var(--text-primary);
+    }
+
+    .page-item.active .page-link {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .content-wrapper {
+            padding: 1rem;
+        }
+
+        .search-container {
+            max-width: 100%;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .btn-action {
+            min-width: 80px;
+            padding: 0.5rem 1rem;
+        }
+    }
+</style>
+
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="content-title">Customers</h2>
+        </div>
+    </div>
+
+    <div class="search-wrapper">
+        <div class="search-container">
+            <form action="/admin/users/" method="get">
+                <input type="text" class="search-input" placeholder="Search customers..." name="search">
+                <button class="search-button" type="submit">Search</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone No</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% for(let i=0; i<data.length; i++) { %>
+                    <tr>
+                        <td><%=data[i].name%></td>
+                        <td><%=data[i].email%></td>
+                        <td><%=data[i].phone%></td>
+                        <td>
+                            <% if(data[i].isBlocked===false) { %>
+                                <a href="/admin/blockCustomer?id=<%=data[i].id%>" class="btn-action btn-block">Block</a>
+                            <% } else { %>
+                                <a href="/admin/unblockCustomer?id=<%=data[i].id%>" class="btn-action btn-unblock">Unblock</a>
+                            <% } %>
+                        </td>
+                    </tr>
+                <% } %>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="d-flex justify-content-center">
+        <nav aria-label="Page navigation">
+            <ul class="pagination">
+                <% for(let i=1; i<=totalpages; i++) { %>
+                    <li class="page-item <%=(i===currentPage) ? 'active' : '' %>">
+                        <a class="page-link" href="?page=<%=i%>"><%=i%></a>
+                    </li>
+                <% } %>
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<%- include("../../views/partials/admin/footer") %>
