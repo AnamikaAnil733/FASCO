@@ -33,16 +33,26 @@ const bcrypt = require("bcrypt");
 //       res.status(500).send("Sever error")
 //     }
 //   };
-const loadHomepage=async(req,res)=>{
-  try{
-    const products= await Product.find({})
-  await res.render("home",{message:req.session.user,products:products})
-  }
-  catch(error){
-     console.log("home page not found");
-     res.status(500).send("server error")
-  }
-}
+const loadHomepage = async (req, res) => {
+    try {
+        // Get active categories
+        const categories = await Category.find({ isListed: true });
+        
+        // Get unblocked products from active categories
+        const products = await Product.find({
+            isBlocked: false,
+            category: { $in: categories.map(category => category._id) }
+        }).sort({ createdAt: -1 });  // Sort by newest first
+        
+        res.render("home", {
+            message: req.session.user,
+            products: products
+        });
+    } catch (error) {
+        console.error("Error loading home page:", error);
+        res.status(500).send("Server error");
+    }
+};
 
   const loadSignup = async (req, res) => {
     try {
@@ -289,19 +299,41 @@ async function sendVerificationEmail(email,otp) {
     }
   };
 
+  const getProductDetail = async (req, res) => {
+    try {
+        const id = req.params.id;
+        const product = await Product.findById(id).populate('category');
+        
+        if (!product) {
+            return res.status(404).render('404', { message: 'Product not found' });
+        }
+
+        if (product.isBlocked) {
+            return res.status(403).render('404', { message: 'This product is currently unavailable' });
+        }
+
+        res.render("product-detail", {
+            message: req.session.user,
+            product: product
+        });
+    } catch (error) {
+        console.error("Error getting product details:", error);
+        res.status(500).send("Server error");
+    }
+  };
+
 
 
 
   module.exports = {
     loadHomepage,
-    pageNotFound,
     loadSignup,
     Signup,
+    pageNotFound,
     verifyOtp,
     resendOtp,
     loadLogin,
     login,
     logout,
-  
-
+    getProductDetail
   };

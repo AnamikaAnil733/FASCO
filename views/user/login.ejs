@@ -9,6 +9,13 @@
       </div>
       
       <form action="/login" method="POST" class="login-form">
+        <a href="/auth/google" class="google-signin">
+            <i class="fab fa-google"></i>
+            <span>Continue with Google</span>
+        </a>
+        <div class="divider">
+            <span>or</span>
+        </div>
         <div class="form-group">
           <label class="form-label">Email Address</label>
           <input type="email" class="form-control" name="email" placeholder="Enter your email" >
@@ -43,5 +50,58 @@
     </div>
   </div>
 </div>
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+<style>
+    .google-signin {
+        width: 100%;
+        padding: 10px;
+        margin: 15px 0;
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .google-signin:hover {
+        background: #f1f1f1;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .google-signin i {
+        color: #4285f4;
+        margin-right: 10px;
+        font-size: 18px;
+    }
+    .google-signin span {
+        color: #444;
+        font-size: 14px;
+        font-weight: 500;
+    }
+    .divider {
+        text-align: center;
+        margin: 15px 0;
+        position: relative;
+    }
+    .divider::before,
+    .divider::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        width: 45%;
+        height: 1px;
+        background: #ddd;
+    }
+    .divider::before { left: 0; }
+    .divider::after { right: 0; }
+    .divider span {
+        background: #fff;
+        padding: 0 10px;
+        color: #777;
+        font-size: 12px;
+    }
+</style>
 
 <%- include("../partials/user/footer.ejs") %>

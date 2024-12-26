@@ -317,7 +317,7 @@
                               <%}%>
                         </td>
                         <td class="text-start">
-                          <a href="/admin/editCategory?id=<%=category._id%>" class="btn btn-info text-white">Edit</a>
+                          <a href="/admin/editCategory?id=<%=category._id%>" class="btn btn-info text-white edit-category-btn" data-category-id="<%=category._id%>">Edit</a>
                         </td>
                       </tr>
                       <%})%>
@@ -467,16 +467,81 @@
         }
         fetch('/admin/addCategory', {
           method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
           body: urlEncodedData
 
         })
+        .then(response => response.json())
+        .then(data => {
+          if (data.error) {
+            Swal.fire({
+              icon: 'error',
+              title: 'Category Already Exists',
+              text: data.error,
+              confirmButtonColor: '#1976D2'
+            });
+          } else if (data.success) {
+            Swal.fire({
+              icon: 'success',
+              title: 'Success!',
+              text: 'Category added successfully',
+              confirmButtonColor: '#1976D2'
+            }).then(() => {
+              window.location.reload();
+            });
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: data.message || 'Failed to add category',
+              confirmButtonColor: '#1976D2'
+            });
+          }
+        })
+        .catch(error => {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'An unexpected error occurred',
+            confirmButtonColor: '#1976D2'
+          });
+        });
+      }
+
+      // Add form submit event listener
+      document.getElementById('categoryForm').addEventListener('submit', handleFormSubmit);
+
+      // Handle edit category form submission
+      document.querySelectorAll('form.edit-category-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+          e.preventDefault();
+          
+          const formData = new FormData(this);
+          const urlEncodedData = new URLSearchParams(formData);
+          
+          fetch(this.action, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: urlEncodedData
+          })
           .then(response => response.json())
           .then(data => {
-            if (data.success) {
+            if (data.error) {
+              Swal.fire({
+                icon: 'error',
+                title: 'Category Already Exists',
+                text: data.error,
+                confirmButtonColor: '#1976D2'
+              });
+            } else if (data.status === true) {
               Swal.fire({
                 icon: 'success',
                 title: 'Success!',
-                text: 'Category added successfully',
+                text: 'Category updated successfully',
                 confirmButtonColor: '#1976D2'
               }).then(() => {
                 window.location.reload();
@@ -485,7 +550,7 @@
               Swal.fire({
                 icon: 'error',
                 title: 'Error',
-                text: data.message || 'Failed to add category',
+                text: data.message || 'Failed to update category',
                 confirmButtonColor: '#1976D2'
               });
             }
@@ -498,11 +563,84 @@
               confirmButtonColor: '#1976D2'
             });
           });
-      }
+        });
+      });
 
-      // Add form submit event listener
-      document.getElementById('categoryForm').addEventListener('submit', handleFormSubmit);
+      // Handle edit category button click
+      document.querySelectorAll('.edit-category-btn').forEach(button => {
+        button.addEventListener('click', async function(e) {
+          e.preventDefault();
+          const categoryId = this.getAttribute('data-category-id');
+          const currentRow = this.closest('tr');
+          const currentName = currentRow.querySelector('td:nth-child(2)').textContent.trim();
+          const currentDescription = currentRow.querySelector('td:nth-child(3)').textContent.trim();
 
+          const { value: formValues } = await Swal.fire({
+            title: 'Edit Category',
+            html:
+              `<input id="swal-input1" class="swal2-input" placeholder="Category Name" value="${currentName}">` +
+              `<textarea id="swal-input2" class="swal2-textarea" placeholder="Description">${currentDescription}</textarea>`,
+            focusConfirm: false,
+            showCancelButton: true,
+            confirmButtonText: 'Update',
+            confirmButtonColor: '#1976D2',
+            cancelButtonColor: '#d33',
+            preConfirm: () => {
+              const name = document.getElementById('swal-input1').value;
+              const desc = document.getElementById('swal-input2').value;
+              
+              if (!name || name.trim().length < 3) {
+                Swal.showValidationMessage('Category name must be at least 3 characters');
+                return false;
+              }
+              
+              if (!desc || desc.trim().length < 10) {
+                Swal.showValidationMessage('Description must be at least 10 characters');
+                return false;
+              }
+              
+              return [name, desc];
+            }
+          });
+
+          if (formValues) {
+            const [newName, newDescription] = formValues;
+            try {
+              const response = await fetch(`/admin/editCategory/${categoryId}`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  categoryName: newName,
+                  description: newDescription
+                })
+              });
+
+              const data = await response.json();
+
+              if (data.status) {
+                await Swal.fire({
+                  icon: 'success',
+                  title: 'Success!',
+                  text: data.message,
+                  confirmButtonColor: '#1976D2'
+                });
+                window.location.reload();
+              } else {
+                throw new Error(data.message);
+              }
+            } catch (error) {
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: error.message || 'Failed to update category',
+                confirmButtonColor: '#1976D2'
+              });
+            }
+          }
+        });
+      });
     </script>
 
 

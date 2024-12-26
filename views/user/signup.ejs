@@ -308,104 +308,109 @@ a:hover{
   const error5 = document.getElementById("error5")
   const signform = document.getElementById("signupForm")
 
-
-  function nameValidateChecking(e){
+  function nameValidateChecking() {
     const nameval = nameid.value;
     const namepattern = /^[A-Za-z\s]+$/;
     if(nameval.trim()===""){
       error1.style.display="block";
       error1.innerHTML = "Name is required";
+      return false;
     }else if(!namepattern.test(nameval)){
       error1.style.display = "block";
       error1.innerHTML = "Name can only contain alphabets and spaces";
+      return false;
     }else{
       error1.style.display="none"
       error1.innerHTML=""
+      return true;
     }
   }
 
-
-  function emailValidateChecking(e){
+  function emailValidateChecking() {
     const emailval = emailid.value;
     const emailpattern = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
     if(emailval.trim()===""){
       error2.style.display="block";
       error2.innerHTML = "Email is required";
+      return false;
     }else if(!emailpattern.test(emailval)){
       error2.style.display = "block";
       error2.innerHTML = "Invalid format";
+      return false;
     }else{
       error2.style.display="none"
       error2.innerHTML=""
+      return true;
     }
-
   }
 
-
-  function phoneValidateChecking(e){
+  function phoneValidateChecking() {
     const phoneval = phoneid.value;
     if(phoneval.trim()===""){
       error3.style.display="block";
       error3.innerHTML = "phone no. is required";
+      return false;
     }else if(phoneval.length<10 || phoneval.length>10){
       error3.style.display = "block";
       error3.innerHTML = "Enter 10 digit";
+      return false;
     }else{
       error3.style.display="none"
       error3.innerHTML=""
+      return true;
     }
   }
 
-
-  function passValidateChecking(e){
+  function passValidateChecking() {
     const passval = passid.value;
     const cpassval = cpassid.value;
     const alpha = /[a-zA-Z]/;
     const digit = /\d/;
+    
     if(passval.trim()===""){
       error4.style.display="block";
-      error4.innerHTML = "password  is required";
+      error4.innerHTML = "password is required";
+      return false;
     }else if(passval.length < 8){
       error4.style.display = "block";
       error4.innerHTML = "Should contain atleast 8 characters";
+      return false;
     }else if(!alpha.test(passval) || !digit.test(passval)){
       error4.style.display = "block";
       error4.innerHTML = "Should contain numbers and alphabets";
+      return false;
     }else{
       error4.style.display="none"
       error4.innerHTML=""
+      
+      if(passval !== cpassval){
+        error5.style.display="block";
+        error5.innerHTML = "Password do not match";
+        return false;
+      }else{
+        error5.style.display="none";
+        error5.innerHTML="";
+        return true;
+      }
     }
-
-
-
-    if(passval != cpassval){
-      error5.style.display="block";
-      error5.innerHTML = "Password do not match";
-    }else{
-      error5.style.display="none";
-      error5.innerHTML="";
-    }
-  
   }
 
-  document.addEventListener("DOMContentLoaded",function(){
-    signform.addEventListener("submit",function(e){
-      nameValidateChecking();
-      emailValidateChecking();
-      phoneValidateChecking();
-      passValidateChecking();
+  // Add blur event listeners
+  nameid.addEventListener('blur', nameValidateChecking);
+  emailid.addEventListener('blur', emailValidateChecking);
+  phoneid.addEventListener('blur', phoneValidateChecking);
+  passid.addEventListener('blur', passValidateChecking);
+  cpassid.addEventListener('blur', passValidateChecking);
 
+  // Form submission validation
+  signform.addEventListener("submit", function(e) {
+    const isNameValid = nameValidateChecking();
+    const isEmailValid = emailValidateChecking();
+    const isPhoneValid = phoneValidateChecking();
+    const isPasswordValid = passValidateChecking();
 
-
-      if(!nameid || !emailid || !phoneid || !passid || !error1 || !error2 || !error3 || !error4 || !error5 || !signform){
-        alert("One or more elements not found")
-      }
-
-      if(error1.innerHTML || error2.innerHTML || error3.innerHTML || error4.innerHTML || error5.innerHTML){
-        e.preventDefault()
-      }
-      
-    })
-  })
-
+    if (!isNameValid || !isEmailValid || !isPhoneValid || !isPasswordValid) {
+      e.preventDefault();
+    }
+  });
 </script>

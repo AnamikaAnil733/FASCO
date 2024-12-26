@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const {Schema} = mongoose;
 
 const productSchema = new mongoose.Schema({
-    product:{
+    productName:{
         type :String,
         required:true
     },
@@ -33,7 +33,7 @@ productOffer : {
 },
 quantity:{
     type:Number,
-    default:true
+    default:0
 },
 color:{
     type:String,
