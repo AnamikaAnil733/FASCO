@@ -78,8 +78,8 @@
                                         </a>
                                         <div class="dropdown-menu">
                                             <a class="dropdown-item" href="/admin/editproduct/<%= product._id %>">Edit</a>
-                                            <a class="dropdown-item text-danger" href="#" 
-                                               onclick="confirmDelete('<%= product._id %>')">Delete</a>
+                                           
+                                              
                                         </div>
                                     </div>
                                 </td>
@@ -157,22 +157,7 @@
         });
     }
 
-    function confirmDelete(productId) {
-        Swal.fire({
-            title: 'Delete Product?',
-            text: "You won't be able to revert this!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = `/admin/delete-product/${productId}`;
-            }
-        });
-    }
+    
 </script>
 
 <%- include("../partials/admin/footer") %>

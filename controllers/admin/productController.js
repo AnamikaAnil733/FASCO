@@ -58,24 +58,49 @@ const addProducts = async (req, res) => {
         // Process all images
         for (const file of req.files) {
             try {
-                // Get just the filename without path
-                const filename = file.filename;
-                
-                // Process image with sharp
-                await sharp(file.path)
-                    .resize(800, 800, {
-                        fit: 'contain',
-                        background: { r: 255, g: 255, b: 255, alpha: 1 }
-                    })
-                    .jpeg({ quality: 90 })
-                    .toFile(path.join(productImagesDir, 'processed-' + filename));
-
-                // Delete the original file
-                fs.unlink(file.path, (err) => {
-                    if (err) console.error('Error deleting original file:', err);
+                console.log('Processing file:', {
+                    originalname: file.originalname,
+                    mimetype: file.mimetype,
+                    size: file.size,
+                    hasBuffer: !!file.buffer
                 });
 
-                images.push('processed-' + filename);
+                const fileName = `${Date.now()}-${file.originalname.replace(/\s+/g, '-')}`;
+                const filePath = path.join(__dirname, '../../public/uploads/product-images', fileName);
+
+                // Ensure the directory exists
+                const dir = path.dirname(filePath);
+                if (!fs.existsSync(dir)) {
+                    fs.mkdirSync(dir, { recursive: true });
+                }
+
+                if (!file.buffer) {
+                    throw new Error('No buffer found in uploaded file');
+                }
+
+                // Process and save the image
+                const image = sharp(file.buffer);
+                const metadata = await image.metadata();
+                
+                // Only resize if the image is larger than 800x800
+                if (metadata.width > 800 || metadata.height > 800) {
+                    await image
+                        .resize(800, 800, {
+                            fit: 'contain',
+                            background: { r: 255, g: 255, b: 255, alpha: 1 }
+                        })
+                        .toFormat('jpeg')
+                        .jpeg({ quality: 90 })
+                        .toFile(filePath);
+                } else {
+                    // If image is smaller, just convert to jpeg without resizing
+                    await image
+                        .toFormat('jpeg')
+                        .jpeg({ quality: 90 })
+                        .toFile(filePath);
+                }
+
+                images.push(fileName);
             } catch (error) {
                 console.error('Error processing image:', error);
                 return res.status(400).json({ 
@@ -254,6 +279,13 @@ const updateProduct = async (req, res) => {
         if (req.files && req.files.length > 0) {
             for (const file of req.files) {
                 try {
+                    console.log('Processing file:', {
+                        originalname: file.originalname,
+                        mimetype: file.mimetype,
+                        size: file.size,
+                        hasBuffer: !!file.buffer
+                    });
+                    
                     const fileName = `${Date.now()}-${file.originalname.replace(/\s+/g, '-')}`;
                     const filePath = path.join(__dirname, '../../public/uploads/product-images', fileName);
 
@@ -263,15 +295,31 @@ const updateProduct = async (req, res) => {
                         fs.mkdirSync(dir, { recursive: true });
                     }
 
+                    if (!file.buffer) {
+                        throw new Error('No buffer found in uploaded file');
+                    }
+
                     // Process and save the image
-                    await sharp(file.buffer)
-                        .resize(800, 800, {
-                            fit: 'contain',
-                            background: { r: 255, g: 255, b: 255, alpha: 1 }
-                        })
-                        .toFormat('jpeg')
-                        .jpeg({ quality: 90 })
-                        .toFile(filePath);
+                    const image = sharp(file.buffer);
+                    const metadata = await image.metadata();
+                    
+                    // Only resize if the image is larger than 800x800
+                    if (metadata.width > 800 || metadata.height > 800) {
+                        await image
+                            .resize(800, 800, {
+                                fit: 'contain',
+                                background: { r: 255, g: 255, b: 255, alpha: 1 }
+                            })
+                            .toFormat('jpeg')
+                            .jpeg({ quality: 90 })
+                            .toFile(filePath);
+                    } else {
+                        // If image is smaller, just convert to jpeg without resizing
+                        await image
+                            .toFormat('jpeg')
+                            .jpeg({ quality: 90 })
+                            .toFile(filePath);
+                    }
 
                     newImages.push(fileName);
                 } catch (error) {

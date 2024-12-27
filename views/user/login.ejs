@@ -8,7 +8,7 @@
         <p>Please login to your account</p>
       </div>
       
-      <form action="/login" method="POST" class="login-form">
+      <form action="/login" method="POST" class="login-form" novalidate>
         <a href="/auth/google" class="google-signin">
             <i class="fab fa-google"></i>
             <span>Continue with Google</span>
@@ -47,6 +47,7 @@
 </div>
 
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+<script src="/js/loginValidation.js"></script>
 <style>
     .google-signin {
         width: 100%;
@@ -96,6 +97,19 @@
         padding: 0 10px;
         color: #777;
         font-size: 12px;
+    }
+    .error-message {
+        color: #dc3545;
+        font-size: 12px;
+        margin-top: 5px;
+        display: block;
+    }
+    .form-control.error {
+        border-color: #dc3545;
+    }
+    .form-group {
+        margin-bottom: 20px;
+        position: relative;
     }
 </style>
 
