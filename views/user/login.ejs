@@ -9,6 +9,10 @@
       </div>
       
       <form action="/login" method="POST" class="login-form" novalidate>
+        <% if (message) { %>
+          <div class="alert alert-danger"><%= message %></div>
+      <% } %>
+      
         <a href="/auth/google" class="google-signin">
             <i class="fab fa-google"></i>
             <span>Continue with Google</span>

@@ -6,33 +6,6 @@ const nodemailer = require("nodemailer");
 const bcrypt = require("bcrypt");
 
 
-
-// const loadHomepage = async (req, res) => {
-//   try {
-//       const user = req.session?.user??req.session?.passport?.user;
-//       const categories = await Category.find({isListed:true});
-//       let productData = await Product.find({
-//         isBlocked:false,
-//         category:{$in:categories.map(category=>category._id)},quantity:{$gt:0}
-//       })
-
-// productData.sort((a,b)=>new Date(b.createdOn));
-// productData = productData.slice(0,4);
-
-
-
-//       if(user){
-//         const userData = await User.findOne({_id:user._id});
-//         res.render("home",{user:userData,products:productData})
-//       }else{
-//         return res.render("home",{products:productData});
-//       }
-  
-//     } catch (error) {
-//       console.log(error);
-//       res.status(500).send("Sever error")
-//     }
-//   };
 const loadHomepage = async (req, res) => {
     try {
         // Get active categories
@@ -193,31 +166,6 @@ async function sendVerificationEmail(email,otp) {
   };
   
 
-
-  // const verifyOtp = async (req, res) => {
-  //   try {
-  //     const {otp} = req.body;
-  //     console.log(otp);
-  //     if(otp === req.session.userOtp){
-  //       const user = req.session.userData
-  //       const passwordHash = await securePassword(user.password)
-  //       const saveUserData = new User({
-  //         name:user.name,
-  //         email:user.email,
-  //         phone:user.phone,
-  //         password:passwordHash
-  //       })
-  //       await saveUserData.save();
-  //       req.session.user = saveUserData._id
-  //       res.json({success:true, redirectUrl:"/"})
-  //     }else{
-  //       res.status(400).json({success:false,message:"Invalid OTP,Please try again"})
-  //     }
-  //   } catch (error) {
-  //     console.error("Error Verifying OTP", error);
-  //     res.status(500).json({success:false,message:"An error occured"})   
-  //   }
-  // };
 
 
   const resendOtp = async(req,res)=>{

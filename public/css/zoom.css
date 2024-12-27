@@ -1,0 +1,20 @@
+.wrap-pic-w {
+    position: relative;
+    overflow: hidden;
+    cursor: zoom-in;
+}
+
+.wrap-pic-w img {
+    transition: transform 0.3s ease-out;
+    max-width: 100%;
+    height: auto;
+}
+
+.zoom-effect {
+    position: relative;
+    overflow: hidden;
+}
+
+.zoom-effect img {
+    transition: transform 0.3s ease-out;
+}

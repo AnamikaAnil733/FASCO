@@ -25,7 +25,7 @@ app.use(session({
 
 
 app.use((req,res,next)=>{
-  console.log(req.session)
+  // console.log(req.session)
   next()
 })
 app.use(passport.initialize());
