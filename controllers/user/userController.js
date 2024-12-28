@@ -4,6 +4,7 @@ const Product = require("../../models/productSchema");
 const env = require("dotenv").config();
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcrypt");
+const Address = require('../../models/addressSchema');
 
 
 const loadHomepage = async (req, res) => {
@@ -411,7 +412,231 @@ async function sendVerificationEmail(email,otp) {
     }
   }
 
+ //Load account page
+const loadAccount = async (req, res) => {
+  try {
+    if (!req.session.user) {
+      return res.redirect('/login');
+    }
+    const user = await User.findById(req.session.user._id);
+    res.render("account", {
+      user: user,
+      message: req.session.user
+    });
+  } catch (error) {
+    console.error("Error loading account page:", error);
+    res.status(500).send("Server error");
+  }
+};
 
+// Update user profile
+const updateProfile = async (req, res) => {
+  try {
+    if (!req.session.user) {
+      return res.redirect('/login');
+    }
+
+    const { name, phone } = req.body;
+    const userId = req.session.user._id;
+
+    const updateData = {
+      name,
+      phone
+    };
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      updateData,
+      { new: true }
+    );
+
+    req.session.user = updatedUser;
+    res.redirect('/userProfile');
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    res.status(500).send("Server error");
+  }
+};
+
+// Change password
+const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+    const userId = req.session.user._id;
+
+    // Validate passwords match
+    if (newPassword !== confirmPassword) {
+      return res.json({ 
+        success: false, 
+        message: 'New passwords do not match' 
+      });
+    }
+
+    // Get user from database
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
+
+    // Check current password
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isPasswordValid) {
+      return res.json({ 
+        success: false, 
+        message: 'Current password is incorrect' 
+      });
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update password
+    user.password = hashedPassword;
+    await user.save();
+
+    res.json({ 
+      success: true, 
+      message: 'Password updated successfully' 
+    });
+  } catch (error) {
+    console.error('Error in changePassword:', error);
+    res.json({ 
+      success: false, 
+      message: 'An error occurred while changing password' 
+    });
+  }
+};
+
+// Load addresses page
+const loadAddresses = async (req, res) => {
+  try {
+    const userId = req.session.user._id;
+    const addressData = await Address.findOne({ userId: userId });
+    
+    res.render("address-book", {
+      addresses: addressData ? addressData.address : [],
+      user: req.session.user
+    });
+  } catch (error) {
+    console.error('Error in loadAddresses:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+// Add new address
+const addAddress = async (req, res) => {
+  try {
+    const userId = req.session.user._id;
+    const {
+      addressType,
+      name,
+      city,
+      landMark,
+      state,
+      pincode,
+      phone,
+      altPhone
+    } = req.body;
+
+    let addressDoc = await Address.findOne({ userId: userId });
+    
+    if (!addressDoc) {
+      addressDoc = new Address({
+        userId: userId,
+        address: []
+      });
+    }
+
+    addressDoc.address.push({
+      addressType,
+      name,
+      city,
+      landMark,
+      state,
+      pincode,
+      phone,
+      altPhone
+    });
+
+    await addressDoc.save();
+    res.json({ success: true, message: 'Address added successfully' });
+  } catch (error) {
+    console.error('Error in addAddress:', error);
+    res.status(500).json({ success: false, message: 'Failed to add address' });
+  }
+};
+
+// Edit address
+const editAddress = async (req, res) => {
+  try {
+    const userId = req.session.user._id;
+    const addressId = req.params.id;
+    const {
+      addressType,
+      name,
+      city,
+      landMark,
+      state,
+      pincode,
+      phone,
+      altPhone
+    } = req.body;
+
+    const result = await Address.updateOne(
+      { 
+        userId: userId,
+        'address._id': addressId 
+      },
+      {
+        $set: {
+          'address.$.addressType': addressType,
+          'address.$.name': name,
+          'address.$.city': city,
+          'address.$.landMark': landMark,
+          'address.$.state': state,
+          'address.$.pincode': pincode,
+          'address.$.phone': phone,
+          'address.$.altPhone': altPhone
+        }
+      }
+    );
+
+    if (result.modifiedCount > 0) {
+      res.json({ success: true, message: 'Address updated successfully' });
+    } else {
+      res.status(404).json({ success: false, message: 'Address not found' });
+    }
+  } catch (error) {
+    console.error('Error in editAddress:', error);
+    res.status(500).json({ success: false, message: 'Failed to update address' });
+  }
+};
+
+// Delete address
+const deleteAddress = async (req, res) => {
+  try {
+    const userId = req.session.user._id;
+    const addressId = req.params.id;
+
+    const result = await Address.updateOne(
+      { userId: userId },
+      { $pull: { address: { _id: addressId } } }
+    );
+
+    if (result.modifiedCount > 0) {
+      res.json({ success: true, message: 'Address deleted successfully' });
+    } else {
+      res.status(404).json({ success: false, message: 'Address not found' });
+    }
+  } catch (error) {
+    console.error('Error in deleteAddress:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete address' });
+  }
+};
 
 
   module.exports = {
@@ -428,5 +653,12 @@ async function sendVerificationEmail(email,otp) {
     loadForgotPassword,
     forgotPassword,
     loadResetPassword,
-    resetPassword
+    resetPassword,
+    loadAccount,
+    updateProfile,
+    changePassword,
+    loadAddresses,
+    addAddress,
+    editAddress,
+    deleteAddress,
   };
