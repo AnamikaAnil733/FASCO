@@ -326,7 +326,6 @@ async function sendVerificationEmail(email,otp) {
         resetPasswordToken: token,
         resetPasswordExpires: { $gt: Date.now() }
       });
-      console.log(token)
   
       if (!user) {
         return res.render('reset-password', { message: 'Password reset token is invalid or expired' });
@@ -367,7 +366,7 @@ async function sendVerificationEmail(email,otp) {
       user.resetPasswordExpires = undefined;
       await user.save();
   
-      res.render('login', { message: 'Password has been reset successfully' });
+      res.render('login', {message: 'Password has been reset successfully',success: true });
     } catch (error) {
       console.error("Error resetting password:", error);
       res.render('reset-password', { 
