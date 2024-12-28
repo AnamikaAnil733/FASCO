@@ -17,6 +17,15 @@ router.get("/logout",userController.logout);
 router.get("/product/:id", userController.getProductDetail);
 
 
+
+// Forgot Password Routes
+router.get("/forgot-password", userController.loadForgotPassword);
+router.post("/forgot-password", userController.forgotPassword);
+router.get("/reset-password/:token", userController.loadResetPassword);
+router.post("/reset-password/:token", userController.resetPassword);
+
+
+
 router.get('/auth/google',passport.authenticate('google',{scope:['profile','email']}));
 router.get('/auth/google/callback',passport.authenticate('google',{failureRedirect:'/signup'}),(req,res)=>{
     req.session.user = req.session.passport.user
