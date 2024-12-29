@@ -365,6 +365,23 @@
         color: var(--text-secondary);
         margin-bottom: 1rem;
     }
+
+    /* Validation Styles */
+    .form-control.error {
+        border-color: var(--danger-color);
+        background-color: #fff5f5;
+    }
+
+    .error-message {
+        color: var(--danger-color);
+        font-size: 0.8rem;
+        margin-top: 0.25rem;
+        display: none;
+    }
+
+    .error-message.show {
+        display: block;
+    }
 </style>
 
 <main class="main-content">
@@ -468,6 +485,173 @@
     const successAlert = document.getElementById('successAlert');
     const errorAlert = document.getElementById('errorAlert');
 
+    // Validation rules
+    const validationRules = {
+        addressType: {
+            required: true,
+            minLength: 2,
+            maxLength: 20,
+            pattern: /^[a-zA-Z\s]+$/,
+            message: 'Address type should be 2-20 characters long and contain only letters'
+        },
+        name: {
+            required: true,
+            minLength: 3,
+            maxLength: 50,
+            pattern: /^[a-zA-Z\s]+$/,
+            message: 'Name should be 3-50 characters long and contain only letters'
+        },
+        landMark: {
+            required: true,
+            minLength: 3,
+            maxLength: 100,
+            message: 'Landmark should be 3-100 characters long'
+        },
+        city: {
+            required: true,
+            minLength: 2,
+            maxLength: 50,
+            pattern: /^[a-zA-Z\s]+$/,
+            message: 'City should be 2-50 characters long and contain only letters'
+        },
+        state: {
+            required: true,
+            minLength: 2,
+            maxLength: 50,
+            pattern: /^[a-zA-Z\s]+$/,
+            message: 'State should be 2-50 characters long and contain only letters'
+        },
+        pincode: {
+            required: true,
+            pattern: /^\d{6}$/,
+            message: 'Pincode should be exactly 6 digits'
+        },
+        phone: {
+            required: true,
+            pattern: /^[6-9]\d{9}$/,
+            message: 'Please enter a valid 10-digit Indian mobile number'
+        },
+        altPhone: {
+            pattern: /^[6-9]\d{9}$/,
+            message: 'Please enter a valid 10-digit Indian mobile number (optional)'
+        }
+    };
+
+    // Validation function
+    function validateField(field, value) {
+        const rules = validationRules[field];
+        const input = form.elements[field];
+        const errorElement = input.parentElement.querySelector('.error-message') || 
+            createErrorElement(input.parentElement);
+
+        // Reset previous validation state
+        input.classList.remove('error');
+        errorElement.classList.remove('show');
+
+        if (!rules) return true;
+
+        // Required check
+        if (rules.required && !value.trim()) {
+            showFieldError(input, errorElement, `${field.charAt(0).toUpperCase() + field.slice(1)} is required`);
+            return false;
+        }
+
+        // Min length check
+        if (rules.minLength && value.trim().length < rules.minLength) {
+            showFieldError(input, errorElement, `Minimum ${rules.minLength} characters required`);
+            return false;
+        }
+
+        // Max length check
+        if (rules.maxLength && value.trim().length > rules.maxLength) {
+            showFieldError(input, errorElement, `Maximum ${rules.maxLength} characters allowed`);
+            return false;
+        }
+
+        // Pattern check
+        if (rules.pattern && !rules.pattern.test(value.trim())) {
+            showFieldError(input, errorElement, rules.message);
+            return false;
+        }
+
+        return true;
+    }
+
+    function createErrorElement(parent) {
+        const errorElement = document.createElement('div');
+        errorElement.className = 'error-message';
+        parent.appendChild(errorElement);
+        return errorElement;
+    }
+
+    function showFieldError(input, errorElement, message) {
+        input.classList.add('error');
+        errorElement.textContent = message;
+        errorElement.classList.add('show');
+    }
+
+    // Add validation to form submission
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        let isValid = true;
+
+        // Validate all fields
+        Object.keys(data).forEach(field => {
+            if (!validateField(field, data[field])) {
+                isValid = false;
+            }
+        });
+
+        if (!isValid) {
+            showAlert(errorAlert, 'Please correct the errors in the form');
+            return;
+        }
+        
+        try {
+            const url = currentAddressId 
+                ? `/edit-address/${currentAddressId}`
+                : '/add-address';
+                
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showAlert(successAlert, result.message);
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                showAlert(errorAlert, result.message);
+            }
+        } catch (error) {
+            showAlert(errorAlert, 'Failed to save address');
+        }
+    });
+
+    // Add real-time validation
+    form.querySelectorAll('input').forEach(input => {
+        input.addEventListener('blur', () => {
+            validateField(input.name, input.value);
+        });
+
+        input.addEventListener('input', () => {
+            const errorElement = input.parentElement.querySelector('.error-message');
+            if (errorElement && errorElement.classList.contains('show')) {
+                validateField(input.name, input.value);
+            }
+        });
+    });
+
     function showAlert(element, message) {
         element.querySelector('span').textContent = message;
         element.classList.remove('d-none');
@@ -540,40 +724,6 @@
             showAlert(errorAlert, 'Failed to delete address');
         }
     }
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData.entries());
-        
-        try {
-            const url = currentAddressId 
-                ? `/edit-address/${currentAddressId}`
-                : '/add-address';
-                
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                showAlert(successAlert, result.message);
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
-            } else {
-                showAlert(errorAlert, result.message);
-            }
-        } catch (error) {
-            showAlert(errorAlert, 'Failed to save address');
-        }
-    });
 
     modal.addEventListener('click', (e) => {
         if (e.target === modal) {

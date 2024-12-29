@@ -1,0 +1,325 @@
+<%- include("../partials/user/header.ejs") %>
+
+<style>
+    .order-details-section {
+        padding: 140px 0 100px;
+        min-height: calc(100vh - 200px);
+        background-color: #f8f9fa;
+    }
+    
+    .page-header {
+        margin-bottom: 2rem;
+    }
+    
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #2d3436;
+    }
+    
+    .btn-back {
+        background-color: transparent;
+        color: #6c5ce7;
+        border: 2px solid #6c5ce7;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-back:hover {
+        background-color: #6c5ce7;
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    .order-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 2px 20px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+    
+    .order-header {
+        padding: 2rem;
+        border-bottom: 1px solid #edf2f7;
+        background-color: #f8f9fa;
+    }
+    
+    .order-id {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #2d3436;
+        margin-bottom: 0.5rem;
+    }
+    
+    .order-date {
+        color: #636e72;
+    }
+    
+    .badge {
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        font-weight: 500;
+        font-size: 0.875rem;
+        letter-spacing: 0.3px;
+    }
+    
+    .badge.delivered {
+        background-color: #00b894;
+        color: white;
+    }
+    
+    .badge.processing {
+        background-color: #0984e3;
+        color: white;
+    }
+    
+    .badge.cancelled {
+        background-color: #d63031;
+        color: white;
+    }
+    
+    .badge.return-request {
+        background-color: #fdcb6e;
+        color: #2d3436;
+    }
+    
+    .badge.returned {
+        background-color: #636e72;
+        color: white;
+    }
+    
+    .order-body {
+        padding: 2rem;
+    }
+    
+    .info-section {
+        margin-bottom: 3rem;
+    }
+    
+    .info-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #2d3436;
+        margin-bottom: 1.5rem;
+    }
+    
+    .info-content {
+        background-color: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 12px;
+        line-height: 1.8;
+    }
+    
+    .product-card {
+        display: flex;
+        align-items: center;
+        padding: 1.5rem;
+        border: 1px solid #edf2f7;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        transition: transform 0.3s ease;
+    }
+    
+    .product-card:hover {
+        transform: translateX(5px);
+    }
+    
+    .product-image {
+        width: 80px;
+        height: 80px;
+        border-radius: 8px;
+        object-fit: cover;
+        margin-right: 1.5rem;
+    }
+    
+    .product-info {
+        flex-grow: 1;
+    }
+    
+    .product-name {
+        font-weight: 600;
+        color: #2d3436;
+        margin-bottom: 0.25rem;
+    }
+    
+    .product-brand {
+        color: #636e72;
+        font-size: 0.875rem;
+    }
+    
+    .product-price {
+        text-align: right;
+        min-width: 100px;
+    }
+    
+    .price-amount {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #2d3436;
+    }
+    
+    .price-quantity {
+        color: #636e72;
+        font-size: 0.875rem;
+    }
+    
+    .order-summary {
+        background-color: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-top: 2rem;
+    }
+    
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #edf2f7;
+    }
+    
+    .summary-row:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+    
+    .summary-label {
+        color: #636e72;
+    }
+    
+    .summary-value {
+        font-weight: 600;
+        color: #2d3436;
+    }
+    
+    .total-row {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 2px solid #edf2f7;
+    }
+    
+    .total-row .summary-label,
+    .total-row .summary-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #2d3436;
+    }
+</style>
+
+<section class="order-details-section">
+    <div class="container">
+        <div class="page-header d-flex justify-content-between align-items-center">
+            <h1 class="page-title">Order Details</h1>
+            <a href="/orders" class="btn btn-back">
+                <i class="fas fa-arrow-left me-2"></i> Back to Orders
+            </a>
+        </div>
+
+        <div class="order-card">
+            <div class="order-header">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <div class="order-id">#<%= order.orderId %></div>
+                        <div class="order-date">
+                            Placed on <%= new Date(order.createdOn).toLocaleDateString('en-US', { 
+                                year: 'numeric', 
+                                month: 'long', 
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            }) %>
+                        </div>
+                    </div>
+                    <div class="col-md-6 text-md-end mt-3 mt-md-0">
+                        <span class="badge <%= 
+                            order.status === 'Delivered' ? 'delivered' : 
+                            order.status === 'Cancelled' ? 'cancelled' : 
+                            order.status === 'Return Request' ? 'return-request' :
+                            order.status === 'Returned' ? 'returned' :
+                            'processing' %>">
+                            <%= order.status %>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="order-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="info-section">
+                            <h3 class="info-title">Shipping Address</h3>
+                            <div class="info-content">
+                                <%= order.address.name %><br>
+                                <%= order.address.street %><br>
+                                <%= order.address.city %>, <%= order.address.state %><br>
+                                <%= order.address.pincode %><br>
+                                Phone: <%= order.address.mobile %>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="info-section">
+                            <h3 class="info-title">Order Information</h3>
+                            <div class="info-content">
+                                Status: <%= order.status %><br>
+                                Order Date: <%= new Date(order.createdOn).toLocaleDateString('en-US', { 
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric' 
+                                }) %><br>
+                                <% if (order.invoiceDate) { %>
+                                    Invoice Date: <%= new Date(order.invoiceDate).toLocaleDateString('en-US', { 
+                                        year: 'numeric', 
+                                        month: 'long', 
+                                        day: 'numeric' 
+                                    }) %><br>
+                                <% } %>
+                                <% if (order.couponApplied) { %>
+                                    <span class="badge bg-success">Coupon Applied</span>
+                                <% } %>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <h3 class="info-title">Order Items</h3>
+                    <% order.orderedItems.forEach(item => { %>
+                        <div class="product-card">
+                            <img src="<%= item.product.images[0] %>" alt="<%= item.product.name %>" class="product-image">
+                            <div class="product-info">
+                                <h4 class="product-name"><%= item.product.name %></h4>
+                                <div class="product-brand"><%= item.product.brand %></div>
+                            </div>
+                            <div class="product-price">
+                                <div class="price-amount">₹<%= (item.price * item.quantity).toLocaleString('en-IN') %></div>
+                                <div class="price-quantity">₹<%= item.price.toLocaleString('en-IN') %> × <%= item.quantity %></div>
+                            </div>
+                        </div>
+                    <% }); %>
+
+                    <div class="order-summary">
+                        <div class="summary-row">
+                            <span class="summary-label">Subtotal</span>
+                            <span class="summary-value">₹<%= order.totalPrice.toLocaleString('en-IN') %></span>
+                        </div>
+                        <% if (order.discount > 0) { %>
+                            <div class="summary-row">
+                                <span class="summary-label">Discount</span>
+                                <span class="summary-value text-success">-₹<%= order.discount.toLocaleString('en-IN') %></span>
+                            </div>
+                        <% } %>
+                        <div class="summary-row total-row">
+                            <span class="summary-label">Total Amount</span>
+                            <span class="summary-value">₹<%= order.finalAmount.toLocaleString('en-IN') %></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<%- include("../partials/user/footer.ejs") %>

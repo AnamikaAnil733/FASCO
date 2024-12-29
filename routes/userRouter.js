@@ -20,6 +20,10 @@ router.get("/product/:id", userController.getProductDetail);
 router.get("/userProfile", userController.loadAccount);
 router.post("/update-profile", userController.updateProfile);
 
+// Order Routes
+router.get("/orders", userAuth, userController.getOrders);
+router.get("/order/:orderId", userAuth, userController.getOrderDetails);
+
 // Forgot Password Routes
 router.get("/forgot-password", userController.loadForgotPassword);
 router.post("/forgot-password", userController.forgotPassword);

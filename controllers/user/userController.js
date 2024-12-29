@@ -1,6 +1,7 @@
 const User = require("../../models/userSchema");
 const Category = require("../../models/categorySchema");
 const Product = require("../../models/productSchema");
+const Order = require("../../models/orderSchema");
 const env = require("dotenv").config();
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcrypt");
@@ -639,6 +640,51 @@ const deleteAddress = async (req, res) => {
 };
 
 
+// Get all orders for the user
+const getOrders = async (req, res) => {
+  try {
+    const userId = req.session.user._id;
+    const orders = await Order.find({ 'address.user': userId })
+      .populate('orderedItems.product')
+      .sort({ createdOn: -1 });
+
+    res.render('orders', {
+      orders,
+      message: req.session.user
+    });
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    res.status(500).send('Server error');
+  }
+};
+
+// Get specific order details
+const getOrderDetails = async (req, res) => {
+  try {
+    const orderId = req.params.orderId;
+    const userId = req.session.user._id;
+
+    const order = await Order.findOne({
+      _id: orderId,
+      'address.user': userId
+    }).populate('orderedItems.product address');
+
+    if (!order) {
+      return res.status(404).redirect('/pageNotFound');
+    }
+
+    res.render('order-details', {
+      order,
+      message: req.session.user
+    });
+  } catch (error) {
+    console.error('Error fetching order details:', error);
+    res.status(500).send('Server error');
+  }
+};
+
+
+
   module.exports = {
     loadHomepage,
     loadSignup,
@@ -661,4 +707,6 @@ const deleteAddress = async (req, res) => {
     addAddress,
     editAddress,
     deleteAddress,
+    getOrders,
+    getOrderDetails,
   };
