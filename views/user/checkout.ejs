@@ -1,0 +1,157 @@
+<%- include('../partials/user/header.ejs') %>
+
+<!-- Space after header -->
+<div style="margin-top: 100px;"></div>
+
+<!-- Breadcrumb -->
+<div class="container">
+    <div class="bread-crumb flex-w p-l-25 p-r-15 p-t-30 p-lr-0-lg">
+        <a href="/" class="stext-109 cl8 hov-cl1 trans-04">
+            Home
+            <i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+        </a>
+        <a href="/cart" class="stext-109 cl8 hov-cl1 trans-04">
+            Cart
+            <i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+        </a>
+        <span class="stext-109 cl4">
+            Checkout
+        </span>
+    </div>
+</div>
+
+<!-- Space between breadcrumb and content -->
+<div style="margin-top: 50px;"></div>
+
+<!-- Checkout Content -->
+<div class="container mb-5">
+    <div class="row">
+        <!-- Shipping Address -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h4 class="mb-4">Shipping Address</h4>
+                    <% if (addresses && addresses.length > 0) { %>
+                        <div class="row">
+                            <% addresses.forEach(address => { %>
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" 
+                                                    name="addressId" value="<%= address._id %>" 
+                                                    id="address<%= address._id %>" required>
+                                                <label class="form-check-label" for="address<%= address._id %>">
+                                                    <strong><%= address.name %></strong><br>
+                                                    <%= address.landMark %><br>
+                                                    <%= address.city %>, <%= address.state %> <%= address.pincode %><br>
+                                                    Phone: <%= address.phone %>, Alternative Phone: <%= address.altPhone %>,
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            <% }); %>
+                        </div>
+                    <% } else { %>
+                        <div class="text-center py-4">
+                            <p class="mb-3">No addresses found. Please add a delivery address.</p>
+                            <a href="/addresses" class="btn btn-primary">Add New Address</a>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+
+            <!-- Payment Method -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h4 class="mb-4">Payment Method</h4>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="radio" name="paymentMethod" 
+                            id="cod" value="COD" checked>
+                        <label class="form-check-label" for="cod">
+                            Cash on Delivery (COD)
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Summary -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h4 class="mb-4">Order Summary</h4>
+                    <% cart.items.forEach(item => { %>
+                        <div class="d-flex justify-content-between mb-3">
+                            <span><%= item.productId.productName %> × <%= item.quantity %></span>
+                            <span>₹<%= item.totalPrice.toFixed(2) %></span>
+                        </div>
+                    <% }); %>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Subtotal</span>
+                        <span>₹<%= total.toFixed(2) %></span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Shipping</span>
+                        <span class="text-success">Free</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-4">
+                        <strong>Total</strong>
+                        <strong>₹<%= total.toFixed(2) %></strong>
+                    </div>
+                    <button id="placeOrderBtn" class="btn btn-primary btn-block py-2 <%= addresses && addresses.length > 0 ? '' : 'disabled' %>">
+                        Place Order
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Space before footer -->
+<div style="margin-bottom: 100px;"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const placeOrderBtn = document.getElementById('placeOrderBtn');
+    
+    if (placeOrderBtn) {
+        placeOrderBtn.addEventListener('click', async function() {
+            const selectedAddress = document.querySelector('input[name="addressId"]:checked');
+            
+            if (!selectedAddress) {
+                alert('Please select a delivery address');
+                return;
+            }
+
+            try {
+                const response = await fetch('/checkout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        addressId: selectedAddress.value
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    window.location.href = `/orders/${data.orderId}`;
+                } else {
+                    alert(data.message || 'Error placing order');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error placing order');
+            }
+        });
+    }
+});
+</script>
+
+<%- include('../partials/user/footer.ejs') %>

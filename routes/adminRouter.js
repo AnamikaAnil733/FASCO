@@ -11,19 +11,32 @@ const path = require("path");
 // Multer configuration
 const storage = multer.memoryStorage();
 
-const upload = multer({
+const fileFilter = (req, file, cb) => {
+    if (file.mimetype === "image/png" || file.mimetype === "image/jpg" || file.mimetype === "image/jpeg") {
+        cb(null, true);
+    } else {
+        cb(new Error('Only .png, .jpg and .jpeg format allowed!'), false);
+    }
+};
+
+const uploadConfig = {
     storage: storage,
     limits: {
         fileSize: 5 * 1024 * 1024, // 5MB limit
     },
-    fileFilter: (req, file, cb) => {
-        if (file.mimetype === "image/png" || file.mimetype === "image/jpg" || file.mimetype === "image/jpeg") {
-            cb(null, true);
-        } else {
-            cb(new Error('Only .png, .jpg and .jpeg format allowed!'), false);
-        }
-    }
-});
+    fileFilter: fileFilter
+};
+
+// Create multer instances for different routes
+const productUpload = multer(uploadConfig).fields([
+    { name: 'mainImages', maxCount: 3 },
+    { name: 'variantImages', maxCount: 15 } // 5 variants * 3 images each
+]);
+
+const updateProductUpload = multer(uploadConfig).fields([
+    { name: 'mainImages', maxCount: 3 },
+    { name: 'variantImages', maxCount: 15 }
+]);
 
 router.get("/login",adminController.loadLogin);
 router.post("/login",adminController.login);
@@ -48,37 +61,9 @@ router.get("/addproducts",adminAuth,productController.getProductAddPage)
 router.get("/products", adminAuth, productController.getAllProducts);
 router.get("/blockProduct", adminAuth, productController.blockProduct);
 router.get("/unblockProduct", adminAuth, productController.unblockProduct);
-
-// Handle product image upload
-router.post("/addProducts", adminAuth, upload.array('images', 3), (req, res, next) => {
-    try {
-        if (req.fileValidationError) {
-            return res.status(400).json({ status: false, message: req.fileValidationError });
-        }
-        if (!req.files || req.files.length !== 3) {
-            return res.status(400).json({ status: false, message: 'Please upload exactly 3 product images' });
-        }
-        next();
-    } catch (error) {
-        if (error instanceof multer.MulterError) {
-            if (error.code === 'LIMIT_FILE_SIZE') {
-                return res.status(400).json({ status: false, message: 'File size is too large. Maximum size is 5MB.' });
-            }
-            if (error.code === 'LIMIT_FILE_COUNT') {
-                return res.status(400).json({ status: false, message: 'Please upload exactly 3 images.' });
-            }
-            return res.status(400).json({ status: false, message: error.message });
-        }
-        next(error);
-    }
-}, productController.addProducts)
-router.get("/editproduct/:id",adminAuth,productController.getEditProduct)
-// Update product with images
-router.post("/updateProduct/:id", 
-    adminAuth, 
-    upload.array('images', 3),
-    productController.updateProduct
-);
-router.post("/deleteProductImage", adminAuth, productController.deleteProductImage)
+router.post("/addProducts", adminAuth, productUpload, productController.addProducts);
+router.get("/editProduct/:id", adminAuth, productController.getEditProduct);
+router.post("/updateProduct/:id", adminAuth, updateProductUpload, productController.updateProduct);
+router.delete("/deleteProductImage", adminAuth, productController.deleteProductImage);
 
 module.exports = router

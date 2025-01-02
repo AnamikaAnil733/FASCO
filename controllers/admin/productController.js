@@ -19,11 +19,15 @@ const productImagesDir = path.join(uploadDir, "product-images");
 // Render Add Product Page
 const getProductAddPage = async (req, res) => {
     try {
-        const category = await Category.find({ isListed: true });
-        res.render("product-add", { cat: category });
+        if (!req.session.admin) {
+            return res.redirect("/admin/login");
+        }
+
+        const categories = await Category.find({ isListed: true });
+        res.render("product-add", { categories });
     } catch (error) {
         console.error("Error loading product add page:", error);
-        res.redirect("/pageerror");
+        res.redirect("/admin/pageerror");
     }
 };
 
@@ -35,106 +39,95 @@ const addProducts = async (req, res) => {
 
         // Check if product already exists
         const productExists = await Product.findOne({
-            productName: products.productName
+            productName: products.name
         });
 
         if (productExists) {
             console.log('Product already exists');
             return res.status(400).json({ 
-                status: false, 
+                success: false, 
                 message: "Product already exists, try a different name." 
             });
         }
 
-        // Handle images
-        const images = [];
-        if (!req.files || req.files.length !== 3) {
-            return res.status(400).json({ 
-                status: false, 
-                message: "Please upload exactly 3 product images" 
-            });
+        // Process main product images
+        const mainImages = [];
+        if (req.files && req.files.mainImages) {
+            for (const file of req.files.mainImages) {
+                const filename = `main-${Date.now()}-${Math.round(Math.random() * 1E9)}.jpg`;
+                const filepath = path.join(productImagesDir, filename);
+                
+                // Process and save image
+                await sharp(file.buffer)
+                    .resize(800, 800, { fit: 'inside' })
+                    .jpeg({ quality: 80 })
+                    .toFile(filepath);
+                
+                mainImages.push(filename);
+            }
         }
 
-        // Process all images
-        for (const file of req.files) {
-            try {
-                console.log('Processing file:', {
-                    originalname: file.originalname,
-                    mimetype: file.mimetype,
-                    size: file.size,
-                    hasBuffer: !!file.buffer
-                });
-
-                const fileName = `${Date.now()}-${file.originalname.replace(/\s+/g, '-')}`;
-                const filePath = path.join(__dirname, '../../public/uploads/product-images', fileName);
-
-                // Ensure the directory exists
-                const dir = path.dirname(filePath);
-                if (!fs.existsSync(dir)) {
-                    fs.mkdirSync(dir, { recursive: true });
-                }
-
-                if (!file.buffer) {
-                    throw new Error('No buffer found in uploaded file');
-                }
-
-                // Process and save the image
-                const image = sharp(file.buffer);
-                const metadata = await image.metadata();
+        // Process variants and their images
+        const variants = [];
+        if (products.variants) {
+            const variantData = Array.isArray(products.variants) ? products.variants : [products.variants];
+            
+            for (let i = 0; i < variantData.length; i++) {
+                const variant = variantData[i];
+                const variantImages = [];
                 
-                // Only resize if the image is larger than 800x800
-                if (metadata.width > 800 || metadata.height > 800) {
-                    await image
-                        .resize(800, 800, {
-                            fit: 'contain',
-                            background: { r: 255, g: 255, b: 255, alpha: 1 }
-                        })
-                        .toFormat('jpeg')
-                        .jpeg({ quality: 90 })
-                        .toFile(filePath);
-                } else {
-                    // If image is smaller, just convert to jpeg without resizing
-                    await image
-                        .toFormat('jpeg')
-                        .jpeg({ quality: 90 })
-                        .toFile(filePath);
+                // Find variant images for this variant
+                if (req.files && req.files.variantImages) {
+                    const variantImageFiles = req.files.variantImages.filter(file => 
+                        file.originalname.startsWith(`variant-${i}-image-`));
+                    
+                    for (const file of variantImageFiles) {
+                        const filename = `variant-${Date.now()}-${Math.round(Math.random() * 1E9)}.jpg`;
+                        const filepath = path.join(productImagesDir, filename);
+                        
+                        // Process and save image
+                        await sharp(file.buffer)
+                            .resize(800, 800, { fit: 'inside' })
+                            .jpeg({ quality: 80 })
+                            .toFile(filepath);
+                        
+                        variantImages.push(filename);
+                    }
                 }
-
-                images.push(fileName);
-            } catch (error) {
-                console.error('Error processing image:', error);
-                return res.status(400).json({ 
-                    status: false, 
-                    message: "Error processing image. Please ensure all files are valid images." 
+                
+                variants.push({
+                    color: variant.color,
+                    quantity: parseInt(variant.quantity) || 0,
+                    images: variantImages.length > 0 ? variantImages : mainImages // Use main images if no variant images
                 });
             }
         }
 
         // Create new product
         const newProduct = new Product({
-            productName: products.productName,
+            productName: products.name,
             description: products.description,
-            brand: products.brand || '',
             category: products.category,
-            regularPrice: products.regularPrice,
-            salesPrice: products.salesPrice,
-            quantity: products.quantity,
-            color: products.color,
-            productImage: images,
-            status: "Available"
+            regularPrice: parseFloat(products.regularPrice),
+            salesPrice: parseFloat(products.salePrice), // Changed from salePrice to match schema
+            brand: products.brand,
+            images: mainImages,
+            variants: variants
         });
 
         await newProduct.save();
-        return res.status(200).json({ 
-            status: true, 
-            message: "Product added successfully" 
+        console.log('Product saved successfully');
+        
+        res.status(200).json({
+            success: true,
+            message: "Product added successfully"
         });
 
     } catch (error) {
-        console.error("Error adding product:", error);
-        return res.status(500).json({ 
-            status: false, 
-            message: "Internal server error: " + error.message 
+        console.error('Error adding product:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || "Error adding product. Please try again."
         });
     }
 };
@@ -152,9 +145,22 @@ const getAllProducts = async (req, res) => {
         })
             .limit(limit)
             .skip((page - 1) * limit)
-            .populate("category")
-            .sort({ createdAt: -1 })
+            .populate({
+                path: "category",
+                match: { isListed: true }
+            })
+            .lean()  // Convert to plain JavaScript objects
             .exec();
+
+        // Calculate total quantity for each product
+        productData.forEach(product => {
+            product.totalQuantity = 0;
+            if (product.variants && product.variants.length > 0) {
+                product.totalQuantity = product.variants.reduce((total, variant) => {
+                    return total + (parseInt(variant.quantity) || 0);
+                }, 0);
+            }
+        });
 
         // Count total products
         const count = await Product.countDocuments({
@@ -164,21 +170,17 @@ const getAllProducts = async (req, res) => {
         // Fetch listed categories
         const category = await Category.find({ isListed: true });
 
-        // console.log('Products found:', productData);
-        // console.log('Categories:', category);
+        // Log product data for debugging
+        console.log('Product Data:', JSON.stringify(productData, null, 2));
 
-        // Render products page
-        if (category) {
-            res.render("products", {
-                products: productData,
-                currentPage: page,
-                totalPages: Math.ceil(count / limit),
-                categories: category,
-                search: search
-            });
-        } else {
-            res.render("page-404");
-        }
+        // Render products page without admin prefix
+        res.render("products", {
+            products: productData,
+            currentPage: page,
+            totalPages: Math.ceil(count / limit),
+            categories: category,
+            search: search
+        });
     } catch (error) {
         console.error("Error fetching products:", error);
         res.status(500).json({ error: error.message });
@@ -250,117 +252,136 @@ const getEditProduct = async (req, res) => {
 const updateProduct = async (req, res) => {
     try {
         const productId = req.params.id;
-        const { productName, description, regularPrice, salesPrice, quantity, color, category } = req.body;
-        const deletedImages = req.body.deletedImages ? JSON.parse(req.body.deletedImages) : [];
-        
-        // Find the existing product
-        const existingProduct = await Product.findById(productId);
-        if (!existingProduct) {
-            return res.status(404).json({ success: false, message: 'Product not found' });
+        const updates = req.body;
+        console.log('Received update data:', updates);
+
+        // Check if the updated name conflicts with another product
+        const existingProduct = await Product.findOne({
+            productName: updates.name,
+            _id: { $ne: productId }
+        });
+
+        if (existingProduct) {
+            return res.status(400).json({
+                success: false,
+                message: "Product name already exists"
+            });
         }
 
-        // Handle deleted images
-        let updatedImages = [...existingProduct.productImage];
-        if (deletedImages.length > 0) {
-            // Remove deleted images from the array
-            updatedImages = updatedImages.filter(img => !deletedImages.includes(img));
-            
-            // Delete the files from the server
-            for (const image of deletedImages) {
-                const imagePath = path.join(__dirname, '../../public/uploads/product-images', image);
+        // Get existing product to preserve images that weren't changed
+        const existingProductData = await Product.findById(productId);
+        if (!existingProductData) {
+            return res.status(404).json({
+                success: false,
+                message: "Product not found"
+            });
+        }
+
+        // Delete removed images
+        const deletedImages = req.body['deletedImages[]'];
+        if (deletedImages) {
+            const imagesToDelete = Array.isArray(deletedImages) ? deletedImages : [deletedImages];
+            for (const image of imagesToDelete) {
+                const imagePath = path.join(productImagesDir, image);
                 if (fs.existsSync(imagePath)) {
                     fs.unlinkSync(imagePath);
                 }
             }
         }
 
-        // Handle new image uploads
-        const newImages = [];
+        // Process variants
+        const processedVariants = [];
+        const variants = JSON.parse(updates.variants);
+
+        // Handle images for each variant
         if (req.files && req.files.length > 0) {
-            for (const file of req.files) {
-                try {
-                    console.log('Processing file:', {
-                        originalname: file.originalname,
-                        mimetype: file.mimetype,
-                        size: file.size,
-                        hasBuffer: !!file.buffer
-                    });
-                    
-                    const fileName = `${Date.now()}-${file.originalname.replace(/\s+/g, '-')}`;
-                    const filePath = path.join(__dirname, '../../public/uploads/product-images', fileName);
+            let currentImageIndex = 0;
 
-                    // Ensure the directory exists
-                    const dir = path.dirname(filePath);
-                    if (!fs.existsSync(dir)) {
-                        fs.mkdirSync(dir, { recursive: true });
+            for (let i = 0; i < variants.length; i++) {
+                const variant = variants[i];
+                const variantImages = [...variant.images];
+
+                // Process new images for this variant
+                for (let j = 0; j < 3; j++) {
+                    if (!variantImages[j] && currentImageIndex < req.files.length) {
+                        const file = req.files[currentImageIndex];
+                        if (file) {
+                            const filename = `${Date.now()}-${i}-${j}-${file.originalname.replace(/\s+/g, '-')}`;
+                            const filepath = path.join(productImagesDir, filename);
+
+                            try {
+                                // Process and save the new image
+                                await sharp(file.buffer)
+                                    .resize(800, 800, {
+                                        fit: 'contain',
+                                        background: { r: 255, g: 255, b: 255, alpha: 1 }
+                                    })
+                                    .toFormat('jpeg')
+                                    .jpeg({ quality: 90 })
+                                    .toFile(filepath);
+
+                                variantImages[j] = filename;
+                                currentImageIndex++;
+                            } catch (error) {
+                                console.error('Error processing image:', error);
+                                return res.status(400).json({
+                                    success: false,
+                                    message: "Error processing image. Please ensure all files are valid images."
+                                });
+                            }
+                        }
                     }
-
-                    if (!file.buffer) {
-                        throw new Error('No buffer found in uploaded file');
-                    }
-
-                    // Process and save the image
-                    const image = sharp(file.buffer);
-                    const metadata = await image.metadata();
-                    
-                    // Only resize if the image is larger than 800x800
-                    if (metadata.width > 800 || metadata.height > 800) {
-                        await image
-                            .resize(800, 800, {
-                                fit: 'contain',
-                                background: { r: 255, g: 255, b: 255, alpha: 1 }
-                            })
-                            .toFormat('jpeg')
-                            .jpeg({ quality: 90 })
-                            .toFile(filePath);
-                    } else {
-                        // If image is smaller, just convert to jpeg without resizing
-                        await image
-                            .toFormat('jpeg')
-                            .jpeg({ quality: 90 })
-                            .toFile(filePath);
-                    }
-
-                    newImages.push(fileName);
-                } catch (error) {
-                    console.error('Error processing image:', error);
-                    return res.status(500).json({ 
-                        success: false, 
-                        message: 'Error processing image: ' + error.message 
-                    });
                 }
+
+                processedVariants.push({
+                    color: variant.color,
+                    images: variantImages,
+                    quantity: parseInt(variant.quantity) || 0
+                });
             }
-            
-            // Add new images to the array
-            updatedImages = [...updatedImages, ...newImages].slice(0, 3); // Keep max 3 images
+        } else {
+            // No new images, use the existing ones from variants
+            processedVariants.push(...variants.map(variant => ({
+                color: variant.color,
+                images: variant.images,
+                quantity: parseInt(variant.quantity) || 0
+            })));
         }
 
-        // Update the product
+        // Update product with new data
         const updatedProduct = await Product.findByIdAndUpdate(
             productId,
             {
-                productName,
-                description,
-                regularPrice: Number(regularPrice),
-                salesPrice: Number(salesPrice),
-                quantity: Number(quantity),
-                color,
-                category,
-                productImage: updatedImages
+                productName: updates.name,
+                description: updates.description,
+                brand: updates.brand || '',
+                category: updates.category,
+                regularPrice: parseFloat(updates.regularPrice),
+                salesPrice: updates.salePrice ? parseFloat(updates.salePrice) : undefined,
+                variants: processedVariants,
+                totalQuantity: processedVariants.reduce((total, variant) => total + variant.quantity, 0)
             },
             { new: true }
         );
 
-        res.json({ 
-            success: true, 
-            message: 'Product updated successfully',
-            product: updatedProduct 
+        if (!updatedProduct) {
+            return res.status(404).json({
+                success: false,
+                message: "Product not found"
+            });
+        }
+
+        console.log('Product updated successfully');
+        return res.status(200).json({
+            success: true,
+            message: "Product updated successfully"
         });
+
     } catch (error) {
         console.error('Error updating product:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Error updating product: ' + error.message 
+        return res.status(500).json({
+            success: false,
+            message: "Error updating product. Please try again."
         });
     }
 };

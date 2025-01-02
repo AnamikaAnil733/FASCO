@@ -1,0 +1,509 @@
+<%- include("../partials/user/header.ejs") %>
+
+<style>
+    .account-section {
+        background-color: #f8f9fa;
+        padding: 5rem 0;
+        min-height: calc(100vh - 300px);
+        margin: 2rem 0;
+    }
+    
+    .main-container {
+        margin-top: 80px;
+        margin-bottom: 80px;
+    }
+    
+    .card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.05);
+        transition: transform 0.3s ease;
+        background: white;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .card-header {
+        background-color: white;
+        border-bottom: 2px solid #f0f0f0;
+        border-radius: 15px 15px 0 0 !important;
+        padding: 1.5rem;
+    }
+    
+    .card-header h5 {
+        margin: 0;
+        font-weight: 600;
+        color: #2c3e50;
+        font-size: 1.2rem;
+    }
+    
+    .card-body {
+        padding: 1.5rem;
+    }
+    
+    .card-body hr {
+        border-color: #e9ecef;
+        opacity: 0.5;
+    }
+    
+    .card-body h5 {
+        color: #2c3e50;
+        font-weight: 600;
+    }
+    
+    .form-label {
+        font-weight: 500;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+    }
+    
+    .form-control {
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        transition: all 0.3s ease;
+        margin-bottom: 1.5rem;
+        font-size: 1rem;
+        background: #f8f9fa;
+        color: #2c3e50;
+        font-weight: 500;
+    }
+    
+    .form-control:focus {
+        border-color: #4b6cb7;
+        background: white;
+        box-shadow: 0 0 0 0.2rem rgba(75, 108, 183, 0.15);
+        color: #1a2530;
+    }
+    
+    .form-control[readonly] {
+        background-color: #e9ecef;
+        cursor: not-allowed;
+        color: #6c757d;
+    }
+    
+    .form-control::placeholder {
+        color: #95a5a6;
+        opacity: 0.8;
+    }
+    
+    .form-control::-webkit-input-placeholder {
+        color: #95a5a6;
+        opacity: 0.8;
+    }
+    
+    .form-control:-ms-input-placeholder {
+        color: #95a5a6;
+        opacity: 0.8;
+    }
+    
+    .form-control[type="password"] {
+        letter-spacing: 0.1em;
+        font-family: monospace;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(45deg, #4b6cb7, #182848);
+        border: none;
+    }
+    
+    .btn-primary:hover {
+        background: linear-gradient(45deg, #182848, #4b6cb7);
+        transform: translateY(-2px);
+    }
+    
+    .btn-primary:not(:first-of-type) {
+        background: linear-gradient(45deg, #2c3e50, #3498db);
+    }
+    
+    .btn-primary:not(:first-of-type):hover {
+        background: linear-gradient(45deg, #3498db, #2c3e50);
+    }
+    
+    .btn-toggle-password {
+        background: transparent;
+        color: #2c3e50;
+        border: 2px solid #2c3e50;
+    }
+    
+    .btn-toggle-password:hover {
+        background: #2c3e50;
+        color: white;
+    }
+    
+    .account-management-buttons {
+        display: grid;
+        gap: 1rem;
+    }
+    
+    .account-management-buttons .btn {
+        text-align: left;
+        padding: 1rem 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.95rem;
+        background: white;
+        border: 2px solid #e9ecef;
+        color: #2c3e50;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .account-management-buttons .btn::after {
+        content: '→';
+        font-size: 1.2rem;
+        opacity: 0;
+        transition: all 0.3s ease;
+    }
+    
+    .account-management-buttons .btn:hover {
+        background: #f8f9fa;
+        border-color: #2c3e50;
+        transform: translateX(5px);
+    }
+    
+    .account-management-buttons .btn:hover::after {
+        opacity: 1;
+        transform: translateX(5px);
+    }
+    
+    .account-management-buttons .btn.active {
+        background: #2c3e50;
+        color: white;
+        border-color: #2c3e50;
+    }
+    
+    .account-management-buttons .btn.active:hover {
+        background: #34495e;
+        border-color: #34495e;
+    }
+    
+    .account-management-buttons .btn.btn-logout {
+        background: #6c757d;
+        color: white;
+        border-color: #6c757d;
+        margin-top: 1rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .account-management-buttons .btn.btn-logout:hover {
+        background: #495057;
+        border-color: #495057;
+        transform: translateX(5px);
+    }
+    
+    .account-management-buttons .btn.btn-logout::after {
+        content: '→';
+        font-size: 1.2rem;
+        opacity: 1;
+        transition: all 0.3s ease;
+    }
+
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(5px);
+        z-index: 1000;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .modal-overlay.active {
+        display: flex;
+        opacity: 1;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .password-form {
+        background: white;
+        padding: 2rem;
+        border-radius: 15px;
+        width: 90%;
+        max-width: 500px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        position: relative;
+        transform: translateY(20px);
+        opacity: 0;
+        transition: all 0.3s ease;
+    }
+    
+    .modal-overlay.active .password-form {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    
+    .close-modal {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: #6c757d;
+        cursor: pointer;
+        padding: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+    }
+    
+    .close-modal:hover {
+        background: #f8f9fa;
+        color: #2c3e50;
+        transform: rotate(90deg);
+    }
+
+    .account-details .row {
+        margin: -0.5rem;
+    }
+
+    .account-details .col-md-6,
+    .account-details .col-12 {
+        padding: 0.5rem;
+    }
+
+    .btn-group {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .account-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 0.5rem;
+    }
+
+    .account-actions .btn {
+        flex: 1;
+    }
+
+    @media (max-width: 991px) {
+        .account-details {
+            margin-top: 2rem;
+        }
+        .account-section {
+            padding: 3rem 0;
+            margin: 1rem 0;
+        }
+        .main-container {
+            margin-top: 40px;
+            margin-bottom: 40px;
+        }
+    }
+
+    .alert {
+        padding: 0.75rem 1rem;
+        margin-bottom: 1rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+    }
+
+    .alert-danger {
+        background-color: #ffe5e5;
+        color: #dc3545;
+        border: 1px solid #ffcccc;
+    }
+
+    .alert-success {
+        background-color: #e8f5e9;
+        color: #28a745;
+        border: 1px solid #c8e6c9;
+    }
+
+    .d-none {
+        display: none;
+    }
+</style>
+
+<div class="main-container">
+    <section class="account-section">
+        <div class="container">
+            <div class="row">
+                <!-- Account Management -->
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Account Management</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="account-management-buttons">
+                                <a href="/userProfile" class="btn active">Account Details</a>
+                                <a href="/address-book" class="btn">Manage Addresses</a>
+                                <a href="/orders" class="btn">Order History</a>
+                                <a href="/logout" class="btn btn-logout">Logout</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Account Details -->
+                <div class="col-lg-8">
+                    <div class="card account-details">
+                        <div class="card-header">
+                            <h5 class="mb-0">Account Details</h5>
+                        </div>
+                        <div class="card-body">
+                            <form action="/update-profile" method="POST">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Full Name</label>
+                                    <input type="text" class="form-control" id="name" name="name" value="<%= user.name %>" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email Address</label>
+                                    <input type="email" class="form-control" id="email" name="email" value="<%= user.email %>" required readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="phone" class="form-label">Phone Number</label>
+                                    <input type="tel" class="form-control" id="phone" name="phone" value="<%= user.phone || '' %>">
+                                </div>
+                                <div class="account-actions">
+                                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                                    <button type="button" class="btn btn-toggle-password" id="togglePasswordForm">
+                                        Change Password
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Password Change Modal -->
+<div class="modal-overlay" id="passwordModal">
+    <div class="password-form">
+        <button class="close-modal" id="closeModal">×</button>
+        <form id="passwordChangeForm" action="/change-password" method="POST">
+            <h5 class="mb-4">Change Password</h5>
+            <div class="alert alert-danger d-none" id="passwordError"></div>
+            <div class="alert alert-success d-none" id="passwordSuccess"></div>
+            <div class="mb-4">
+                <label for="currentPassword" class="form-label">Current Password</label>
+                <input type="password" class="form-control" id="currentPassword" name="currentPassword" required>
+            </div>
+            <div class="mb-4">
+                <label for="newPassword" class="form-label">New Password</label>
+                <input type="password" class="form-control" id="newPassword" name="newPassword" required>
+            </div>
+            <div class="mb-4">
+                <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Update Password</button>
+        </form>
+    </div>
+</div>
+
+<%- include("../partials/user/footer.ejs") %>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const toggleBtn = document.getElementById('togglePasswordForm');
+        const modal = document.getElementById('passwordModal');
+        const closeBtn = document.getElementById('closeModal');
+        const passwordForm = document.getElementById('passwordChangeForm');
+        const errorDiv = document.getElementById('passwordError');
+        const successDiv = document.getElementById('passwordSuccess');
+        
+        function openModal() {
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            // Clear previous messages and form
+            errorDiv.classList.add('d-none');
+            successDiv.classList.add('d-none');
+            passwordForm.reset();
+        }
+        
+        function closeModal() {
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+        
+        toggleBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            openModal();
+        });
+        
+        closeBtn.addEventListener('click', function() {
+            closeModal();
+        });
+        
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+        
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        passwordForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = {
+                currentPassword: formData.get('currentPassword'),
+                newPassword: formData.get('newPassword'),
+                confirmPassword: formData.get('confirmPassword')
+            };
+
+            try {
+                const response = await fetch('/change-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    errorDiv.classList.add('d-none');
+                    successDiv.classList.remove('d-none');
+                    successDiv.textContent = result.message;
+                    
+                    // Close modal after success
+                    setTimeout(() => {
+                        closeModal();
+                    }, 2000);
+                } else {
+                    successDiv.classList.add('d-none');
+                    errorDiv.classList.remove('d-none');
+                    errorDiv.textContent = result.message;
+                }
+            } catch (error) {
+                successDiv.classList.add('d-none');
+                errorDiv.classList.remove('d-none');
+                errorDiv.textContent = 'An error occurred. Please try again.';
+            }
+        });
+    });
+</script>

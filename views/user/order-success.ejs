@@ -1,0 +1,128 @@
+<%- include('../partials/user/header.ejs') %>
+
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center p-5">
+                    <!-- Success Icon -->
+                    <div class="mb-4">
+                        <i class="zmdi zmdi-check-circle text-success" style="font-size: 5rem;"></i>
+                    </div>
+
+                    <!-- Success Message -->
+                    <h2 class="mb-4">Order Placed Successfully!</h2>
+                    <p class="text-muted mb-4">Thank you for your purchase. Your order has been confirmed.</p>
+
+                    <!-- Order Details -->
+                    <div class="order-details text-start mb-4">
+                        <h5 class="mb-3">Order Details</h5>
+                        <p><strong>Order ID:</strong> <%= order.orderId %></p>
+                        <p><strong>Total Amount:</strong> ₹<%= order.totalAmount.toFixed(2) %></p>
+                        <p><strong>Payment Method:</strong> <%= order.paymentMethod %></p>
+                    </div>
+
+                    <!-- Shipping Address -->
+                    <div class="shipping-address text-start mb-4">
+                        <h5 class="mb-3">Shipping Address</h5>
+                        <p class="mb-1"><strong><%= order.shippingAddress.name %></strong></p>
+                        <p class="mb-1"><%= order.shippingAddress.landMark %></p>
+                        <p class="mb-1"><%= order.shippingAddress.city %>, <%= order.shippingAddress.state %></p>
+                        <p class="mb-1">PIN: <%= order.shippingAddress.pincode %></p>
+                        <p class="mb-0">Phone: <%= order.shippingAddress.phone %></p>
+                        <% if (order.shippingAddress.altPhone) { %>
+                            <p class="mb-0">Alt Phone: <%= order.shippingAddress.altPhone %></p>
+                        <% } %>
+                    </div>
+
+                    <!-- Order Items -->
+                    <div class="order-items text-start mb-4">
+                        <h5 class="mb-3">Order Items</h5>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Quantity</th>
+                                        <th class="text-end">Price</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% order.items.forEach(item => { %>
+                                        <tr>
+                                            <td><%= item.productId.productName %></td>
+                                            <td><%= item.quantity %></td>
+                                            <td class="text-end">₹<%= item.totalPrice.toFixed(2) %></td>
+                                        </tr>
+                                    <% }); %>
+                                    <tr>
+                                        <td colspan="2" class="text-end"><strong>Total:</strong></td>
+                                        <td class="text-end"><strong>₹<%= order.totalAmount.toFixed(2) %></strong></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                        <a href="/orders" class="btn btn-primary me-md-2">View All Orders</a>
+                        <a href="/" class="btn btn-outline-primary">Continue Shopping</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border-radius: 15px;
+}
+
+.text-success {
+    color: #28a745 !important;
+}
+
+.order-details, .shipping-address, .order-items {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.table th, .table td {
+    padding: 12px;
+}
+
+.btn {
+    padding: 10px 20px;
+    border-radius: 5px;
+}
+
+.btn-primary {
+    background-color: #4f46e5;
+    border-color: #4f46e5;
+}
+
+.btn-primary:hover {
+    background-color: #4338ca;
+    border-color: #4338ca;
+}
+
+.btn-outline-primary {
+    color: #4f46e5;
+    border-color: #4f46e5;
+}
+
+.btn-outline-primary:hover {
+    background-color: #4f46e5;
+    border-color: #4f46e5;
+}
+</style>
+
+<%- include('../partials/user/footer.ejs') %>

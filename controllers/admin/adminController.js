@@ -1,7 +1,7 @@
 const User = require("../../models/userSchema")
 const mongoose = require("mongoose")
 const bcrypt = require("bcrypt")
-
+const Category = require("../../models/categorySchema")
 
 
 
@@ -77,6 +77,21 @@ const pageerror = async (req, res) => {
     }
   };
 
+const loadAddProduct = async (req, res) => {
+    try {
+        if (!req.session.admin) {
+            return res.redirect("/admin/login");
+        }
+        
+        const categories = await Category.find({}, 'name');
+        res.render("product-add", { categories });
+        
+    } catch (error) {
+        console.error("Error loading add product page:", error);
+        res.redirect("/admin/pageerror");
+    }
+};
+
 
 
 
@@ -86,5 +101,6 @@ module.exports = {
     login,
     loadDashbord,
     pageerror,
-    logout
+    logout,
+    loadAddProduct
 }

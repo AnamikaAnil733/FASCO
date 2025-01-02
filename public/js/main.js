@@ -194,12 +194,77 @@
 
     /*==================================================================
     [ Cart ]*/
-    $('.js-show-cart').on('click',function(){
+    $('.js-show-cart').on('click',function(e){
+        e.preventDefault(); // Prevent default navigation
         $('.js-panel-cart').addClass('show-header-cart');
     });
 
     $('.js-hide-cart').on('click',function(){
         $('.js-panel-cart').removeClass('show-header-cart');
+    });
+
+    // Handle cart navigation
+    $('.view-cart-btn').on('click', function(e) {
+        e.preventDefault();
+        window.location.href = '/cart';
+    });
+
+    // Handle cart item quantity changes
+    $('.btn-num-product-down').on('click', function(e){
+        e.preventDefault();
+        var numProduct = Number($(this).next().val());
+        if(numProduct > 0) {
+            $(this).next().val(numProduct - 1);
+            updateCartQuantity($(this).closest('tr').data('product-id'), numProduct - 1);
+        }
+    });
+
+    $('.btn-num-product-up').on('click', function(e){
+        e.preventDefault();
+        var numProduct = Number($(this).prev().val());
+        $(this).prev().val(numProduct + 1);
+        updateCartQuantity($(this).closest('tr').data('product-id'), numProduct + 1);
+    });
+
+    function updateCartQuantity(productId, quantity) {
+        fetch('/cart/update', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                productId: productId,
+                quantity: quantity
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Update cart count
+            $('.js-show-cart').attr('data-notify', data.totalItems);
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    // Handle remove from cart
+    $('.remove-from-cart').on('click', function(e) {
+        e.preventDefault();
+        const productId = $(this).closest('tr').data('product-id');
+        
+        fetch(`/cart/remove/${productId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Remove the row from the table
+            $(this).closest('tr').remove();
+            // Update cart count
+            $('.js-show-cart').attr('data-notify', data.totalItems);
+            // If cart is empty, show empty message
+            if (data.totalItems === 0) {
+                $('.table-responsive').html('<div class="text-center py-5"><h4>Your cart is empty</h4><a href="/" class="btn btn-primary mt-3">Continue Shopping</a></div>');
+            }
+        })
+        .catch(error => console.error('Error:', error));
     });
 
     /*==================================================================

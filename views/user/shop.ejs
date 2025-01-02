@@ -1,0 +1,218 @@
+<%- include('../partials/user/header.ejs') %>
+
+<main class="bg0 m-t-23 p-b-140">
+    <div class="container">
+        <!-- Breadcrumb -->
+        <div class="bread-crumb flex-w p-l-25 p-r-15 p-t-30 p-lr-0-lg">
+            <a href="/" class="stext-109 cl8 hov-cl1 trans-04">
+                Home
+                <i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+            </a>
+            <span class="stext-109 cl4">
+                Shop
+            </span>
+        </div>
+
+        <div class="row m-t-30">
+            <!-- Filter sidebar -->
+            <div class="col-md-3">
+                <div class="filter-sidebar p-t-0 p-r-15 p-lr-0-lg">
+                    <!-- Categories -->
+                    <div class="filter-widget mb-4">
+                        <h4 class="mtext-112 cl2 p-b-27">Categories</h4>
+                        <ul class="filter-list">
+                            <li class="p-b-6">
+                                <a href="/shop" class="filter-link stext-106 trans-04 <%= !category ? 'filter-link-active' : '' %>">
+                                    All Products
+                                </a>
+                            </li>
+                            <% categories.forEach(function(cat) { %>
+                                <li class="p-b-6">
+                                    <a href="/shop?category=<%= cat._id %>" 
+                                       class="filter-link stext-106 trans-04 <%= category === cat._id.toString() ? 'filter-link-active' : '' %>">
+                                        <%= cat.name %>
+                                    </a>
+                                </li>
+                            <% }); %>
+                        </ul>
+                    </div>
+
+                    <!-- Price Range -->
+                    <div class="filter-widget mb-4">
+                        <h4 class="mtext-112 cl2 p-b-27">Price Range</h4>
+                        <div class="price-range-wrap">
+                            <div class="price-range">
+                                <input type="range" class="form-range" min="0" max="10000" value="5000" id="priceRange">
+                            </div>
+                            <div class="price-input mt-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="stext-106 cl6">₹0</span>
+                                    <span class="stext-106 cl2">₹<span id="priceValue">5000</span></span>
+                                    <span class="stext-106 cl6">₹10000</span>
+                                </div>
+                            </div>
+                            <button class="flex-c-m stext-107 cl6 size-301 bor7 p-lr-15 hov-tag1 trans-04 m-t-10" 
+                                    id="applyPriceFilter">
+                                Apply Filter
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Sort By -->
+                    <div class="filter-widget">
+                        <h4 class="mtext-112 cl2 p-b-27">Sort By</h4>
+                        <select class="form-select stext-106 cl6" id="sortProducts">
+                            <option value="default">Default Sorting</option>
+                            <option value="price_asc">Price: Low to High</option>
+                            <option value="price_desc">Price: High to Low</option>
+                            <option value="newest">Newest First</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product grid -->
+            <div class="col-md-9">
+                <div class="row">
+                    <% if(products.length > 0) { %>
+                        <% products.forEach((product) => { %>
+                            <div class="col-sm-6 col-md-4 p-b-35 isotope-item">
+                                <div class="block2">
+                                    <div class="block2-pic hov-img0">
+                                        <% if (product.variants && product.variants.length > 0 && product.variants[0].images && product.variants[0].images.length > 0) { %>
+                                            <img src="/uploads/product-images/<%= product.variants[0].images[0] %>" alt="<%= product.productName %>" class="product-image">
+                                        <% } else { %>
+                                            <img src="/images/no-image.png" alt="No image available" class="product-image">
+                                        <% } %>
+                                        <a href="/product/<%= product._id %>" class="block2-btn flex-c-m stext-103 cl2 size-102 bg0 bor2 hov-btn1 p-lr-15 trans-04">
+                                            View Details
+                                        </a>
+                                    </div>
+
+                                    <div class="block2-txt flex-w flex-t p-t-14">
+                                        <div class="block2-txt-child1 flex-col-l">
+                                            <a href="/product/<%= product._id %>" class="stext-104 cl4 hov-cl1 trans-04 js-name-b2 p-b-6">
+                                                <%= product.productName %>
+                                            </a>
+                                            <span class="stext-105 cl3">
+                                                ₹<%= product.salesPrice %>
+                                            </span>
+                                            <% if (product.variants && product.variants.length > 0) { %>
+                                                <div class="variant-colors mt-2">
+                                                    <% product.variants.forEach(variant => { %>
+                                                        <span class="color-dot" style="background-color: <%= variant.color %>" title="<%= variant.color %>"></span>
+                                                    <% }); %>
+                                                </div>
+                                            <% } %>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <% }) %>
+                    <% } else { %>
+                        <div class="col-12 text-center">
+                            <h3 class="mtext-111 cl2">No products found</h3>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<style>
+    .filter-sidebar {
+        background: #fff;
+        padding: 20px;
+        border-radius: 4px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+    .filter-widget {
+        margin-bottom: 30px;
+    }
+    .filter-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .filter-link {
+        color: #888;
+        text-decoration: none;
+        transition: color 0.3s;
+        display: block;
+        padding: 5px 0;
+    }
+    .filter-link:hover,
+    .filter-link-active {
+        color: #007bff;
+    }
+    .price-range {
+        margin: 10px 0;
+    }
+    .form-range::-webkit-slider-thumb {
+        background: #007bff;
+    }
+    .form-select {
+        border: 1px solid #e6e6e6;
+        padding: 8px;
+        border-radius: 4px;
+        width: 100%;
+    }
+    .block2-pic {
+        position: relative;
+        overflow: hidden;
+        border-radius: 4px;
+    }
+    .product-image {
+        width: 100%;
+        height: 300px;
+        object-fit: cover;
+    }
+    .block2-btn {
+        position: absolute;
+        bottom: -100px;
+        left: 50%;
+        transform: translateX(-50%);
+        transition: bottom 0.3s;
+    }
+    .block2-pic:hover .block2-btn {
+        bottom: 20px;
+    }
+    .variant-colors {
+        display: flex;
+        gap: 4px;
+        margin-top: 8px;
+    }
+    .color-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 1px solid #ddd;
+    }
+</style>
+
+<script>
+    // Price Range Slider
+    const priceRange = document.getElementById('priceRange');
+    const priceValue = document.getElementById('priceValue');
+    
+    priceRange.addEventListener('input', function() {
+        priceValue.textContent = this.value;
+    });
+
+    // Apply Price Filter
+    document.getElementById('applyPriceFilter').addEventListener('click', function() {
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('price', priceRange.value);
+        window.location.href = currentUrl.toString();
+    });
+
+    // Sort Products
+    document.getElementById('sortProducts').addEventListener('change', function() {
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('sort', this.value);
+        window.location.href = currentUrl.toString();
+    });
+</script>
+
+<%- include('../partials/user/footer.ejs') %>

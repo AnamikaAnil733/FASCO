@@ -1,0 +1,466 @@
+<%- include("../partials/user/header.ejs") %>
+
+<style>
+    .order-details-section {
+        padding: 140px 0 100px;
+        min-height: calc(100vh - 200px);
+        background-color: #f8f9fa;
+    }
+    
+    .page-header {
+        margin-bottom: 2rem;
+    }
+    
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #2d3436;
+    }
+    
+    .btn-back {
+        background-color: transparent;
+        color: #6c5ce7;
+        border: 2px solid #6c5ce7;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-back:hover {
+        background-color: #6c5ce7;
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    .order-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 2px 20px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+    
+    .order-header {
+        padding: 2rem;
+        border-bottom: 1px solid #edf2f7;
+        background-color: #f8f9fa;
+    }
+    
+    .order-id {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #2d3436;
+        margin-bottom: 0.5rem;
+    }
+    
+    .order-date {
+        color: #636e72;
+    }
+    
+    .badge {
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        font-weight: 500;
+        font-size: 0.875rem;
+        letter-spacing: 0.3px;
+    }
+    
+    .badge.delivered {
+        background-color: #00b894;
+        color: white;
+    }
+    
+    .badge.processing {
+        background-color: #0984e3;
+        color: white;
+    }
+    
+    .badge.cancelled {
+        background-color: #d63031;
+        color: white;
+    }
+    
+    .badge.return-request {
+        background-color: #fdcb6e;
+        color: #2d3436;
+    }
+    
+    .badge.returned {
+        background-color: #636e72;
+        color: white;
+    }
+    
+    .order-body {
+        padding: 2rem;
+    }
+    
+    .info-section {
+        margin-bottom: 3rem;
+    }
+    
+    .info-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #2d3436;
+        margin-bottom: 1.5rem;
+    }
+    
+    .info-content {
+        background-color: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 12px;
+        line-height: 1.8;
+    }
+    
+    .product-card {
+        display: flex;
+        align-items: center;
+        padding: 1.5rem;
+        border: 1px solid #edf2f7;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        transition: transform 0.3s ease;
+    }
+    
+    .product-card:hover {
+        transform: translateX(5px);
+    }
+    
+    .product-image {
+        width: 80px;
+        height: 80px;
+        border-radius: 8px;
+        object-fit: cover;
+        margin-right: 1.5rem;
+    }
+    
+    .product-info {
+        flex-grow: 1;
+    }
+    
+    .product-name {
+        font-weight: 600;
+        color: #2d3436;
+        margin-bottom: 0.25rem;
+    }
+    
+    .product-brand {
+        color: #636e72;
+        font-size: 0.875rem;
+    }
+    
+    .product-price {
+        text-align: right;
+        min-width: 100px;
+    }
+    
+    .price-amount {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #2d3436;
+    }
+    
+    .price-quantity {
+        color: #636e72;
+        font-size: 0.875rem;
+    }
+    
+    .order-summary {
+        background-color: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-top: 2rem;
+    }
+    
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #edf2f7;
+    }
+    
+    .summary-row:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+    
+    .summary-label {
+        color: #636e72;
+    }
+    
+    .summary-value {
+        font-weight: 600;
+        color: #2d3436;
+    }
+    
+    .total-row {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 2px solid #edf2f7;
+    }
+    
+    .total-row .summary-label,
+    .total-row .summary-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #2d3436;
+    }
+    
+    .order-status {
+        display: inline-block;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+    
+    .pending { background: #fff3cd; color: #856404; }
+    .processing { background: #cce5ff; color: #004085; }
+    .shipped { background: #d4edda; color: #155724; }
+    .delivered { background: #d1e7dd; color: #0f5132; }
+    .cancelled { background: #f8d7da; color: #721c24; }
+    
+    .btn-cancel {
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-cancel:hover {
+        background-color: #c82333;
+    }
+    
+    .cancelled-info {
+        color: #721c24;
+        font-size: 0.9rem;
+    }
+    
+    .timeline {
+        position: relative;
+        padding: 20px 0;
+    }
+    
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 15px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #e9ecef;
+    }
+    
+    .timeline-item {
+        position: relative;
+        padding-left: 45px;
+        margin-bottom: 25px;
+    }
+    
+    .timeline-point {
+        position: absolute;
+        left: 7px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #e9ecef;
+        border: 2px solid #fff;
+    }
+    
+    .timeline-item.active .timeline-point {
+        background: #28a745;
+    }
+    
+    .timeline-item.cancelled .timeline-point {
+        background: #dc3545;
+    }
+    
+    .timeline-content {
+        background: #fff;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .timeline-content h4 {
+        margin: 0 0 5px;
+        color: #2d3436;
+        font-size: 1.1rem;
+    }
+    
+    .timeline-content p {
+        margin: 0;
+        color: #636e72;
+        font-size: 0.9rem;
+    }
+</style>
+
+<section class="order-details-section">
+    <div class="container">
+        <div class="page-header d-flex justify-content-between align-items-center">
+            <h1 class="page-title">Order Details</h1>
+            <a href="/orders" class="btn btn-back">
+                <i class="fas fa-arrow-left me-2"></i> Back to Orders
+            </a>
+        </div>
+
+        <div class="order-card">
+            <div class="order-header">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <div class="order-id">#<%= order.orderId %></div>
+                        <div class="order-date">Ordered on <%= new Date(order.createdOn).toLocaleDateString('en-IN', { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                        }) %></div>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <div class="order-status <%= order.orderStatus.toLowerCase() %>">
+                            Status: <%= order.orderStatus %>
+                        </div>
+                        <% if (order.orderStatus === 'Pending' || order.orderStatus === 'Processing') { %>
+                            <button onclick="cancelOrder('<%= order._id %>')" class="btn btn-cancel mt-2">
+                                Cancel Order
+                            </button>
+                        <% } %>
+                        <% if (order.orderStatus === 'Cancelled' && order.cancelledAt) { %>
+                            <div class="cancelled-info mt-2">
+                                Cancelled on <%= new Date(order.cancelledAt).toLocaleDateString('en-IN', { 
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric' 
+                                }) %>
+                            </div>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="order-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="info-section">
+                            <h3 class="info-title">Shipping Address</h3>
+                            <div class="info-content">
+                                <%= order.shippingAddress.name %><br>
+                                <% if (order.shippingAddress.landMark) { %>
+                                    <%= order.shippingAddress.landMark %><br>
+                                <% } %>
+                                <%= order.shippingAddress.city %>, <%= order.shippingAddress.state %><br>
+                                <%= order.shippingAddress.pincode %><br>
+                                Phone: <%= order.shippingAddress.phone %>
+                                <% if (order.shippingAddress.altPhone) { %>
+                                    <br>Alt Phone: <%= order.shippingAddress.altPhone %>
+                                <% } %>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="info-section">
+                            <h3 class="info-title">Order Information</h3>
+                            <div class="info-content">
+                                Status: <%= order.orderStatus %><br>
+                                Order Date: <%= new Date(order.createdOn).toLocaleDateString('en-IN', { 
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric' 
+                                }) %><br>
+                                <% if (order.invoiceDate) { %>
+                                    Invoice Date: <%= new Date(order.invoiceDate).toLocaleDateString('en-IN', { 
+                                        year: 'numeric', 
+                                        month: 'long', 
+                                        day: 'numeric' 
+                                    }) %><br>
+                                <% } %>
+                                <% if (order.couponApplied) { %>
+                                    <span class="badge bg-success">Coupon Applied</span>
+                                <% } %>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <h3 class="info-title">Order Timeline</h3>
+                    <div class="timeline">
+                        <div class="timeline-item <%= order.orderStatus === 'Pending' || order.orderStatus === 'Processing' || order.orderStatus === 'Shipped' || order.orderStatus === 'Delivered' ? 'active' : '' %>">
+                            <div class="timeline-point"></div>
+                            <div class="timeline-content">
+                                <h4>Order Placed</h4>
+                                <p><%= new Date(order.createdOn).toLocaleString('en-IN') %></p>
+                            </div>
+                        </div>
+                        <% if (order.orderStatus === 'Processing' || order.orderStatus === 'Shipped' || order.orderStatus === 'Delivered') { %>
+                            <div class="timeline-item active">
+                                <div class="timeline-point"></div>
+                                <div class="timeline-content">
+                                    <h4>Processing</h4>
+                                    <p>Your order is being processed</p>
+                                </div>
+                            </div>
+                        <% } %>
+                        <% if (order.orderStatus === 'Shipped' || order.orderStatus === 'Delivered') { %>
+                            <div class="timeline-item active">
+                                <div class="timeline-point"></div>
+                                <div class="timeline-content">
+                                    <h4>Shipped</h4>
+                                    <p>Your order is on the way</p>
+                                </div>
+                            </div>
+                        <% } %>
+                        <% if (order.orderStatus === 'Delivered') { %>
+                            <div class="timeline-item active">
+                                <div class="timeline-point"></div>
+                                <div class="timeline-content">
+                                    <h4>Delivered</h4>
+                                    <p>Your order has been delivered</p>
+                                </div>
+                            </div>
+                        <% } %>
+                        <% if (order.orderStatus === 'Cancelled') { %>
+                            <div class="timeline-item cancelled">
+                                <div class="timeline-point"></div>
+                                <div class="timeline-content">
+                                    <h4>Cancelled</h4>
+                                    <p>Order was cancelled</p>
+                                </div>
+                            </div>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    async function cancelOrder(orderId) {
+        if (confirm('Are you sure you want to cancel this order?')) {
+            try {
+                const response = await fetch(`/cancel-order/${orderId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert('Order cancelled successfully');
+                    location.reload();
+                } else {
+                    alert(data.message || 'Failed to cancel order');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while cancelling the order');
+            }
+        }
+    }
+</script>
+
+<%- include("../partials/user/footer.ejs") %>

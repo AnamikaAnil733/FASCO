@@ -1,0 +1,262 @@
+<%- include("../partials/user/header.ejs") %>
+
+<style>
+    .orders-section {
+        padding: 140px 0 100px;
+        min-height: calc(100vh - 200px);
+        background-color: #f8f9fa;
+    }
+    
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #2d3436;
+        margin-bottom: 2rem;
+    }
+    
+    .order-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 2px 20px rgba(0, 0, 0, 0.05);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+    }
+    
+    .order-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    .order-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #edf2f7;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .order-id {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #2d3436;
+    }
+    
+    .order-date {
+        color: #636e72;
+        font-size: 0.9rem;
+    }
+    
+    .order-body {
+        padding: 1.5rem;
+    }
+    
+    .order-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .order-amount {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #2d3436;
+    }
+    
+    .badge {
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        font-weight: 500;
+        font-size: 0.875rem;
+        letter-spacing: 0.3px;
+    }
+    
+    .badge.delivered {
+        background-color: #00b894;
+        color: white;
+    }
+    
+    .badge.processing {
+        background-color: #0984e3;
+        color: white;
+    }
+    
+    .badge.cancelled {
+        background-color: #d63031;
+        color: white;
+    }
+    
+    .badge.return-request {
+        background-color: #fdcb6e;
+        color: #2d3436;
+    }
+    
+    .badge.returned {
+        background-color: #636e72;
+        color: white;
+    }
+    
+    .btn-view {
+        background-color: #6c5ce7;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-view:hover {
+        background-color: #5f3dc4;
+        transform: translateY(-2px);
+        color: white;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 2px 20px rgba(0, 0, 0, 0.05);
+    }
+    
+    .empty-state h4 {
+        font-size: 1.5rem;
+        color: #2d3436;
+        margin-bottom: 1rem;
+    }
+    
+    .empty-state p {
+        color: #636e72;
+        margin-bottom: 2rem;
+    }
+    
+    .btn-shop {
+        background-color: #6c5ce7;
+        color: white;
+        border: none;
+        padding: 1rem 2rem;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-shop:hover {
+        background-color: #5f3dc4;
+        transform: translateY(-2px);
+        color: white;
+    }
+    
+    .order-status {
+        padding: 5px 10px;
+        border-radius: 4px;
+        margin: 10px 0;
+        font-weight: bold;
+    }
+    .pending { background: #fff3cd; color: #856404; }
+    .processing { background: #cce5ff; color: #004085; }
+    .shipped { background: #d4edda; color: #155724; }
+    .delivered { background: #d1e7dd; color: #0f5132; }
+    .cancelled { background: #f8d7da; color: #721c24; }
+    .order-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+    }
+    .btn-cancel {
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .btn-cancel:hover {
+        background-color: #c82333;
+    }
+</style>
+
+<section class="orders-section">
+    <div class="container">
+        <h1 class="page-title">My Orders</h1>
+        
+        <% if (orders && orders.length > 0) { %>
+            <div class="row">
+                <% orders.forEach(order => { %>
+                    <div class="col-12">
+                        <div class="order-card">
+                            <div class="order-header">
+                                <div>
+                                    <div class="order-id">#<%= order.orderId %></div>
+                                    <div class="order-date">
+                                        <%= new Date(order.createdOn).toLocaleDateString('en-US', { 
+                                            year: 'numeric', 
+                                            month: 'long', 
+                                            day: 'numeric' 
+                                        }) %>
+                                    </div>
+                                </div>
+                                <span class="badge <%= 
+                                    order.status === 'Delivered' ? 'delivered' : 
+                                    order.status === 'Cancelled' ? 'cancelled' : 
+                                    order.status === 'Return Request' ? 'return-request' :
+                                    order.status === 'Returned' ? 'returned' :
+                                    'processing' %>">
+                                    <%= order.status %>
+                                </span>
+                            </div>
+                            <div class="order-body">
+                                <div class="order-info">
+                                    <div class="order-amount">₹<%= (order.totalAmount || 0).toLocaleString('en-IN') %></div>
+                                    <div class="order-status <%= order.orderStatus.toLowerCase() %>">
+                                        Status: <%= order.orderStatus %>
+                                    </div>
+                                    <div class="order-actions">
+                                        <a href="/order/<%= order._id %>" class="btn btn-view">View Details</a>
+                                        <% if (order.orderStatus === 'Pending' || order.orderStatus === 'Processing') { %>
+                                            <button onclick="cancelOrder('<%= order._id %>')" class="btn btn-cancel">Cancel Order</button>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <% }); %>
+            </div>
+        <% } else { %>
+            <div class="empty-state">
+                <h4>No Orders Yet</h4>
+                <p>Looks like you haven't placed any orders. Start shopping to see your orders here!</p>
+                <a href="/" class="btn btn-shop">Start Shopping</a>
+            </div>
+        <% } %>
+    </div>
+</section>
+
+<script>
+    async function cancelOrder(orderId) {
+        if (confirm('Are you sure you want to cancel this order?')) {
+            try {
+                const response = await fetch(`/cancel-order/${orderId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert('Order cancelled successfully');
+                    location.reload();
+                } else {
+                    alert(data.message || 'Failed to cancel order');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while cancelling the order');
+            }
+        }
+    }
+</script>
+
+<%- include("../partials/user/footer.ejs") %>

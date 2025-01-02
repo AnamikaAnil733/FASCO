@@ -17,7 +17,6 @@ const userSchema = new Schema({
         required:false,
         sparse:true,
         unique:true,
-
     },
     googleId: {
         type: String,
@@ -48,6 +47,14 @@ const userSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: "Order"
     }],
+    resetPasswordToken: {
+        type: String,
+        default: undefined
+    },
+    resetPasswordExpires: {
+        type: Date,
+        default: undefined
+    },
     createdOn: {
         type: Date,
         default: Date.now
@@ -75,6 +82,18 @@ const userSchema = new Schema({
         searchOn: {
             type: Date,
             default: Date.now
+        }
+    }],
+    addresses: [{
+        fullName: String,
+        mobile: String,
+        streetAddress: String,
+        city: String,
+        state: String,
+        pinCode: String,
+        isDefault: {
+            type: Boolean,
+            default: false
         }
     }]
 });

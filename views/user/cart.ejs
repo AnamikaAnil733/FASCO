@@ -1,0 +1,212 @@
+<%- include('../partials/user/header.ejs') %>
+
+<!-- Space after header -->
+<div style="margin-top: 100px;"></div>
+
+<!-- Breadcrumb -->
+<div class="container">
+    <div class="bread-crumb flex-w p-l-25 p-r-15 p-t-30 p-lr-0-lg">
+        <a href="/" class="stext-109 cl8 hov-cl1 trans-04">
+            Home
+            <i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+        </a>
+        <span class="stext-109 cl4">
+            Shopping Cart
+        </span>
+    </div>
+</div>
+
+<!-- Space between breadcrumb and content -->
+<div style="margin-top: 50px;"></div>
+
+<!-- Cart Content -->
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8">
+            <h2 class="mb-4 font-weight-bold">Your Shopping Cart</h2>
+            <% if (!cart || !cart.items || cart.items.length === 0) { %>
+                <div class="text-center py-5 bg-light rounded shadow-sm">
+                    <i class="zmdi zmdi-shopping-cart" style="font-size: 4rem; color: #ccc;"></i>
+                    <h4 class="mt-4 mb-3">Your cart is empty</h4>
+                    <p class="text-muted mb-4">Looks like you haven't added anything to your cart yet.</p>
+                    <a href="/" class="btn btn-primary px-4 py-2">Start Shopping</a>
+                </div>
+            <% } else { %>
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <% cart.items.forEach(item => { %>
+                            <div class="row align-items-center mb-4 pb-3 border-bottom" data-product-id="<%= item.productId._id %>">
+                                <div class="col-md-2">
+                                    <% if (item.productId.variants && item.productId.variants.length > 0 && 
+                                          item.productId.variants[0].images && item.productId.variants[0].images.length > 0) { %>
+                                        <img src="/uploads/product-images/<%= item.productId.variants[0].images[0] %>" 
+                                             alt="<%= item.productId.productName %>" 
+                                             class="img-fluid rounded shadow-sm"
+                                             style="width: 100px; height: 100px; object-fit: cover;">
+                                    <% } else { %>
+                                        <img src="/images/no-image.png" 
+                                             alt="No image available" 
+                                             class="img-fluid rounded shadow-sm"
+                                             style="width: 100px; height: 100px; object-fit: cover;">
+                                    <% } %>
+                                </div>
+                                <div class="col-md-4">
+                                    <h5 class="mb-2"><%= item.productId.productName %></h5>
+                                    <p class="mb-0 text-muted">Price: ₹<%= item.price.toFixed(2) %></p>
+                                    <% if (item.productId.variants && item.productId.variants[item.variantIndex]) { %>
+                                        <p class="mb-0 text-muted">Color: <%= item.productId.variants[item.variantIndex].color %></p>
+                                    <% } %>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="d-flex align-items-center justify-content-start quantity-selector">
+                                        <button class="btn btn-outline-secondary decrease-quantity rounded-circle p-2" style="width: 35px; height: 35px;">
+                                            <i class="zmdi zmdi-minus"></i>
+                                        </button>
+                                        <input type="number" class="form-control quantity-input mx-2 text-center" 
+                                            value="<%= item.quantity %>" min="1" 
+                                            style="width: 60px;">
+                                        <button class="btn btn-outline-secondary increase-quantity rounded-circle p-2" style="width: 35px; height: 35px;">
+                                            <i class="zmdi zmdi-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <h6 class="mb-0">₹<%= item.totalPrice.toFixed(2) %></h6>
+                                </div>
+                                <div class="col-md-1">
+                                    <button class="btn btn-link text-danger remove-item p-0">
+                                        <i class="zmdi zmdi-close"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        <% }); %>
+                    </div>
+                </div>
+            <% } %>
+        </div>
+        
+        <% if (cart && cart.items && cart.items.length > 0) { %>
+            <div class="col-lg-4 mt-4 mt-lg-0">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <h4 class="mb-4">Order Summary</h4>
+                        <div class="d-flex justify-content-between mb-3">
+                            <span>Subtotal</span>
+                            <span>₹<%= cart.items.reduce((total, item) => total + item.totalPrice, 0).toFixed(2) %></span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-3">
+                            <span>Shipping</span>
+                            <span class="text-success">Free</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between mb-4">
+                            <strong>Total</strong>
+                            <strong>₹<%= cart.items.reduce((total, item) => total + item.totalPrice, 0).toFixed(2) %></strong>
+                        </div>
+                        <a href="/checkout" class="btn btn-primary btn-block py-2">
+                            Proceed to Checkout
+                        </a>
+                        <a href="/" class="btn btn-outline-secondary btn-block mt-2 py-2">
+                            Continue Shopping
+                        </a>
+                    </div>
+                </div>
+            </div>
+        <% } %>
+    </div>
+</div>
+
+<!-- Space before footer -->
+<div style="margin-bottom: 100px;"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Update quantity
+    function updateQuantity(productId, quantity) {
+        fetch('/cart/update', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ productId, quantity })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message || 'Error updating cart');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating cart');
+        });
+    }
+
+    // Remove item
+    function removeItem(productId) {
+        if (confirm('Are you sure you want to remove this item?')) {
+            fetch(`/cart/remove/${productId}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.message || 'Error removing item');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error removing item');
+            });
+        }
+    }
+
+    // Event listeners for quantity buttons
+    document.querySelectorAll('.decrease-quantity').forEach(button => {
+        button.addEventListener('click', function() {
+            const row = this.closest('.row');
+            const input = row.querySelector('.quantity-input');
+            const productId = row.dataset.productId;
+            if (input.value > 1) {
+                input.value = parseInt(input.value) - 1;
+                updateQuantity(productId, input.value);
+            }
+        });
+    });
+
+    document.querySelectorAll('.increase-quantity').forEach(button => {
+        button.addEventListener('click', function() {
+            const row = this.closest('.row');
+            const input = row.querySelector('.quantity-input');
+            const productId = row.dataset.productId;
+            input.value = parseInt(input.value) + 1;
+            updateQuantity(productId, input.value);
+        });
+    });
+
+    // Event listeners for quantity input
+    document.querySelectorAll('.quantity-input').forEach(input => {
+        input.addEventListener('change', function() {
+            const row = this.closest('.row');
+            const productId = row.dataset.productId;
+            if (this.value < 1) this.value = 1;
+            updateQuantity(productId, this.value);
+        });
+    });
+
+    // Event listeners for remove buttons
+    document.querySelectorAll('.remove-item').forEach(button => {
+        button.addEventListener('click', function() {
+            const row = this.closest('.row');
+            const productId = row.dataset.productId;
+            removeItem(productId);
+        });
+    });
+});
+</script>
+
+<%- include('../partials/user/footer.ejs') %>
