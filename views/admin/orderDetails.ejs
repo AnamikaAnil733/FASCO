@@ -1,0 +1,196 @@
+<%- include('../partials/admin/header.ejs') %>
+
+<section class="content-main">
+    <div class="content-header">
+        <div>
+            <h2 class="content-title card-title">Order Details</h2>
+            <p>Order ID: <%= order._id %></p>
+        </div>
+        <div>
+            <a href="/admin/orders" class="btn btn-light">Back to Orders</a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>Order Information</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Order Date</label>
+                        <div class="form-control-plaintext"><%= moment(order.orderDate).format('MMM DD, YYYY') %></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select class="form-select status-select" 
+                                data-order-id="<%= order._id %>"
+                                <%= order.status === 'Delivered' || order.status === 'Cancelled' ? 'disabled' : '' %>>
+                            <option value="Pending" <%= order.status === 'Pending' ? 'selected' : '' %>>Pending</option>
+                            <option value="Processing" <%= order.status === 'Processing' ? 'selected' : '' %>>Processing</option>
+                            <option value="Shipped" <%= order.status === 'Shipped' ? 'selected' : '' %>>Shipped</option>
+                            <option value="Delivered" <%= order.status === 'Delivered' ? 'selected' : '' %>>Delivered</option>
+                            <option value="Cancelled" <%= order.status === 'Cancelled' ? 'selected' : '' %>>Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Total Amount</label>
+                        <div class="form-control-plaintext">₹<%= (order.totalAmount || 0).toFixed(2) %></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>Customer Information</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Customer Name</label>
+                        <div class="form-control-plaintext"><%= order.userId ? order.userId.name : 'N/A' %></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <div class="form-control-plaintext"><%= order.userId ? order.userId.email : 'N/A' %></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Ordered Items</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Image</th>
+                            <th>Quantity</th>
+                            <th>Price</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% order.items.forEach(item => { %>
+                            <tr>
+                                <td><%= item.productId ? item.productId.productName : 'N/A' %></td>
+                                <td>
+                                    <% if (item.productId && item.productId.images && item.productId.images.length > 0) { %>
+                                        <img src="/uploads/re-image/<%= item.productId.images[0] %>" 
+                                            alt="<%= item.productId.productName %>" 
+                                            style="width: 80px; height: 80px; object-fit: cover;"
+                                            class="img-thumbnail">
+                                    <% } else { %>
+                                        <img src="/admin-assets/imgs/theme/no-image.png" 
+                                            alt="No Image Available"
+                                            style="width: 80px; height: 80px; object-fit: cover;"
+                                            class="img-thumbnail">
+                                    <% } %>
+                                </td>
+                                <td><%= item.quantity %></td>
+                                <td>₹<%= (item.price || 0).toFixed(2) %></td>
+                                <td>₹<%= ((item.quantity || 0) * (item.price || 0)).toFixed(2) %></td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" class="text-end"><strong>Total Amount:</strong></td>
+                            <td><strong>₹<%= (order.totalAmount || 0).toFixed(2) %></strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Shipping Address</h4>
+        </div>
+        <div class="card-body">
+            <% if (order.shippingAddress) { %>
+                <div class="mb-3">
+                    <label class="form-label">Name</label>
+                    <div class="form-control-plaintext"><%= order.shippingAddress.name || 'N/A' %></div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">City</label>
+                    <div class="form-control-plaintext"><%= order.shippingAddress.city || 'N/A' %></div>
+                </div>
+                <% if (order.shippingAddress.landMark) { %>
+                    <div class="mb-3">
+                        <label class="form-label">Landmark</label>
+                        <div class="form-control-plaintext"><%= order.shippingAddress.landMark %></div>
+                    </div>
+                <% } %>
+            <% } else { %>
+                <div class="alert alert-info">No shipping address available</div>
+            <% } %>
+        </div>
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle status changes
+    document.querySelector('.status-select').addEventListener('change', async function() {
+        const orderId = this.dataset.orderId;
+        const newStatus = this.value;
+
+        try {
+            const response = await fetch('/admin/orders/update-status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    orderId: orderId,
+                    status: newStatus
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                Swal.fire({
+                    title: 'Success!',
+                    text: data.message,
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                });
+
+                // If status is Delivered or Cancelled, disable the select
+                if (newStatus === 'Delivered' || newStatus === 'Cancelled') {
+                    this.disabled = true;
+                }
+            } else {
+                throw new Error(data.message);
+            }
+        } catch (error) {
+            Swal.fire({
+                title: 'Error!',
+                text: error.message || 'Failed to update order status',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+            // Reset select to previous value
+            this.value = this.getAttribute('data-previous-value');
+        }
+    });
+
+    // Store the previous value when focusing on select
+    document.querySelector('.status-select').addEventListener('focus', function() {
+        this.setAttribute('data-previous-value', this.value);
+    });
+});
+</script>
+
+<%- include('../partials/admin/footer.ejs') %>

@@ -1,6 +1,6 @@
 <%- include('../partials/user/header.ejs') %>
 
-<main class="bg0 m-t-23 p-b-140">
+<main class="bg0 m-t-100 p-b-140">
     <div class="container">
         <!-- Breadcrumb -->
         <div class="bread-crumb flex-w p-l-25 p-r-15 p-t-30 p-lr-0-lg">
@@ -17,6 +17,22 @@
             <!-- Filter sidebar -->
             <div class="col-md-3">
                 <div class="filter-sidebar p-t-0 p-r-15 p-lr-0-lg">
+                    <!-- Search -->
+<div class="filter-widget mb-4">
+    <h4 class="mtext-112 cl2 p-b-27">Search Products</h4>
+    <div class="search-wrap">
+        <div class="input-group">
+            <input type="text" 
+                   class="form-control stext-106" 
+                   id="searchInput" 
+                   placeholder="Search products..."
+                   value="<%= search || '' %>">
+            <button class="btn btn-primary" id="searchButton">
+                <i class="fa fa-search"></i>
+            </button>
+        </div>
+    </div>
+</div>
                     <!-- Categories -->
                     <div class="filter-widget mb-4">
                         <h4 class="mtext-112 cl2 p-b-27">Categories</h4>
@@ -42,13 +58,13 @@
                         <h4 class="mtext-112 cl2 p-b-27">Price Range</h4>
                         <div class="price-range-wrap">
                             <div class="price-range">
-                                <input type="range" class="form-range" min="0" max="10000" value="5000" id="priceRange">
+                                <input type="range" class="form-range" min="0" max="100000" step="100" value="<%= maxPrice || 5000 %>" id="priceRange">
                             </div>
                             <div class="price-input mt-2">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <span class="stext-106 cl6">₹0</span>
-                                    <span class="stext-106 cl2">₹<span id="priceValue">5000</span></span>
-                                    <span class="stext-106 cl6">₹10000</span>
+                                    <span class="stext-106 cl2">₹<span id="priceValue"><%= maxPrice || 5000 %></span></span>
+                                    <span class="stext-106 cl6">₹100000</span>
                                 </div>
                             </div>
                             <button class="flex-c-m stext-107 cl6 size-301 bor7 p-lr-15 hov-tag1 trans-04 m-t-10" 
@@ -63,6 +79,8 @@
                         <h4 class="mtext-112 cl2 p-b-27">Sort By</h4>
                         <select class="form-select stext-106 cl6" id="sortProducts">
                             <option value="default">Default Sorting</option>
+                            <option value="name_asc">Name: A to Z</option>
+                            <option value="name_desc">Name: Z to A</option>
                             <option value="price_asc">Price: Low to High</option>
                             <option value="price_desc">Price: High to Low</option>
                             <option value="newest">Newest First</option>
@@ -121,6 +139,29 @@
 </main>
 
 <style>
+    .search-wrap {
+    margin-bottom: 20px;
+}
+.search-wrap .input-group {
+    display: flex;
+    gap: 8px;
+}
+.search-wrap input {
+    border: 1px solid #e6e6e6;
+    padding: 8px 15px;
+    border-radius: 4px;
+    flex-grow: 1;
+}
+.search-wrap .btn {
+    padding: 8px 15px;
+    border-radius: 4px;
+    border-color: #717fe0;
+    color: white;
+}
+.search-wrap .btn:hover {
+    background-color: #5965c3;
+    border-color: #5965c3;
+}
     .filter-sidebar {
         background: #fff;
         padding: 20px;
@@ -195,7 +236,7 @@
     // Price Range Slider
     const priceRange = document.getElementById('priceRange');
     const priceValue = document.getElementById('priceValue');
-    
+
     priceRange.addEventListener('input', function() {
         priceValue.textContent = this.value;
     });
@@ -203,15 +244,101 @@
     // Apply Price Filter
     document.getElementById('applyPriceFilter').addEventListener('click', function() {
         const currentUrl = new URL(window.location.href);
-        currentUrl.searchParams.set('price', priceRange.value);
+        
+        // Set price range
+        currentUrl.searchParams.set('maxPrice', priceRange.value);
+        
+        // Preserve category if exists
+        const category = currentUrl.searchParams.get('category');
+        if (category) {
+            currentUrl.searchParams.set('category', category);
+        }
+        
+        // Preserve sort if exists
+        const sort = currentUrl.searchParams.get('sort');
+        if (sort) {
+            currentUrl.searchParams.set('sort', sort);
+        }
+        
         window.location.href = currentUrl.toString();
     });
 
     // Sort Products
     document.getElementById('sortProducts').addEventListener('change', function() {
         const currentUrl = new URL(window.location.href);
-        currentUrl.searchParams.set('sort', this.value);
+        const value = this.value;
+        
+        if (value === 'default') {
+            currentUrl.searchParams.delete('sort');
+        } else {
+            currentUrl.searchParams.set('sort', value);
+        }
+        
         window.location.href = currentUrl.toString();
+    });
+
+    // Set initial values from URL
+    window.addEventListener('load', function() {
+        const currentUrl = new URL(window.location.href);
+        
+        // Set price range if in URL
+        const maxPrice = currentUrl.searchParams.get('maxPrice');
+        if (maxPrice) {
+            priceRange.value = maxPrice;
+            priceValue.textContent = maxPrice;
+        }
+        
+        // Set sort selection if in URL
+        const sort = currentUrl.searchParams.get('sort');
+        if (sort) {
+            document.getElementById('sortProducts').value = sort;
+        }
+    });
+
+    // Search Products
+    document.getElementById('searchButton').addEventListener('click', function() {
+        const searchQuery = document.getElementById('searchInput').value.trim();
+        const currentUrl = new URL(window.location.href);
+        
+        // Remove existing search parameter
+        currentUrl.searchParams.delete('search');
+        
+        // Add new search parameter if not empty
+        if (searchQuery) {
+            currentUrl.searchParams.set('search', searchQuery);
+        }
+        
+        // Preserve other parameters (but don't duplicate them)
+        const category = currentUrl.searchParams.get('category');
+        const maxPrice = currentUrl.searchParams.get('maxPrice');
+        const sort = currentUrl.searchParams.get('sort');
+        
+        if (category) currentUrl.searchParams.set('category', category);
+        if (maxPrice) currentUrl.searchParams.set('maxPrice', maxPrice);
+        if (sort) currentUrl.searchParams.set('sort', sort);
+        
+        console.log('Navigating to:', currentUrl.toString());
+        window.location.href = currentUrl.toString();
+    });
+
+    // Handle Enter key in search input
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            document.getElementById('searchButton').click();
+        }
+    });
+
+    // Add this to your existing load event listener
+    window.addEventListener('load', function() {
+        const currentUrl = new URL(window.location.href);
+        
+        // Set search input if in URL
+        const search = currentUrl.searchParams.get('search');
+        if (search) {
+            document.getElementById('searchInput').value = search;
+        }
+        
+        // ... your existing price range and sort code ...
     });
 </script>
 

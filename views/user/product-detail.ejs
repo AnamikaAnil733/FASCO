@@ -1,5 +1,7 @@
 <%- include("../../views/partials/user/header") %>
-
+<!-- Add SweetAlert2 CSS and JS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-material-ui/material-ui.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <div class="product-detail">
     <!-- Breadcrumb -->
     <div class="container">
@@ -86,11 +88,17 @@
                 <!-- Quantity -->
                 <div class="quantity-section">
                     <h3>Quantity</h3>
+                    <div class="stock-info">
+                        <% if (product.variants && product.variants.length > 0) { %>
+                            <p class="available-stock">Available Stock: <span id="current-stock"><%= product.variants[0].quantity %></span></p>
+                        <% } %>
+                    </div>
                     <div class="quantity-selector">
                         <button class="qty-btn" onclick="updateQuantity(-1)">−</button>
-                        <input type="number" id="quantity" value="1" min="1" max="10">
+                        <input type="number" id="quantity" value="1" min="1" max="5">
                         <button class="qty-btn" onclick="updateQuantity(1)">+</button>
                     </div>
+                    <small class="text-muted">Maximum 5 items per order</small>
                 </div>
 
                 <!-- Actions -->
@@ -105,6 +113,54 @@
         </div>
     </div>
 </div>
+
+<!-- Related Products Section -->
+<section class="sec-relate-product bg0 p-t-45 p-b-105">
+    <div class="container">
+        <div class="p-b-45">
+            <h3 class="ltext-106 cl5 txt-center">
+                Related Products
+            </h3>
+        </div>
+
+        <!-- Related Products Grid -->
+        <div class="row isotope-grid">
+            <% relatedProducts.forEach(function(relatedProduct) { %>
+                <% if (relatedProduct.variants && relatedProduct.variants.length > 0) { %>
+                    <div class="col-sm-6 col-md-4 col-lg-3 p-b-35 isotope-item">
+                        <div class="block2">
+                            <div class="block2-pic hov-img0">
+                                <% if (relatedProduct.variants[0] && relatedProduct.variants[0].images && relatedProduct.variants[0].images.length > 0) { %>
+                                    <img src="/uploads/product-images/<%= relatedProduct.variants[0].images[0] %>" alt="<%= relatedProduct.productName %>" class="product-image">
+                                <% } else { %>
+                                    <img src="/images/no-image.png" alt="No image available" class="product-image">
+                                <% } %>
+                                <a href="/product/<%= relatedProduct._id %>" class="block2-btn flex-c-m stext-103 cl2 size-102 bg0 bor2 hov-btn1 p-lr-15 trans-04">
+                                    Quick View
+                                </a>
+                            </div>
+
+                            <div class="block2-txt flex-w flex-t p-t-14">
+                                <div class="block2-txt-child1 flex-col-l">
+                                    <a href="/product/<%= relatedProduct._id %>" class="stext-104 cl4 hov-cl1 trans-04 js-name-b2 p-b-6">
+                                        <%= relatedProduct.productName %>
+                                    </a>
+
+                                    <span class="stext-105 cl3">
+                                        ₹<%= relatedProduct.salesPrice %>
+                                        <% if (relatedProduct.regularPrice > relatedProduct.salesPrice) { %>
+                                            <span class="stext-109 cl4 text-decoration-line-through ms-2">₹<%= relatedProduct.regularPrice %></span>
+                                        <% } %>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <% } %>
+            <% }); %>
+        </div>
+    </div>
+</section>
 
 <style>
 /* Product Detail Page Styles */
@@ -410,6 +466,21 @@
     margin: 0;
 }
 
+.stock-info {
+    margin-bottom: 10px;
+}
+
+.available-stock {
+    font-size: 0.9em;
+    color: #666;
+    margin: 5px 0;
+}
+
+#current-stock {
+    font-weight: bold;
+    color: #28a745;
+}
+
 /* Action Buttons */
 .product-actions {
     display: flex;
@@ -468,168 +539,221 @@
         font-size: 1.3rem;
     }
 }
+/* Related Products Styles */
+.sec-relate-product {
+    background-color: #f8f9fa;
+    padding: 60px 0;
+}
+
+.sec-relate-product h3 {
+    font-size: 2rem;
+    color: #333;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.block2 {
+    position: relative;
+    margin-bottom: 30px;
+}
+
+.block2-pic {
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+}
+
+.block2-pic img {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+    transition: transform 0.3s;
+}
+
+.block2:hover .block2-pic img {
+    transform: scale(1.05);
+}
+
+.block2-btn {
+    position: absolute;
+    bottom: -50px;
+    left: 50%;
+    transform: translateX(-50%);
+    transition: bottom 0.3s;
+    background: white;
+    padding: 10px 20px;
+    border-radius: 4px;
+    text-decoration: none;
+    color: #333;
+}
+
+.block2:hover .block2-btn {
+    bottom: 20px;
+}
+
+.block2-txt {
+    padding: 15px;
+    text-align: center;
+}
+
+.block2-txt-child1 a {
+    color: #333;
+    text-decoration: none;
+    font-weight: 500;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.block2-txt-child1 .stext-105 {
+    color: #717fe0;
+    font-weight: 600;
+}
+
+.text-decoration-line-through {
+    text-decoration: line-through;
+    color: #999;
+    margin-left: 8px;
+}
 </style>
 
 <script>
-let currentVariant = 0;
 const variants = <%- JSON.stringify(product.variants) %>;
-
-function imageZoom(imgID, resultID) {
-    var img, lens, result, cx, cy;
-    img = document.getElementById(imgID);
-    result = document.getElementById(resultID);
-    
-    /* Create lens */
-    lens = document.createElement("div");
-    lens.setAttribute("class", "zoom-lens");
-    img.parentElement.insertBefore(lens, img);
-
-    /* Calculate ratio between result DIV and lens */
-    cx = result.offsetWidth / lens.offsetWidth;
-    cy = result.offsetHeight / lens.offsetHeight;
-
-    /* Set background properties for the result DIV */
-    result.style.backgroundImage = "url('" + img.src + "')";
-    result.style.backgroundSize = (img.width * cx) + "px " + (img.height * cy) + "px";
-
-    /* Mouse move functions */
-    function moveLens(e) {
-        var pos, x, y;
-        e.preventDefault();
-        pos = getCursorPos(e);
-        x = pos.x - (lens.offsetWidth / 2);
-        y = pos.y - (lens.offsetHeight / 2);
-        if (x > img.width - lens.offsetWidth) {x = img.width - lens.offsetWidth;}
-        if (x < 0) {x = 0;}
-        if (y > img.height - lens.offsetHeight) {y = img.height - lens.offsetHeight;}
-        if (y < 0) {y = 0;}
-        lens.style.left = x + "px";
-        lens.style.top = y + "px";
-        result.style.backgroundPosition = "-" + (x * cx) + "px -" + (y * cy) + "px";
-    }
-
-    function getCursorPos(e) {
-        var a, x = 0, y = 0;
-        e = e || window.event;
-        a = img.getBoundingClientRect();
-        x = e.pageX - a.left - window.pageXOffset;
-        y = e.pageY - a.top - window.pageYOffset;
-        return {x : x, y : y};
-    }
-
-    lens.addEventListener("mousemove", moveLens);
-    img.addEventListener("mousemove", moveLens);
-}
-
-// Initialize zoom when image is loaded
-document.addEventListener('DOMContentLoaded', function() {
-    var mainImage = document.getElementById('mainImage');
-    if (mainImage) {
-        mainImage.onload = function() {
-            imageZoom("mainImage", "zoomResult");
-        }
-        if (mainImage.complete) {
-            imageZoom("mainImage", "zoomResult");
-        }
-    }
-});
-
-function updateMainImage(src, variantIndex) {
-    const mainImage = document.getElementById('mainImage');
-    mainImage.src = src;
-    mainImage.onload = function() {
-        imageZoom("mainImage", "zoomResult");
-    };
-    if (variantIndex !== undefined) {
-        document.querySelectorAll('.color-btn').forEach((btn, index) => {
-            btn.classList.toggle('active', index === variantIndex);
-        });
-        currentVariant = variantIndex;
-        updateAvailableQuantity();
-    }
-}
-
-function selectColor(color, index) {
-    // Update active state of color buttons
-    document.querySelectorAll('.color-btn').forEach((btn, i) => {
-        btn.classList.toggle('active', i === index);
-    });
-
-    // Update current variant and available quantity
-    currentVariant = index;
-    document.getElementById('availableQuantity').textContent = variants[index].quantity;
-
-    // Reset quantity input if it's more than available
-    const quantityInput = document.getElementById('quantity');
-    if (parseInt(quantityInput.value) > variants[index].quantity) {
-        quantityInput.value = variants[index].quantity;
-    }
-    quantityInput.max = variants[index].quantity;
-}
+let currentVariant = 0;
 
 function updateQuantity(change) {
     const input = document.getElementById('quantity');
-    const newValue = parseInt(input.value) + change;
-    const maxQuantity = variants[currentVariant].quantity;
+    const currentValue = parseInt(input.value) || 1;
+    const variant = variants[currentVariant];
+    const maxStock = Math.min(variant.quantity, 5); // Limit to 5 or available stock
     
-    if (newValue >= 1 && newValue <= maxQuantity) {
-        input.value = newValue;
-    }
+    let newValue = currentValue + change;
+    
+    // Ensure the value stays between 1 and maxStock
+    newValue = Math.max(1, Math.min(newValue, maxStock));
+    
+    input.value = newValue;
+    
+    // Update button states
+    document.querySelector('.qty-btn:first-child').disabled = newValue <= 1;
+    document.querySelector('.qty-btn:last-child').disabled = newValue >= maxStock;
+}
+
+function selectColor(color, index) {
+    // Update active color button
+    document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.color-btn')[index].classList.add('active');
+    
+    // Update current variant index
+    currentVariant = index;
+    
+    // Update stock display
+    const variant = variants[index];
+    document.getElementById('current-stock').textContent = variant.quantity;
 }
 
 function addToCart() {
     const quantity = parseInt(document.getElementById('quantity').value);
     const variant = variants[currentVariant];
+    const maxStock = Math.min(variant.quantity, 5); // Limit to 5 or available stock
     
-    if (quantity > variant.quantity) {
-        alert('Selected quantity is not available');
+    if (quantity > maxStock) {
+        Swal.fire({
+            title: 'Quantity Limit Exceeded',
+            text: 'Maximum quantity limit is 5 items per product',
+            icon: 'warning',
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#3085d6'
+        });
         return;
     }
-
-    const data = {
-        productId: '<%= product._id %>',
-        variantIndex: currentVariant,
-        quantity: quantity
-    };
     
-    console.log('Sending add to cart request:', data);
+    if (quantity < 1) {
+        Swal.fire({
+            title: 'Invalid Quantity',
+            text: 'Please select at least 1 item',
+            icon: 'warning',
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#3085d6'
+        });
+        return;
+    }
+    
+    // Show loading state
+    Swal.fire({
+        title: 'Adding to Cart',
+        text: 'Please wait...',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        willOpen: () => {
+            Swal.showLoading();
+        }
+    });
 
-    // Add to cart logic here
     fetch('/cart/add', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify({
+            productId: '<%= product._id %>',
+            quantity: quantity,
+            variantIndex: currentVariant
+        })
     })
-    .then(response => {
-        console.log('Response status:', response.status);
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
-        console.log('Response data:', data);
         if (data.success) {
-            alert('Product added to cart successfully');
-            // Update cart count if you have a cart counter in the header
-            fetch('/cart/count')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success && document.getElementById('cartCount')) {
-                        document.getElementById('cartCount').textContent = data.count;
-                    }
-                });
+            updateCartCount();
+            Swal.fire({
+                title: 'Success!',
+                text: 'Product added to cart successfully!',
+                icon: 'success',
+                confirmButtonText: 'Continue Shopping',
+                showCancelButton: true,
+                cancelButtonText: 'View Cart',
+                confirmButtonColor: 'white',
+                cancelButtonColor: 'white'
+            }).then((result) => {
+                if (!result.isConfirmed) {
+                    // If user clicks "View Cart"
+                    window.location.href = '/cart';
+                }
+            });
         } else {
-            alert(data.message || 'Error adding product to cart');
+            Swal.fire({
+                title: 'Error!',
+                text: data.message || 'Error adding to cart',
+                icon: 'error',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#3085d6'
+            });
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error adding product to cart');
+        Swal.fire({
+            title: 'Error!',
+            text: 'Failed to add product to cart',
+            icon: 'error',
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#3085d6'
+        });
     });
 }
 
-// Initialize with first variant
-selectColor(variants[0].color, 0);
+function updateMainImage(src, variantIndex) {
+    document.getElementById('mainImage').src = src;
+    document.getElementById('zoomResult').style.backgroundImage = `url(${src})`;
+    currentVariant = variantIndex;
+}
+
+function updateCartCount() {
+    fetch('/cart/count')
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('cart-count').innerText = data.count;
+    });
+}
 </script>
 
 <script src="/js/zoom.js"></script>

@@ -3,7 +3,6 @@ const Category = require("../../models/categorySchema");
 const Product = require("../../models/productSchema");
 const Order = require("../../models/orderSchema");
 const Cart = require("../../models/cartSchema");
-const Address = require("../../models/addressSchema");
 const env = require("dotenv").config();
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcrypt");
@@ -26,7 +25,8 @@ const loadHomepage = async (req, res) => {
     
     res.render("home", {
       message: req.session.user,
-      products: products
+      products: products,
+      categories: categories
     });
   } catch (error) {
     console.error("Error loading home page:", error);
@@ -257,48 +257,71 @@ const logout = async(req,res)=>{
 };
 
 // Load product detail page
-const getProductDetail = async (req, res) => {
-  try {
-    const id = req.params.id;
-    const product = await Product.findById(id)
-      .populate('category')
-      .select('productName description brand category regularPrice salesPrice productOffer variants')
-      .lean();  // Convert to plain JavaScript object
-      
-    if (!product) {
-      return res.status(404).render('404', { 
-        message: 'Product not found',
-        user: req.session.user 
-      });
-    }
+const loadProductDetails = async (req, res) => {
+    try {
+        const productId = req.params.id;
+        const product = await Product.findById(productId)
+            .populate('category')
+            .select('productName description brand category regularPrice salesPrice productOffer variants')
+            .lean();
 
-    if (!product.variants || product.variants.length === 0) {
-      return res.status(403).render('404', { 
-        message: 'This product is currently unavailable',
-        user: req.session.user 
-      });
-    }
+        if (!product) {
+            return res.status(404).render('404', { 
+                message: 'Product not found',
+                user: req.session.user 
+            });
+        }
 
-    // Ensure each variant has the required fields
-    product.variants = product.variants.map(variant => ({
-      ...variant,
-      quantity: variant.quantity || 0,
-      images: variant.images || []
-    }));
-    
-    res.render("product-detail", {
-      message: req.session.user,
-      product: product,
-      title: product.productName,
-      user: req.session.user
-    });
-  } catch (error) {
-    console.error("Error getting product details:", error);
-    res.status(500).render('404', { 
-      message: 'Error loading product details',
-      user: req.session.user 
-    });
-  }
+        if (!product.variants || product.variants.length === 0) {
+            return res.status(403).render('404', { 
+                message: 'This product is currently unavailable',
+                user: req.session.user 
+            });
+        }
+
+        // Ensure each variant has the required fields
+        product.variants = product.variants.map(variant => ({
+            ...variant,
+            quantity: variant.quantity || 0,
+            images: variant.images || []
+        }));
+
+        // Find only related products from the same category
+        const relatedProducts = await Product.find({
+            _id: { $ne: productId }, // Exclude current product
+            category: product.category._id,
+            isBlocked: false,
+            'variants.0': { $exists: true } // Ensure product has at least one variant
+        })
+        .populate('category')
+        .select('productName description brand category regularPrice salesPrice productOffer variants')
+        .limit(4) // Show up to 4 related products
+        .lean();
+
+        // Process related products to ensure they have the required fields
+        const processedRelatedProducts = relatedProducts.map(relatedProduct => ({
+            ...relatedProduct,
+            variants: relatedProduct.variants.map(variant => ({
+                ...variant,
+                quantity: variant.quantity || 0,
+                images: variant.images || []
+            }))
+        }));
+
+        res.render("product-detail", {
+            message: req.session.user,
+            product: product,
+            relatedProducts: processedRelatedProducts,
+            title: product.productName,
+            user: req.session.user
+        });
+    } catch (error) {
+        console.error("Error in product details:", error);
+        res.status(500).render('404', { 
+            message: 'Error loading product details',
+            user: req.session.user 
+        });
+    }
 };
 
 // Load forgot password page
@@ -767,99 +790,58 @@ const addToCart = async (req, res) => {
     console.log('Add to cart request body:', req.body);
     const userId = req.session.user._id;
     const { productId, quantity, variantIndex } = req.body;
-
-    console.log('User ID:', userId);
-    console.log('Product ID:', productId);
-    console.log('Quantity:', quantity);
-    console.log('Variant Index:', variantIndex);
+    
+    // Validate quantity
+    const MAX_QUANTITY = 5;
+    if (quantity > MAX_QUANTITY) {
+      return res.status(400).json({
+        success: false,
+        message: "Maximum quantity limit is 5 items per product"
+      });
+    }
 
     // Get product details
-    const product = await Product.findById(productId)
-      .select('productName variants salesPrice price')
-      .lean();
-
+    const product = await Product.findById(productId);
     if (!product) {
-      console.log('Product not found');
-      return res.status(404).json({ success: false, message: 'Product not found' });
+      return res.status(404).json({ success: false, message: "Product not found" });
     }
-    console.log('Found product:', product.productName);
-
-    // Check if variant exists
-    if (!product.variants || !product.variants[variantIndex]) {
-      console.log('Invalid variant. Variants:', product.variants);
-      return res.status(400).json({ success: false, message: 'Invalid variant selected' });
-    }
-
-    const variant = product.variants[variantIndex];
-    console.log('Selected variant:', variant);
-
-    // Check variant stock
-    if (!variant.quantity || variant.quantity < quantity) {
-      console.log('Insufficient stock. Available:', variant.quantity, 'Requested:', quantity);
-      return res.status(400).json({ success: false, message: 'Selected quantity not available' });
-    }
-
-    // Calculate price
-    const price = product.salesPrice || product.price;
-    const totalPrice = price * quantity;
-    console.log('Price:', price, 'Total Price:', totalPrice);
 
     // Find or create cart
     let cart = await Cart.findOne({ userId });
     if (!cart) {
-      console.log('Creating new cart for user');
       cart = new Cart({ userId, items: [] });
     }
 
-    // Check if product with same variant already in cart
-    const existingItemIndex = cart.items.findIndex(item => 
-      item.productId && item.productId.toString() === productId && 
+    // Check if product already exists in cart
+    const existingItem = cart.items.find(item => 
+      item.productId.toString() === productId && 
       item.variantIndex === variantIndex
     );
 
-    if (existingItemIndex !== -1) {
-      console.log('Updating existing cart item');
-      const existingItem = cart.items[existingItemIndex];
-      // Check if adding quantity exceeds available stock
-      if (existingItem.quantity + quantity > variant.quantity) {
-        console.log('Adding would exceed stock');
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Adding this quantity would exceed available stock' 
+    if (existingItem) {
+      const newQuantity = existingItem.quantity + quantity;
+      if (newQuantity > MAX_QUANTITY) {
+        return res.status(400).json({
+          success: false,
+          message: `Cannot add ${quantity} more items. Maximum limit is 5 items per product. You already have ${existingItem.quantity} in your cart.`
         });
       }
       
-      // Create new item while preserving existing fields
-      const updatedItem = {
-        ...existingItem.toObject(), // Convert to plain object to avoid Mongoose issues
-        quantity: existingItem.quantity + quantity,
-        totalPrice: (existingItem.quantity + quantity) * price,
-        productId: productId, // Ensure productId is set
-        price: price, // Ensure price is set
-        variantIndex: variantIndex, // Ensure variantIndex is set
-        status: existingItem.status || 'none',
-        cancellationReason: existingItem.cancellationReason || 'none'
-      };
-      
-      // Replace the existing item
-      cart.items[existingItemIndex] = updatedItem;
+      // Update existing item
+      existingItem.quantity = newQuantity;
+      existingItem.totalPrice = product.salesPrice * newQuantity;
     } else {
-      console.log('Adding new item to cart');
+      // Add new item
       cart.items.push({
         productId,
         variantIndex,
         quantity,
-        price,
-        totalPrice,
-        status: 'none',
-        cancellationReason: 'none'
+        price: product.salesPrice,
+        totalPrice: product.salesPrice * quantity
       });
     }
 
-    console.log('Saving cart:', JSON.stringify(cart.toObject(), null, 2));
     await cart.save();
-    console.log('Cart saved successfully');
-    
     res.json({ success: true });
   } catch (error) {
     console.error("Error adding to cart:", error);
@@ -926,6 +908,13 @@ const updateCartItem = async (req, res) => {
     const { productId, quantity } = req.body;
     const userId = req.session.user._id;
 
+    if (!productId || !quantity) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Product ID and quantity are required" 
+      });
+    }
+
     // Find cart and populate product details
     const cart = await Cart.findOne({ userId }).populate('items.productId');
     if (!cart) {
@@ -940,6 +929,25 @@ const updateCartItem = async (req, res) => {
       return res.status(404).json({ success: false, message: "Item not found in cart" });
     }
 
+    const MAX_QUANTITY = 5;
+    if (quantity > MAX_QUANTITY) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Maximum quantity limit is 5 items per product",
+        currentQuantity: item.quantity
+      });
+    }
+
+    // Validate quantity against stock
+    const variantStock = item.productId.variants[item.variantIndex].quantity;
+    if (quantity > variantStock) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Requested quantity exceeds available stock",
+        currentQuantity: item.quantity
+      });
+    }
+
     // Get current price from product
     const price = item.productId.salesPrice || item.productId.price;
     
@@ -949,17 +957,26 @@ const updateCartItem = async (req, res) => {
     item.totalPrice = parseFloat((price * quantity).toFixed(2));
 
     await cart.save();
-    res.json({ success: true, message: "Cart updated" });
+    res.json({ 
+      success: true, 
+      message: "Cart updated successfully",
+      newQuantity: quantity,
+      newTotal: item.totalPrice
+    });
   } catch (error) {
-    console.warn("Error updating cart:", error);
-    res.status(500).json({ success: false, message: "Error updating cart" });
+    console.error("Error updating cart:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to update cart. Please try again.",
+      error: error.message 
+    });
   }
 };
 
 // Remove from cart
 const removeFromCart = async (req, res) => {
   try {
-    const { productId } = req.params;
+    const { productId, variantIndex } = req.params;
     const userId = req.session.user._id;
 
     const cart = await Cart.findOne({ userId });
@@ -967,8 +984,9 @@ const removeFromCart = async (req, res) => {
       return res.status(404).json({ message: "Cart not found" });
     }
 
+    // Remove only the specific variant of the product
     cart.items = cart.items.filter(item => 
-      item.productId.toString() !== productId
+      !(item.productId.toString() === productId && item.variantIndex.toString() === variantIndex)
     );
 
     await cart.save();
@@ -1078,6 +1096,25 @@ const placeOrder = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid address' });
     }
 
+    // Verify stock availability for all items
+    for (const item of cart.items) {
+      const product = await Product.findById(item.productId._id);
+      if (!product || !product.variants || !product.variants[item.variantIndex]) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Product ${item.productId.productName} is no longer available` 
+        });
+      }
+
+      const variant = product.variants[item.variantIndex];
+      if (!variant.quantity || variant.quantity < item.quantity) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Insufficient stock for ${item.productId.productName}` 
+        });
+      }
+    }
+
     console.log('Found selected address:', selectedAddress);
 
     // Calculate total
@@ -1090,7 +1127,8 @@ const placeOrder = async (req, res) => {
         productId: item.productId._id,
         quantity: item.quantity,
         price: item.price,
-        totalPrice: item.totalPrice
+        totalPrice: item.totalPrice,
+        variantIndex: item.variantIndex
       })),
       totalAmount: total,
       shippingAddress: {
@@ -1110,8 +1148,25 @@ const placeOrder = async (req, res) => {
 
     console.log('Creating order with data:', JSON.stringify(order, null, 2));
 
+    // Save the order first
     await order.save();
     console.log('Order created:', order._id);
+
+    // Update stock for each product
+    for (const item of cart.items) {
+      await Product.updateOne(
+        { 
+          _id: item.productId._id,
+          'variants.quantity': { $gte: item.quantity }
+        },
+        { 
+          $inc: { 
+            [`variants.${item.variantIndex}.quantity`]: -item.quantity 
+          }
+        }
+      );
+      console.log(`Updated stock for product ${item.productId._id}, variant ${item.variantIndex}`);
+    }
 
     // Clear cart
     cart.items = [];
@@ -1177,22 +1232,63 @@ const cancelOrder = async (req, res) => {
 const loadShop = async (req, res) => {
   try {
     const category = req.query.category;
-    const minPrice = parseInt(req.query.minPrice) || 0;
-    const maxPrice = parseInt(req.query.maxPrice) || Number.MAX_SAFE_INTEGER;
-    const sort = req.query.sort || '-createdAt';
+    const maxPrice = parseInt(req.query.maxPrice) || 100000;
+    const search = req.query.search ? req.query.search.trim() : '';
+    let sort = '-createdAt'; // Default sort by newest
+
+    // Handle sorting
+    switch(req.query.sort) {
+      case 'name_asc':
+        sort = 'productName';
+        break;
+      case 'name_desc':
+        sort = '-productName';
+        break;
+      case 'price_asc':
+        sort = 'salesPrice';
+        break;
+      case 'price_desc':
+        sort = '-salesPrice';
+        break;
+      case 'newest':
+        sort = '-createdAt';
+        break;
+      case 'default':
+      default:
+        sort = '-createdAt';
+    }
 
     // Build query
     let query = { isBlocked: false };
+    
+    // Add category filter
     if (category) {
       query.category = category;
     }
-    query.salesPrice = { $gte: minPrice, $lte: maxPrice };
+    
+    // Add price filter
+    query.salesPrice = { $lte: maxPrice };
+    
+    // Add search filter
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+      query.$or = [
+        { productName: searchRegex },
+        { description: searchRegex },
+        { brand: searchRegex }
+      ];
+    }
+
+    console.log('Search Query:', search);
+    console.log('MongoDB Query:', JSON.stringify(query, null, 2));
 
     // Get products with filters
     const products = await Product.find(query)
       .populate('category')
       .sort(sort)
       .lean();
+
+    console.log('Found Products:', products.length);
 
     // Get all categories for filter
     const categories = await Category.find({ isListed: true });
@@ -1201,9 +1297,9 @@ const loadShop = async (req, res) => {
       products,
       categories,
       category,
-      minPrice,
       maxPrice,
-      sort,
+      search,
+      sort: req.query.sort || 'default',
       message: req.session.user
     });
   } catch (error) {
@@ -1223,7 +1319,7 @@ module.exports = {
     loadLogin,
     login,
     logout,
-    getProductDetail,
+    loadProductDetails,
     loadForgotPassword,
     forgotPassword,
     loadResetPassword,

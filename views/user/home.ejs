@@ -278,7 +278,7 @@ display: inline-block;
 	<section class="section-slide">
 		<div class="wrap-slick1">
 			<div class="slick1">
-				<div class="item-slick1" style="background-image: url(images/vect);">
+				<div class="item-slick1" style="background-image: url(images/a.jpg);">
 					<div class="container h-full">
 						<div class="flex-col-l-m h-full p-t-100 p-b-30 respon5">
 							<div class="layer-slick1 animated visible-false" data-appear="fadeInDown" data-delay="0">
@@ -302,7 +302,7 @@ display: inline-block;
 					</div>
 				</div>
 
-				<div class="item-slick1" style="background-image: url(images/slide-02.jpg);">
+				<div class="item-slick1" style="background-image: url(images/b.jpg);">
 					<div class="container h-full">
 						<div class="flex-col-l-m h-full p-t-100 p-b-30 respon5">
 							<div class="layer-slick1 animated visible-false" data-appear="rollIn" data-delay="0">
@@ -326,7 +326,7 @@ display: inline-block;
 					</div>
 				</div>
 
-				<div class="item-slick1" style="background-image: url(images/slide-03.jpg);">
+				<div class="item-slick1" style="background-image: url(images/c.jpg);">
 					<div class="container h-full">
 						<div class="flex-col-l-m h-full p-t-100 p-b-30 respon5">
 							<div class="layer-slick1 animated visible-false" data-appear="rotateInDownLeft" data-delay="0">
@@ -370,18 +370,13 @@ display: inline-block;
 						All Products
 					</button>
 
-					<button class="stext-106 cl6 hov1 bor3 trans-04 m-r-32 m-tb-5" data-filter=".women">
-						Women
-					</button>
-
-					<button class="stext-106 cl6 hov1 bor3 trans-04 m-r-32 m-tb-5" data-filter=".men">
-						Men
-					</button>
-
-					<button class="stext-106 cl6 hov1 bor3 trans-04 m-r-32 m-tb-5" data-filter=".bag">
-						Bag
-					</button>
-
+					<% if(categories && categories.length > 0) { %>
+						<% categories.forEach(category => { %>
+							<button class="stext-106 cl6 hov1 bor3 trans-04 m-r-32 m-tb-5" data-filter=".<%= category.name.toLowerCase().replace(/\s+/g, '-') %>">
+								<%= category.name %>
+							</button>
+						<% }); %>
+					<% } %>
 				</div>
 
 				<div class="flex-w flex-c-m m-tb-10">
@@ -599,10 +594,10 @@ display: inline-block;
 				</div>
 			</div>
 
-			<div class="row">
+			<div class="row isotope-grid">
 				<% if(products.length>0) { %>
 					<% products.forEach((product) => { %>
-					<div class="col-3">
+					<div class="col-3 isotope-item <%= product.category.name.toLowerCase().replace(/\s+/g, '-') %>">
 						<div class="block2">
 							<div class="block2-pic hov-img0">
 								<% if (product.variants && product.variants.length > 0 && product.variants[0].images && product.variants[0].images.length > 0) { %>
@@ -659,6 +654,36 @@ display: inline-block;
             })
             .catch(error => console.error('Error updating cart count:', error));
     }
+</script>
+
+<!-- Add Isotope.js library -->
+<script src="https://unpkg.com/isotope-layout@3/dist/isotope.pkgd.min.js"></script>
+
+<!-- Initialize Isotope and handle filtering -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Isotope
+    var grid = document.querySelector('.isotope-grid');
+    var iso = new Isotope(grid, {
+        itemSelector: '.isotope-item',
+        layoutMode: 'fitRows'
+    });
+
+    // Filter items on button click
+    var filterButtons = document.querySelectorAll('.filter-tope-group button');
+    filterButtons.forEach(function(button) {
+        button.addEventListener('click', function() {
+            var filterValue = this.getAttribute('data-filter');
+            
+            // Remove active class from all buttons
+            filterButtons.forEach(btn => btn.classList.remove('how-active1'));
+            // Add active class to clicked button
+            this.classList.add('how-active1');
+
+            iso.arrange({filter: filterValue});
+        });
+    });
+});
 </script>
 
 <%-include("../../views/partials/user/footer")%>

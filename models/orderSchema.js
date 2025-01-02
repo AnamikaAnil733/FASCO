@@ -49,6 +49,10 @@ const orderSchema = new Schema({
             type: String,
             required: true
         },
+        street: {
+            type: String,
+            required: true
+        },
         city: {
             type: String,
             required: true
@@ -83,6 +87,15 @@ const orderSchema = new Schema({
         type: String,
         required: true,
         enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled']
+    },
+    status: {
+        type: String,
+        enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
+        default: 'Pending'
+    },
+    orderDate: {
+        type: Date,
+        default: Date.now
     },
     createdAt: {
         type: Date,

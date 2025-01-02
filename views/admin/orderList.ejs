@@ -1,0 +1,335 @@
+<%- include('../partials/admin/header.ejs') %>
+
+<section class="content-main">
+    <div class="content-header">
+        <div>
+            <h2 class="content-title card-title">Orders List</h2>
+            <p>All orders including process and completed</p>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Date</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (orders && orders.length > 0) { %>
+                            <% orders.forEach(order => { %>
+                                <tr>
+                                    <td><%= order.orderId %></td>
+                                    <td><%= order.userId ? order.userId.name : 'N/A' %></td>
+                                    <td><%= moment(order.orderDate).format('MMM DD, YYYY') %></td>
+                                    <td>₹<%= (order.totalAmount || 0).toFixed(2) %></td>
+                                    <td>
+                                        <select class="form-select form-select-sm status-select" 
+                                                data-order-id="<%= order._id %>"
+                                                <%= order.status === 'Delivered' || order.status === 'Cancelled' ? 'disabled' : '' %>>
+                                            <option value="Pending" <%= order.status === 'Pending' ? 'selected' : '' %>>Pending</option>
+                                            <option value="Processing" <%= order.status === 'Processing' ? 'selected' : '' %>>Processing</option>
+                                            <option value="Shipped" <%= order.status === 'Shipped' ? 'selected' : '' %>>Shipped</option>
+                                            <option value="Delivered" <%= order.status === 'Delivered' ? 'selected' : '' %>>Delivered</option>
+                                            <option value="Cancelled" <%= order.status === 'Cancelled' ? 'selected' : '' %>>Cancelled</option>
+                                        </select>
+                                    </td>
+                                    <td class="text-end">
+                                        <button class="btn btn-light btn-sm rounded font-sm" 
+                                                onclick="location.href='/admin/orders/<%= order._id %>'">
+                                            View details
+                                        </button>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        <% } else { %>
+                            <tr>
+                                <td colspan="6" class="text-center">No orders found</td>
+                            </tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-area mt-30 mb-50">
+        <nav aria-label="Page navigation example">
+            <ul class="pagination justify-content-center">
+                <% if (currentPage > 1) { %>
+                    <li class="page-item">
+                        <a class="page-link" href="/admin/orders?page=<%= currentPage - 1 %>"><i class="material-icons md-chevron_left"></i></a>
+                    </li>
+                <% } %>
+
+                <% for(let i = 1; i <= totalPages; i++) { %>
+                    <li class="page-item <%= currentPage == i ? 'active' : '' %>">
+                        <a class="page-link" href="/admin/orders?page=<%= i %>"><%= i %></a>
+                    </li>
+                <% } %>
+
+                <% if (currentPage < totalPages) { %>
+                    <li class="page-item">
+                        <a class="page-link" href="/admin/orders?page=<%= currentPage + 1 %>"><i class="material-icons md-chevron_right"></i></a>
+                    </li>
+                <% } %>
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<style>
+.table img {
+    border-radius: 4px;
+}
+
+.status-select {
+    min-width: 120px;
+}
+
+.pagination {
+    margin-bottom: 2rem;
+}
+
+.page-link {
+    color: #2c3e50;
+    border-color: #e9ecef;
+}
+
+.page-link:hover {
+    color: #2c3e50;
+    background-color: #e9ecef;
+    border-color: #dee2e6;
+}
+
+.page-item.active .page-link {
+    background-color: #2c3e50;
+    border-color: #2c3e50;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: #fff;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+.modal-lg {
+    max-width: 900px;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 14px;
+    }
+    
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 12px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle status changes
+    document.querySelectorAll('.status-select').forEach(select => {
+        select.addEventListener('change', async function() {
+            const orderId = this.dataset.orderId;
+            const newStatus = this.value;
+
+            try {
+                const response = await fetch('/admin/orders/update-status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        orderId: orderId,
+                        status: newStatus
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Success!',
+                        text: data.message,
+                        icon: 'success',
+                        confirmButtonText: 'OK'
+                    });
+
+                    // If status is Delivered or Cancelled, disable the select
+                    if (newStatus === 'Delivered' || newStatus === 'Cancelled') {
+                        this.disabled = true;
+                    }
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: error.message || 'Failed to update order status',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+                // Reset select to previous value
+                this.value = this.getAttribute('data-previous-value');
+            }
+        });
+
+        // Store the previous value when focusing on select
+        select.addEventListener('focus', function() {
+            this.setAttribute('data-previous-value', this.value);
+        });
+    });
+});
+</script>
+
+<script>
+// Handle status changes
+document.querySelectorAll('.status-select').forEach(select => {
+    // Store initial value
+    select.setAttribute('data-previous-value', select.value);
+    
+    select.addEventListener('change', async function() {
+        const orderId = this.dataset.orderId;
+        const newStatus = this.value;
+        const previousValue = this.dataset.previousValue;
+
+        try {
+            const response = await fetch('/admin/updateOrderStatus', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    orderId: orderId,
+                    status: newStatus
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Update previous value
+                this.setAttribute('data-previous-value', newStatus);
+                
+                // Show success message
+                Swal.fire({
+                    title: 'Status Updated!',
+                    text: 'Order status has been updated successfully',
+                    icon: 'success',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+
+                // If status is Cancelled or Delivered, disable the select
+                if (newStatus === 'Cancelled' || newStatus === 'Delivered') {
+                    this.disabled = true;
+                }
+            } else {
+                // Revert to previous value
+                this.value = previousValue;
+                throw new Error(data.message);
+            }
+        } catch (error) {
+            // Revert to previous value
+            this.value = previousValue;
+            
+            Swal.fire({
+                title: 'Error!',
+                text: error.message || 'Failed to update status',
+                icon: 'error',
+                confirmButtonColor: '#dc3545'
+            });
+        }
+    });
+});
+
+// Handle order cancellation
+document.querySelectorAll('.cancel-order').forEach(button => {
+    button.addEventListener('click', async function() {
+        const orderId = this.dataset.orderId;
+
+        // Show confirmation dialog
+        const result = await Swal.fire({
+            title: 'Cancel Order?',
+            text: 'Are you sure you want to cancel this order? This action cannot be undone.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, cancel order',
+            cancelButtonText: 'No, keep order'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                const response = await fetch('/admin/cancelOrder', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        orderId: orderId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Order Cancelled!',
+                        text: 'The order has been cancelled successfully',
+                        icon: 'success',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000
+                    });
+
+                    // Update the UI
+                    const statusSelect = document.querySelector(`select[data-order-id="${orderId}"]`);
+                    if (statusSelect) {
+                        statusSelect.value = 'Cancelled';
+                        statusSelect.disabled = true;
+                    }
+                    // Remove the cancel button
+                    this.remove();
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: error.message || 'Failed to cancel order',
+                    icon: 'error',
+                    confirmButtonColor: '#dc3545'
+                });
+            }
+        }
+    });
+});
+</script>
+
+<%- include('../partials/admin/footer.ejs') %>

@@ -4,6 +4,7 @@ const adminController = require("../controllers/admin/adminController")
 const customerController =require("../controllers/admin/customerController")
 const categoryController =require("../controllers/admin/categoryController")
 const productController =require("../controllers/admin/productController")
+const orderController = require("../controllers/admin/orderController")
 const {userAuth,adminAuth} = require("../middleware/auth");
 const multer = require("multer");
 const path = require("path");
@@ -65,5 +66,12 @@ router.post("/addProducts", adminAuth, productUpload, productController.addProdu
 router.get("/editProduct/:id", adminAuth, productController.getEditProduct);
 router.post("/updateProduct/:id", adminAuth, updateProductUpload, productController.updateProduct);
 router.delete("/deleteProductImage", adminAuth, productController.deleteProductImage);
+
+// Order Management Routes
+router.get('/orderList', adminAuth, orderController.getAllOrders);  // Keep the old route for compatibility
+router.get('/orders', adminAuth, orderController.getAllOrders);
+router.get('/orders/:orderId', adminAuth, orderController.getOrderDetails);
+router.post('/updateOrderStatus', adminAuth, orderController.updateOrderStatus);
+router.post('/cancelOrder', adminAuth, orderController.cancelOrder);
 
 module.exports = router

@@ -14,7 +14,8 @@ router.post("/resend-otp",userController.resendOtp)
 router.get("/login",userController.loadLogin);
 router.post("/login",userController.login);
 router.get("/logout",userController.logout);
-router.get("/product/:id", userController.getProductDetail);
+// router.get("/product/:id", userController.getProductDetail);
+router.get('/product/:id', userController.loadProductDetails);
 
 // Account Routes
 router.get("/userProfile", userController.loadAccount);
@@ -55,7 +56,7 @@ router.delete('/delete-address/:id', userAuth, userController.deleteAddress);
 router.post('/cart/add', userAuth, userController.addToCart);
 router.get('/cart', userAuth, userController.getCart);
 router.put('/cart/update', userAuth, userController.updateCartItem);
-router.delete('/cart/remove/:productId', userAuth, userController.removeFromCart);
+router.delete('/cart/remove/:productId/:variantIndex', userAuth, userController.removeFromCart);
 router.get('/cart/count', userAuth, userController.getCartCount);
 
 // Checkout Routes
