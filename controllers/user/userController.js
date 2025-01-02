@@ -742,8 +742,23 @@ const getOrderDetails = async (req, res) => {
       });
     }
 
+    // Format shipping address
+    const formattedOrder = {
+      ...order,
+      shippingAddress: {
+        name: order.shippingAddress.name || 'N/A',
+        landMark: order.shippingAddress.landMark || 'N/A',
+        addressType: order.shippingAddress.addressType || 'N/A',
+        city: order.shippingAddress.city || 'N/A',
+        state: order.shippingAddress.state || 'N/A',
+        pincode: order.shippingAddress.pincode || 'N/A',
+        phone: order.shippingAddress.phone || 'N/A',
+        altPhone: order.shippingAddress.altPhone || ''
+      }
+    };
+
     res.render('order-details', {
-      order,
+      order: formattedOrder,
       message: req.session.user
     });
   } catch (error) {
@@ -1134,6 +1149,7 @@ const placeOrder = async (req, res) => {
       shippingAddress: {
         addressType: selectedAddress.addressType,
         name: selectedAddress.name,
+        street: selectedAddress.street,
         landMark: selectedAddress.landMark,
         city: selectedAddress.city,
         state: selectedAddress.state,

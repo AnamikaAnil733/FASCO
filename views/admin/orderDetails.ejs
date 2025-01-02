@@ -71,7 +71,6 @@
                     <thead>
                         <tr>
                             <th>Product</th>
-                            <th>Image</th>
                             <th>Quantity</th>
                             <th>Price</th>
                             <th>Total</th>
@@ -81,19 +80,6 @@
                         <% order.items.forEach(item => { %>
                             <tr>
                                 <td><%= item.productId ? item.productId.productName : 'N/A' %></td>
-                                <td>
-                                    <% if (item.productId && item.productId.images && item.productId.images.length > 0) { %>
-                                        <img src="/uploads/re-image/<%= item.productId.images[0] %>" 
-                                            alt="<%= item.productId.productName %>" 
-                                            style="width: 80px; height: 80px; object-fit: cover;"
-                                            class="img-thumbnail">
-                                    <% } else { %>
-                                        <img src="/admin-assets/imgs/theme/no-image.png" 
-                                            alt="No Image Available"
-                                            style="width: 80px; height: 80px; object-fit: cover;"
-                                            class="img-thumbnail">
-                                    <% } %>
-                                </td>
                                 <td><%= item.quantity %></td>
                                 <td>₹<%= (item.price || 0).toFixed(2) %></td>
                                 <td>₹<%= ((item.quantity || 0) * (item.price || 0)).toFixed(2) %></td>

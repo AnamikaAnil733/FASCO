@@ -53,7 +53,12 @@ const orderController = {
                 const shippingAddress = order.shippingAddress ? {
                     name: order.shippingAddress.name || 'N/A',
                     landMark: order.shippingAddress.landMark || 'N/A',
-                    addressType: order.shippingAddress.addressType || 'N/A'
+                    addressType: order.shippingAddress.addressType || 'N/A',
+                    city: order.shippingAddress.city || 'N/A',
+                    state: order.shippingAddress.state || 'N/A',
+                    pincode: order.shippingAddress.pincode || 'N/A',
+                    phone: order.shippingAddress.phone || 'N/A',
+                    altPhone: order.shippingAddress.altPhone || ''
                 } : null;
 
                 return {
@@ -195,7 +200,12 @@ const orderController = {
             const shippingAddress = order.shippingAddress ? {
                 name: order.shippingAddress.name || 'N/A',
                 landMark: order.shippingAddress.landMark || 'N/A',
-                addressType: order.shippingAddress.addressType || 'N/A'
+                addressType: order.shippingAddress.addressType || 'N/A',
+                city: order.shippingAddress.city || 'N/A',
+                state: order.shippingAddress.state || 'N/A',
+                pincode: order.shippingAddress.pincode || 'N/A',
+                phone: order.shippingAddress.phone || 'N/A',
+                altPhone: order.shippingAddress.altPhone || ''
             } : null;
 
             // Format the order for display
