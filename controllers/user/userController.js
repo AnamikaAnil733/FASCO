@@ -7,6 +7,7 @@ const Address = require("../../models/addressSchema");
 const env = require("dotenv").config();
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcrypt");
+const Address = require('../../models/addressSchema');
 
 // Load homepage
 const loadHomepage = async (req, res) => {

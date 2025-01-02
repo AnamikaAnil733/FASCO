@@ -43,6 +43,14 @@ const userSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: "Wishlist"
     },
+    resetPasswordToken: {
+        type: String,
+        default: undefined
+    },
+    resetPasswordExpires: {
+        type: Date,
+        default: undefined
+    },
     orderHistory: [{
         type: Schema.Types.ObjectId,
         ref: "Order"
