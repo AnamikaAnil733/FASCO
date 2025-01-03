@@ -209,10 +209,23 @@
     
     .order-status {
         display: inline-block;
-        padding: 8px 16px;
-        border-radius: 6px;
-        font-weight: 600;
-        margin-bottom: 8px;
+        margin-right: 15px;
+    }
+    
+    .btn-cancel {
+        display: inline-block;
+        background-color: #ff4757;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-cancel:hover {
+        background-color: #ff6b81;
+        transform: translateY(-2px);
     }
     
     .pending { background: #fff3cd; color: #856404; }
@@ -297,6 +310,63 @@
         color: #636e72;
         font-size: 0.9rem;
     }
+    
+    .ordered-items {
+        padding: 1.5rem;
+        background-color: #f8f9fa;
+        border-radius: 12px;
+    }
+    
+    .ordered-item {
+        background-color: white;
+        padding: 1.5rem;
+        border: 1px solid #edf2f7;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        transition: transform 0.3s ease;
+    }
+    
+    .ordered-item:hover {
+        transform: translateX(5px);
+    }
+    
+    .item-image {
+        width: 100px;
+        height: 100px;
+        border-radius: 8px;
+        object-fit: cover;
+        margin-right: 1.5rem;
+    }
+    
+    .item-details {
+        flex-grow: 1;
+    }
+    
+    .item-name {
+        font-weight: 600;
+        color: #2d3436;
+        margin-bottom: 0.25rem;
+    }
+    
+    .item-brand {
+        color: #636e72;
+        font-size: 0.875rem;
+    }
+    
+    .item-price-qty {
+        margin-top: 0.5rem;
+    }
+    
+    .item-total {
+        text-align: right;
+        min-width: 100px;
+    }
+    
+    .order-total {
+        padding: 1.5rem;
+        background-color: #f8f9fa;
+        border-radius: 12px;
+    }
 </style>
 
 <section class="order-details-section">
@@ -313,21 +383,25 @@
                 <div class="row align-items-center">
                     <div class="col-md-6">
                         <div class="order-id">#<%= order.orderId %></div>
-                        <div class="order-date">Ordered on <%= new Date(order.createdOn).toLocaleDateString('en-IN', { 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric' 
-                        }) %></div>
+                        <div class="order-date">Ordered on <%= 
+                            order.createdOn ? new Date(order.createdOn).toLocaleDateString('en-IN', { 
+                                year: 'numeric', 
+                                month: 'long', 
+                                day: 'numeric' 
+                            }) : 'N/A'
+                        %></div>
                     </div>
                     <div class="col-md-6 text-md-end">
-                        <div class="order-status <%= order.orderStatus.toLowerCase() %>">
-                            Status: <%= order.orderStatus %>
+                        <div class="d-flex align-items-center justify-content-end">
+                            <div class="order-status badge <%= order.orderStatus ? order.orderStatus.toLowerCase() : 'processing' %>">
+                                <%= order.orderStatus || 'Processing' %>
+                            </div>
+                            <% if (!order.orderStatus || order.orderStatus === 'Pending' || order.orderStatus === 'Processing') { %>
+                                <button onclick="cancelOrder('<%= order._id %>')" class="btn btn-cancel ms-3">
+                                    Cancel Order
+                                </button>
+                            <% } %>
                         </div>
-                        <% if (order.orderStatus === 'Pending' || order.orderStatus === 'Processing') { %>
-                            <button onclick="cancelOrder('<%= order._id %>')" class="btn btn-cancel mt-2">
-                                Cancel Order
-                            </button>
-                        <% } %>
                         <% if (order.orderStatus === 'Cancelled' && order.cancelledAt) { %>
                             <div class="cancelled-info mt-2">
                                 Cancelled on <%= new Date(order.cancelledAt).toLocaleDateString('en-IN', { 
@@ -364,12 +438,14 @@
                         <div class="info-section">
                             <h3 class="info-title">Order Information</h3>
                             <div class="info-content">
-                                Status: <%= order.orderStatus %><br>
-                                Order Date: <%= new Date(order.createdOn).toLocaleDateString('en-IN', { 
-                                    year: 'numeric', 
-                                    month: 'long', 
-                                    day: 'numeric' 
-                                }) %><br>
+                                Status: <%= order.orderStatus || 'Processing' %><br>
+                                Order Date: <%= 
+                                    order.createdOn ? new Date(order.createdOn).toLocaleDateString('en-IN', { 
+                                        year: 'numeric', 
+                                        month: 'long', 
+                                        day: 'numeric' 
+                                    }) : 'N/A'
+                                %><br>
                                 <% if (order.invoiceDate) { %>
                                     Invoice Date: <%= new Date(order.invoiceDate).toLocaleDateString('en-IN', { 
                                         year: 'numeric', 
@@ -386,13 +462,50 @@
                 </div>
 
                 <div class="info-section">
+                    <h3 class="info-title">Ordered Items</h3>
+                    <div class="ordered-items">
+                        <% order.items.forEach(item => { %>
+                            <div class="ordered-item d-flex align-items-center mb-3 p-3 bg-white rounded shadow-sm">
+                                <div class="item-image me-3" style="width: 100px; height: 100px;">
+                                    <% if (item.productId && item.productId.variants && item.productId.variants.length > 0 && item.productId.variants[0].images && item.productId.variants[0].images.length > 0) { %>
+                                        <img src="/uploads/product-images/<%= item.productId.variants[0].images[0] %>" 
+                                             alt="<%= item.productId.productName %>" 
+                                             class="img-fluid rounded"
+                                             style="width: 100%; height: 100%; object-fit: cover;">
+                                    <% } else { %>
+                                        <div class="no-image rounded" style="width: 100%; height: 100%; background-color: #edf2f7; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fas fa-image text-muted"></i>
+                                        </div>
+                                    <% } %>
+                                </div>
+                                <div class="item-details flex-grow-1">
+                                    <h4 class="item-name mb-1"><%= item.productId ? item.productId.productName : 'Product Not Available' %></h4>
+                                    <p class="item-brand text-muted mb-1"><%= item.productId ? item.productId.brand : '' %></p>
+                                    <div class="item-price-qty">
+                                        <span class="text-primary">₹<%= item.price.toFixed(2) %></span>
+                                        <span class="text-muted mx-2">×</span>
+                                        <span class="text-muted">Qty: <%= item.quantity %></span>
+                                    </div>
+                                </div>
+                                <div class="item-total text-end">
+                                    <strong>₹<%= (item.price * item.quantity).toFixed(2) %></strong>
+                                </div>
+                            </div>
+                        <% }); %>
+                        <div class="order-total mt-3 text-end">
+                            <h4>Total Amount: <span class="text-primary">₹<%= order.totalAmount.toFixed(2) %></span></h4>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-section">
                     <h3 class="info-title">Order Timeline</h3>
                     <div class="timeline">
                         <div class="timeline-item <%= order.orderStatus === 'Pending' || order.orderStatus === 'Processing' || order.orderStatus === 'Shipped' || order.orderStatus === 'Delivered' ? 'active' : '' %>">
                             <div class="timeline-point"></div>
                             <div class="timeline-content">
                                 <h4>Order Placed</h4>
-                                <p><%= new Date(order.createdOn).toLocaleString('en-IN') %></p>
+                                <p><%= order.createdOn ? new Date(order.createdOn).toLocaleString('en-IN') : 'N/A' %></p>
                             </div>
                         </div>
                         <% if (order.orderStatus === 'Processing' || order.orderStatus === 'Shipped' || order.orderStatus === 'Delivered') { %>

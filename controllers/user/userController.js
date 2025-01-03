@@ -693,15 +693,18 @@ const getOrders = async (req, res) => {
   try {
     const userId = req.session.user._id;
     const orders = await Order.find({ userId })
-      .populate('items.productId')
-      .sort({ createdOn: -1 });
+      .populate({
+        path: 'items.productId',
+        select: 'productName brand variants defaultVariant regularPrice salesPrice',
+        model: 'Product'
+      })
+      .sort({ createdAt: -1 });
 
-    console.log('Found orders:', orders);
-
-    // Add default value for totalAmount if undefined
+    // Add default value for totalAmount if undefined and map createdAt to createdOn
     const processedOrders = orders.map(order => ({
       ...order.toObject(),
-      totalAmount: order.totalAmount || 0
+      totalAmount: order.totalAmount || 0,
+      createdOn: order.createdAt // Map createdAt to createdOn for consistency
     }));
 
     res.render('orders', {
@@ -723,7 +726,8 @@ const getOrderDetails = async (req, res) => {
     const order = await Order.findOne({ _id: orderId, userId })
       .populate({
         path: 'items.productId',
-        select: 'name price images brand'
+        select: 'productName brand variants defaultVariant regularPrice salesPrice',
+        model: 'Product'
       });
 
     if (!order) {
@@ -742,9 +746,17 @@ const getOrderDetails = async (req, res) => {
       });
     }
 
-    // Format shipping address
+    // Format shipping address and order data
     const formattedOrder = {
-      ...order,
+      _id: order._id,
+      orderId: order._id.toString().slice(-6).toUpperCase(), // Add a formatted order ID
+      userId: order.userId,
+      items: order.items,
+      totalAmount: order.totalAmount,
+      orderStatus: order.orderStatus || 'Processing', // Add default status
+      paymentMethod: order.paymentMethod,
+      createdAt: order.createdAt,
+      createdOn: order.createdAt, // Add this for backward compatibility
       shippingAddress: {
         name: order.shippingAddress.name || 'N/A',
         landMark: order.shippingAddress.landMark || 'N/A',
@@ -778,7 +790,11 @@ const getOrderSuccess = async (req, res) => {
 
     // Find the order
     const order = await Order.findOne({ orderId })
-      .populate('items.productId')
+      .populate({
+        path: 'items.productId',
+        select: 'productName brand variants defaultVariant regularPrice salesPrice',
+        model: 'Product'
+      })
       .lean();
 
     if (!order) {

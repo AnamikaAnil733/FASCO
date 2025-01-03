@@ -190,21 +190,15 @@
                                 <div>
                                     <div class="order-id">#<%= order.orderId %></div>
                                     <div class="order-date">
-                                        <%= new Date(order.createdOn).toLocaleDateString('en-US', { 
-                                            year: 'numeric', 
-                                            month: 'long', 
-                                            day: 'numeric' 
-                                        }) %>
-                                    </div>
+                                        <%= 
+                            order.createdOn ? new Date(order.createdOn).toLocaleDateString('en-IN', { 
+                                year: 'numeric', 
+                                month: 'long', 
+                                day: 'numeric' 
+                            }) : 'N/A'
+                        %></div>
                                 </div>
-                                <span class="badge <%= 
-                                    order.status === 'Delivered' ? 'delivered' : 
-                                    order.status === 'Cancelled' ? 'cancelled' : 
-                                    order.status === 'Return Request' ? 'return-request' :
-                                    order.status === 'Returned' ? 'returned' :
-                                    'processing' %>">
-                                    <%= order.status %>
-                                </span>
+                              
                             </div>
                             <div class="order-body">
                                 <div class="order-info">
