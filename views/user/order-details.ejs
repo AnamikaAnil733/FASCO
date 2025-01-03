@@ -393,16 +393,16 @@
                     </div>
                     <div class="col-md-6 text-md-end">
                         <div class="d-flex align-items-center justify-content-end">
-                            <div class="order-status badge <%= order.orderStatus ? order.orderStatus.toLowerCase() : 'processing' %>">
-                                <%= order.orderStatus || 'Processing' %>
+                            <div class="order-status badge <%= order.status ? order.status.toLowerCase() : 'processing' %>">
+                                <%= order.status || 'Processing' %>
                             </div>
-                            <% if (!order.orderStatus || order.orderStatus === 'Pending' || order.orderStatus === 'Processing') { %>
+                            <% if (!order.status || order.status === 'Pending' || order.status === 'Processing') { %>
                                 <button onclick="cancelOrder('<%= order._id %>')" class="btn btn-cancel ms-3">
                                     Cancel Order
                                 </button>
                             <% } %>
                         </div>
-                        <% if (order.orderStatus === 'Cancelled' && order.cancelledAt) { %>
+                        <% if (order.status === 'Cancelled' && order.cancelledAt) { %>
                             <div class="cancelled-info mt-2">
                                 Cancelled on <%= new Date(order.cancelledAt).toLocaleDateString('en-IN', { 
                                     year: 'numeric', 
@@ -508,7 +508,7 @@
                                 <p><%= order.createdOn ? new Date(order.createdOn).toLocaleString('en-IN') : 'N/A' %></p>
                             </div>
                         </div>
-                        <% if (order.orderStatus === 'Processing' || order.orderStatus === 'Shipped' || order.orderStatus === 'Delivered') { %>
+                        <% if (order.status === 'Processing' || order.status === 'Shipped' || order.status === 'Delivered') { %>
                             <div class="timeline-item active">
                                 <div class="timeline-point"></div>
                                 <div class="timeline-content">
@@ -517,7 +517,7 @@
                                 </div>
                             </div>
                         <% } %>
-                        <% if (order.orderStatus === 'Shipped' || order.orderStatus === 'Delivered') { %>
+                        <% if (order.status === 'Shipped' || order.status === 'Delivered') { %>
                             <div class="timeline-item active">
                                 <div class="timeline-point"></div>
                                 <div class="timeline-content">
@@ -526,7 +526,7 @@
                                 </div>
                             </div>
                         <% } %>
-                        <% if (order.orderStatus === 'Delivered') { %>
+                        <% if (order.status === 'Delivered') { %>
                             <div class="timeline-item active">
                                 <div class="timeline-point"></div>
                                 <div class="timeline-content">
@@ -535,7 +535,7 @@
                                 </div>
                             </div>
                         <% } %>
-                        <% if (order.orderStatus === 'Cancelled') { %>
+                        <% if (order.status === 'Cancelled') { %>
                             <div class="timeline-item cancelled">
                                 <div class="timeline-point"></div>
                                 <div class="timeline-content">

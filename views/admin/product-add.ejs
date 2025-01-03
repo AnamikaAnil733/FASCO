@@ -1163,12 +1163,9 @@
 
    .cropper-modal {
        opacity: 1 !important;
-       background: white !important;
+       
    }
 
-   /* .cropper-container {
-       background: white !important;
-   } */
 
    .zoom-controls {
        position: fixed;
@@ -1535,7 +1532,7 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="product_name" class="form-label">Product Name</label>
-                                        <input type="text" class="form-control" id="product_name" name="name" required>
+                                        <input type="text" class="form-control" id="product_name" name="name" >
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -1547,7 +1544,7 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="category" class="form-label">Category</label>
-                                        <select class="form-select" id="category" name="category" required>
+                                        <select class="form-select" id="category" name="category" >
                                             <option value="">Select Category</option>
                                             <% if (categories && categories.length > 0) { %>
                                                 <% categories.forEach(function(category) { %>
@@ -1560,19 +1557,19 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="regular_price" class="form-label">Regular Price</label>
-                                        <input type="number" class="form-control" id="regular_price" name="regularPrice" required>
+                                        <input type="number" class="form-control" id="regular_price" name="regularPrice">
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="sale_price" class="form-label">Sale Price</label>
-                                        <input type="number" class="form-control" id="sale_price" name="salePrice" required>
+                                        <input type="number" class="form-control" id="sale_price" name="salePrice" >
                                     </div>
                                 </div>
                                 <div class="col-12">
                                     <div class="mb-3">
                                         <label for="description" class="form-label">Description</label>
-                                        <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+                                        <textarea class="form-control" id="description" name="description" rows="3" ></textarea>
                                     </div>
                                 </div>
                             </div>
@@ -1613,7 +1610,7 @@
             <div class="col-md-6">
                 <div class="mb-3">
                     <label class="form-label">Color</label>
-                    <input type="text" class="form-control variant-color" required>
+                    <input type="text" class="form-control variant-color">
                 </div>
             </div>
             <div class="col-md-6">

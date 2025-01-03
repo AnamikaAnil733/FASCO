@@ -80,11 +80,7 @@ const orderSchema = new Schema({
         required: true,
         enum: ['Pending', 'Paid', 'Failed']
     },
-    orderStatus: {
-        type: String,
-        required: true,
-        enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled']
-    },
+   
     status: {
         type: String,
         enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],

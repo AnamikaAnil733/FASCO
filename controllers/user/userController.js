@@ -749,11 +749,11 @@ const getOrderDetails = async (req, res) => {
     // Format shipping address and order data
     const formattedOrder = {
       _id: order._id,
-      orderId: order._id.toString().slice(-6).toUpperCase(), // Add a formatted order ID
+      orderId: order._id, 
       userId: order.userId,
       items: order.items,
       totalAmount: order.totalAmount,
-      orderStatus: order.orderStatus || 'Processing', // Add default status
+      status: order.status || 'Processing', // Add default status
       paymentMethod: order.paymentMethod,
       createdAt: order.createdAt,
       createdOn: order.createdAt, // Add this for backward compatibility

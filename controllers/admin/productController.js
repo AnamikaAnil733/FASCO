@@ -354,7 +354,6 @@ const updateProduct = async (req, res) => {
             {
                 productName: updates.name,
                 description: updates.description,
-                brand: updates.brand || '',
                 category: updates.category,
                 regularPrice: parseFloat(updates.regularPrice),
                 salesPrice: updates.salePrice ? parseFloat(updates.salePrice) : undefined,
