@@ -39,8 +39,8 @@
                             <div class="row align-items-center mb-4 pb-3 border-bottom" data-product-id="<%= item.productId._id %>">
                                 <div class="col-md-2">
                                     <% if (item.productId.variants && item.productId.variants.length > 0 && 
-                                          item.productId.variants[0].images && item.productId.variants[0].images.length > 0) { %>
-                                        <img src="/uploads/product-images/<%= item.productId.variants[0].images[0] %>" 
+                                          item.productId.variants[item.variantIndex].images && item.productId.variants[item.variantIndex].images.length > 0) { %>
+                                        <img src="/uploads/product-images/<%= item.productId.variants[item.variantIndex].images[0] %>" 
                                              alt="<%= item.productId.productName %>" 
                                              class="img-fluid rounded shadow-sm"
                                              style="width: 100px; height: 100px; object-fit: cover;">

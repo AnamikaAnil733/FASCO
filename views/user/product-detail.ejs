@@ -90,8 +90,12 @@
                     <h3>Quantity</h3>
                     <div class="stock-info">
                         <% if (product.variants && product.variants.length > 0) { %>
+                            <% if (product.variants[0].quantity > 0) { %>
                             <p class="available-stock">Available Stock: <span id="current-stock"><%= product.variants[0].quantity %></span></p>
-                        <% } %>
+                            <% } else { %>
+                                <p class="out-of-stock">Out of stock</p>
+                            <% } %>
+                            <%}%>
                     </div>
                     <div class="quantity-selector">
                         <button class="qty-btn" onclick="updateQuantity(-1)">−</button>
@@ -476,10 +480,16 @@
     margin: 5px 0;
 }
 
+
 #current-stock {
     font-weight: bold;
     color: #28a745;
 }
+.out-of-stock {
+    color: red;
+    font-weight: bold;
+}
+
 
 /* Action Buttons */
 .product-actions {
@@ -642,7 +652,9 @@ function selectColor(color, index) {
     // Update active color button
     document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.color-btn')[index].classList.add('active');
-    
+    let product = <%- JSON.stringify(product) %>;
+    document.querySelector('#current-stock').innerHTML = product.variants[index].quantity;
+
     // Update current variant index
     currentVariant = index;
     
