@@ -652,7 +652,7 @@ function selectColor(color, index) {
     // Update active color button
     document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.color-btn')[index].classList.add('active');
-    let product = <%- JSON.stringify(product) %>;
+    let product = <%- JSON.stringify(product) %>
     document.querySelector('#current-stock').innerHTML = product.variants[index].quantity;
 
     // Update current variant index
