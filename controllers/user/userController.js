@@ -1228,7 +1228,7 @@ const cancelOrder = async (req, res) => {
     }
 
     // Only allow cancellation of pending or processing orders
-    if (order.orderStatus !== 'Pending' && order.orderStatus !== 'Processing') {
+    if (order.status !== 'Pending' && order.status !== 'Processing') {
       return res.status(400).json({
         success: false,
         message: 'Order cannot be cancelled in its current status'
@@ -1236,7 +1236,7 @@ const cancelOrder = async (req, res) => {
     }
 
     // Update order status
-    order.orderStatus = 'Cancelled';
+    order.status = 'Cancelled';
     order.cancelledAt = new Date();
     await order.save();
 

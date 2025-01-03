@@ -438,7 +438,7 @@
                         <div class="info-section">
                             <h3 class="info-title">Order Information</h3>
                             <div class="info-content">
-                                Status: <%= order.orderStatus || 'Processing' %><br>
+                                Status: <%= order.status || 'Processing' %><br>
                                 Order Date: <%= 
                                     order.createdOn ? new Date(order.createdOn).toLocaleDateString('en-IN', { 
                                         year: 'numeric', 
@@ -501,7 +501,7 @@
                 <div class="info-section">
                     <h3 class="info-title">Order Timeline</h3>
                     <div class="timeline">
-                        <div class="timeline-item <%= order.orderStatus === 'Pending' || order.orderStatus === 'Processing' || order.orderStatus === 'Shipped' || order.orderStatus === 'Delivered' ? 'active' : '' %>">
+                        <div class="timeline-item <%= order.status === 'Pending' || order.status === 'Processing' || order.status === 'Shipped' || order.status === 'Delivered' ? 'active' : '' %>">
                             <div class="timeline-point"></div>
                             <div class="timeline-content">
                                 <h4>Order Placed</h4>
