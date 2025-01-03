@@ -42,22 +42,22 @@
                             <table class="table">
                                 <thead>
                                     <tr>
-                                        <th>Product</th>
-                                        <th>Quantity</th>
-                                        <th class="text-end">Price</th>
+                                        <th class="text-left">Product</th>
+                                        <th class="text-center">Quantity</th>
+                                        <th class="text-right">Price</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <% order.items.forEach(item => { %>
                                         <tr>
-                                            <td><%= item.productId.productName %></td>
-                                            <td><%= item.quantity %></td>
-                                            <td class="text-end">₹<%= item.totalPrice.toFixed(2) %></td>
+                                            <td class="text-left"><%= item.productId.productName %></td>
+                                            <td class="text-center"><%= item.quantity %></td>
+                                            <td class="text-right">₹<%= item.totalPrice.toFixed(2) %></td>
                                         </tr>
                                     <% }); %>
                                     <tr>
-                                        <td colspan="2" class="text-end"><strong>Total:</strong></td>
-                                        <td class="text-end"><strong>₹<%= order.totalAmount.toFixed(2) %></strong></td>
+                                        <td colspan="2" class="text-right"><strong>Total:</strong></td>
+                                        <td class="text-right"><strong>₹<%= order.totalAmount.toFixed(2) %></strong></td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -102,6 +102,7 @@
 .btn {
     padding: 10px 20px;
     border-radius: 5px;
+    margin: 105px;
 }
 
 .btn-primary {
@@ -123,6 +124,8 @@
     background-color: #4f46e5;
     border-color: #4f46e5;
 }
+
+
 </style>
 
 <%- include('../partials/user/footer.ejs') %>
