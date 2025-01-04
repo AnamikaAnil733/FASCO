@@ -6,15 +6,15 @@
 
 <!-- Breadcrumb -->
 <div class="container">
-    <div class="bread-crumb flex-w p-l-25 p-r-15 p-t-30 p-lr-0-lg">
-        <a href="/" class="stext-109 cl8 hov-cl1 trans-04">
-            Home
-            <i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
-        </a>
-        <span class="stext-109 cl4">
-            Shopping Cart
-        </span>
-    </div>
+  <div class="bread-crumb flex-w p-l-25 p-r-15 p-t-30 p-lr-0-lg">
+    <a href="/" class="stext-109 cl8 hov-cl1 trans-04">
+      Home
+      <i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+    </a>
+    <span class="stext-109 cl4">
+      Shopping Cart
+    </span>
+  </div>
 </div>
 
 <!-- Space between breadcrumb and content -->
@@ -22,220 +22,223 @@
 
 <!-- Cart Content -->
 <div class="container">
-    <div class="row">
-        <div class="col-lg-8">
-            <h2 class="mb-4 font-weight-bold">Your Shopping Cart</h2>
-            <% if (!cart || !cart.items || cart.items.length === 0) { %>
-                <div class="text-center py-5 bg-light rounded shadow-sm">
-                    <i class="zmdi zmdi-shopping-cart" style="font-size: 4rem; color: #ccc;"></i>
-                    <h4 class="mt-4 mb-3">Your cart is empty</h4>
-                    <p class="text-muted mb-4">Looks like you haven't added anything to your cart yet.</p>
-                    <a href="/" class="btn btn-primary px-4 py-2">Start Shopping</a>
-                </div>
-            <% } else { %>
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body p-4">
-                        <% cart.items.forEach(item => { %>
-                            <div class="row align-items-center mb-4 pb-3 border-bottom" data-product-id="<%= item.productId._id %>">
-                                <div class="col-md-2">
-                                    <% if (item.productId.variants && item.productId.variants.length > 0 && 
+  <div class="row">
+    <div class="col-lg-8">
+      <h2 class="mb-4 font-weight-bold">Your Shopping Cart</h2>
+      <% if (!cart || !cart.items || cart.items.length === 0) { %>
+      <div class="text-center py-5 bg-light rounded shadow-sm">
+        <i class="zmdi zmdi-shopping-cart" style="font-size: 4rem; color: #ccc;"></i>
+        <h4 class="mt-4 mb-3">Your cart is empty</h4>
+        <p class="text-muted mb-4">Looks like you haven't added anything to your cart yet.</p>
+        <a href="/" class="btn btn-primary px-4 py-2">Start Shopping</a>
+      </div>
+      <% } else { %>
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+          <% cart.items.forEach(item => { %>
+          <div class="row align-items-center mb-4 pb-3 border-bottom" data-product-id="<%= item.productId._id %>">
+            <div class="col-md-2">
+              <% if (item.productId.variants && item.productId.variants.length > 0 && 
                                           item.productId.variants[item.variantIndex].images && item.productId.variants[item.variantIndex].images.length > 0) { %>
-                                        <img src="/uploads/product-images/<%= item.productId.variants[item.variantIndex].images[0] %>" 
-                                             alt="<%= item.productId.productName %>" 
-                                             class="img-fluid rounded shadow-sm"
-                                             style="width: 100px; height: 100px; object-fit: cover;">
-                                    <% } else { %>
-                                        <img src="/images/no-image.png" 
-                                             alt="No image available" 
-                                             class="img-fluid rounded shadow-sm"
-                                             style="width: 100px; height: 100px; object-fit: cover;">
-                                    <% } %>
-                                </div>
-                                <div class="col-md-4">
-                                    <h5 class="mb-2"><%= item.productId.productName %></h5>
-                                    <p class="mb-0 text-muted">Price: ₹<span class="item-price" id="price-<%= item.productId._id %>"><%= item.price.toFixed(2) %></span></p>
-                                    <% if (item.productId.variants && item.productId.variants[item.variantIndex]) { %>
-                                        <p class="mb-0 text-muted">Color: <%= item.productId.variants[item.variantIndex].color %></p>
-                                        <p class="mb-0 text-muted">Available Stock: <%= item.productId.variants[item.variantIndex].quantity %></p>
-                                    <% } %>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="d-flex align-items-center justify-content-start quantity-selector">
-                                        <button class="btn btn-outline-secondary decrease-quantity rounded-circle p-2" style="width: 35px; height: 35px;">
-                                            <i class="zmdi zmdi-minus"></i>
-                                        </button>
-                                        <input type="number" class="form-control quantity-input mx-2 text-center" 
-                                            value="<%= item.quantity %>" min="1" max="5"
-                                            data-stock="<%= Math.min(item.productId.variants[item.variantIndex].quantity, 5) %>"
-                                            style="width: 60px;">
-                                        <button class="btn btn-outline-secondary increase-quantity rounded-circle p-2" 
-                                                style="width: 35px; height: 35px;"
-                                                <%= item.quantity >= Math.min(item.productId.variants[item.variantIndex].quantity, 5) ? 'disabled' : '' %>>
-                                            <i class="zmdi zmdi-plus"></i>
-                                        </button>
-                                    </div>
-                                    <% if (item.quantity >= Math.min(item.productId.variants[item.variantIndex].quantity, 5)) { %>
-                                        <small class="text-danger">Maximum stock reached</small>
-                                    <% } %>
-                                </div>
-                                <div class="col-md-2">
-                                    <h6 class="mb-0">₹<%= item.totalPrice.toFixed(2) %></h6>
-                                </div>
-                                <div class="col-md-1">
-                                    <button class="btn btn-link text-danger remove-item p-0" 
-                                            data-product-id="<%= item.productId._id %>"
-                                            data-variant-index="<%= item.variantIndex %>">
-                                        <i class="zmdi zmdi-close"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        <% }); %>
-                    </div>
-                </div>
-            <% } %>
-        </div>
-        
-        <% if (cart && cart.items && cart.items.length > 0) { %>
-            <div class="col-lg-4 mt-4 mt-lg-0">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body p-4">
-                        <h4 class="mb-4">Order Summary</h4>
-                        <div class="d-flex justify-content-between mb-3">
-                            <span>Subtotal</span>
-                            <span>₹<span id="cart-subtotal"><%= cart.items.reduce((total, item) => total + item.totalPrice, 0).toFixed(2) %></span></span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-3">
-                            <span>Shipping</span>
-                            <span class="text-success">Free</span>
-                        </div>
-                        <hr>
-                        <div class="d-flex justify-content-between mb-4">
-                            <strong>Total</strong>
-                            <strong>₹<span id="cart-total"><%= cart.items.reduce((total, item) => total + item.totalPrice, 0).toFixed(2) %></span></strong>
-                        </div>
-                        <a href="/checkout" class="btn btn-primary btn-block py-2">
-                            Proceed to Checkout
-                        </a>
-                        <a href="/" class="btn btn-outline-secondary btn-block mt-2 py-2">
-                            Continue Shopping
-                        </a>
-                    </div>
-                </div>
+              <img src="/uploads/product-images/<%= item.productId.variants[item.variantIndex].images[0] %>" alt="<%= item.productId.productName %>" class="img-fluid rounded shadow-sm" style="width: 100px; height: 100px; object-fit: cover;">
+              <% } else { %>
+              <img src="/images/no-image.png" alt="No image available" class="img-fluid rounded shadow-sm" style="width: 100px; height: 100px; object-fit: cover;">
+              <% } %>
             </div>
-        <% } %>
+            <div class="col-md-4">
+              <h5 class="mb-2"><%= item.productId.productName %></h5>
+              <p class="mb-0 text-muted">Price: ₹<span class="item-price" id="price-<%= item.productId._id %>"><%= item.price.toFixed(2) %></span></p>
+              <% if (item.productId.variants && item.productId.variants[item.variantIndex]) { %>
+              <p class="mb-0 text-muted">Color: <%= item.productId.variants[item.variantIndex].color %></p>
+              <p class="mb-0 text-muted">Available Stock: <%= item.productId.variants[item.variantIndex].quantity %></p>
+              <% } %>
+            </div>
+            <div class="col-md-3">
+              <div class="d-flex align-items-center justify-content-start quantity-selector">
+                <button class="btn btn-outline-secondary decrease-quantity rounded-circle p-2" style="width: 35px; height: 35px;">
+                  <i class="zmdi zmdi-minus"></i>
+                </button>
+                <input type="number" class="form-control quantity-input mx-2 text-center" value="<%= item.quantity %>" min="1" max="5" data-stock="<%= Math.min(item.productId.variants[item.variantIndex].quantity, 5) %>" style="width: 60px;">
+                <button class="btn btn-outline-secondary increase-quantity rounded-circle p-2" style="width: 35px; height: 35px;" <%= item.quantity >= Math.min(item.productId.variants[item.variantIndex].quantity, 5) ? 'disabled' : '' %>>
+                  <i class="zmdi zmdi-plus"></i>
+                </button>
+              </div>
+              <% if (item.quantity >= Math.min(item.productId.variants[item.variantIndex].quantity, 5)) { %>
+              <small class="text-danger">Maximum quantity reached</small>
+              <% } %>
+            </div>
+            <div class="col-md-2">
+              <h6 class="mb-0">₹<%= item.totalPrice.toFixed(2) %></h6>
+            </div>
+            <div class="col-md-1">
+              <button class="btn btn-link text-danger remove-item p-0" data-product-id="<%= item.productId._id %>" data-variant-index="<%= item.variantIndex %>">
+                <i class="zmdi zmdi-close"></i>
+              </button>
+            </div>
+          </div>
+          <% }); %>
+        </div>
+      </div>
+      <% } %>
     </div>
+
+    <% if (cart && cart.items && cart.items.length > 0) { %>
+    <div class="col-lg-4 mt-4 mt-lg-0">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+          <h4 class="mb-4">Order Summary</h4>
+          <div class="d-flex justify-content-between mb-3">
+            <span>Subtotal</span>
+            <span>₹<span id="cart-subtotal"><%= cart.items.reduce((total, item) => total + item.totalPrice, 0).toFixed(2) %></span></span>
+          </div>
+          <div class="d-flex justify-content-between mb-3">
+            <span>Shipping</span>
+            <span class="text-success">Free</span>
+          </div>
+          <hr>
+          <div class="d-flex justify-content-between mb-4">
+            <strong>Total</strong>
+            <strong>₹<span id="cart-total"><%= cart.items.reduce((total, item) => total + item.totalPrice, 0).toFixed(2) %></span></strong>
+          </div>
+          <a href="/checkout" class="btn btn-primary btn-block py-2">
+            Proceed to Checkout
+          </a>
+          <a href="/" class="btn btn-outline-secondary btn-block mt-2 py-2">
+            Continue Shopping
+          </a>
+        </div>
+      </div>
+    </div>
+    <% } %>
+  </div>
 </div>
 
 <!-- Space before footer -->
 <div style="margin-bottom: 100px;"></div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('DOMContentLoaded', function() {
     // Function to update cart totals
     function updateCartTotals() {
-        let subtotal = 0;
-        document.querySelectorAll('.row[data-product-id]').forEach(row => {
-            const price = parseFloat(row.querySelector('.item-price').textContent);
-            const quantity = parseInt(row.querySelector('.quantity-input').value);
-            subtotal += price * quantity;
-        });
-        
-        const formattedSubtotal = subtotal.toFixed(2);
-        document.getElementById('cart-subtotal').textContent = formattedSubtotal;
-        document.getElementById('cart-total').textContent = formattedSubtotal;
+      let subtotal = 0;
+      document.querySelectorAll('.row[data-product-id]').forEach(row => {
+        const price = parseFloat(row.querySelector('.item-price').textContent);
+        const quantity = parseInt(row.querySelector('.quantity-input').value);
+        subtotal += price * quantity;
+      });
+
+      const formattedSubtotal = subtotal.toFixed(2);
+      document.getElementById('cart-subtotal').textContent = formattedSubtotal;
+      document.getElementById('cart-total').textContent = formattedSubtotal;
     }
 
     // Update quantity
     function updateQuantity(productId, quantity) {
-        const row = document.querySelector(`[data-product-id="${productId}"]`);
-        const input = row.querySelector('.quantity-input');
-        const maxStock = Math.min(parseInt(input.dataset.stock), 5);
-        
-        // Validate against stock and max limit
-        if (quantity > maxStock) {
-            quantity = maxStock;
-            input.value = maxStock;
-            alert('Maximum quantity limit is 5 items per product');
-            return;
-        }
+      const row = document.querySelector(`[data-product-id="${productId}"]`);
+      const input = row.querySelector('.quantity-input');
+      const maxStock = Math.min(parseInt(input.dataset.stock), 5);
 
-        fetch('/cart/update', {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ 
-                productId: productId,
-                quantity: quantity 
-            })
+      // Validate against stock and max limit
+      if (quantity > maxStock) {
+        quantity = maxStock;
+        input.value = maxStock;
+        alert('Maximum quantity limit is 5 items per product');
+        return;
+      }
+
+      fetch('/cart/update', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            productId: productId,
+            quantity: quantity
+          })
         })
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
-                // Update quantity input
-                input.value = data.newQuantity;
-                
-                // Update item price display
-                const priceElement = document.getElementById(`price-${productId}`);
-                if (priceElement) {
-                    priceElement.textContent = (data.newTotal / data.newQuantity).toFixed(2);
-                }
-                
-                // Update cart totals
-                updateCartTotals();
-            } else {
-                alert(data.message || 'Error updating quantity');
-                input.value = data.currentQuantity || 1;
+          if (data.success) {
+            // Update quantity input
+            input.value = data.newQuantity;
+
+            // Update item price display
+            const priceElement = document.getElementById(`price-${productId}`);
+            if (priceElement) {
+              priceElement.textContent = (data.newTotal / data.newQuantity).toFixed(2);
             }
+
+            // Update cart totals
+            updateCartTotals();
+          } else {
+            alert(data.message || 'Error updating quantity');
+            input.value = data.currentQuantity || 1;
+          }
         })
         .catch(error => {
-            console.error('Error:', error);
-            alert('Error updating quantity');
+          console.error('Error:', error);
+          alert('Error updating quantity');
         });
     }
 
     // Event listeners for quantity buttons
     document.querySelectorAll('.decrease-quantity').forEach(button => {
-        button.addEventListener('click', function() {
-            const row = this.closest('.row');
-            const input = row.querySelector('.quantity-input');
-            const productId = row.dataset.productId;
-            if (input.value > 1) {
-                input.value = parseInt(input.value) - 1;
-                updateQuantity(productId, input.value);
-            }
-        });
+      button.addEventListener('click', function() {
+        const row = this.closest('.row');
+        const input = row.querySelector('.quantity-input');
+        const productId = row.dataset.productId;
+        if (input.value > 1) {
+          input.value = parseInt(input.value) - 1;
+          updateQuantity(productId, input.value);
+        }
+      });
     });
 
     document.querySelectorAll('.increase-quantity').forEach(button => {
-        button.addEventListener('click', function() {
-            const row = this.closest('.row');
-            const input = row.querySelector('.quantity-input');
-            const productId = row.dataset.productId;
-            const maxStock = Math.min(parseInt(input.dataset.stock), 5);
-            if (parseInt(input.value) < maxStock) {
-                input.value = parseInt(input.value) + 1;
-                updateQuantity(productId, input.value);
-            }
-        });
+      button.addEventListener('click', function() {
+        const row = this.closest('.row');
+        const input = row.querySelector('.quantity-input');
+        const productId = row.dataset.productId;
+        const maxStock = Math.min(parseInt(input.dataset.stock), 5);
+        if (parseInt(input.value) < maxStock) {
+          input.value = parseInt(input.value) + 1;
+          updateQuantity(productId, input.value);
+        }
+      });
     });
 
     // Event listener for direct input changes
     document.querySelectorAll('.quantity-input').forEach(input => {
-        input.addEventListener('change', function() {
-            const row = this.closest('.row');
-            const productId = row.dataset.productId;
-            let value = parseInt(this.value) || 1;
-            const maxStock = Math.min(parseInt(this.dataset.stock), 5);
-            
-            // Ensure value is between 1 and maxStock
-            value = Math.max(1, Math.min(value, maxStock));
-            this.value = value;
-            
-            updateQuantity(productId, value);
-        });
+      input.addEventListener('change', function() {
+        const row = this.closest('.row');
+        const productId = row.dataset.productId;
+        let value = parseInt(this.value) || 1;
+        const maxStock = Math.min(parseInt(this.dataset.stock), 5);
+
+        // Ensure value is between 1 and maxStock
+        value = Math.max(1, Math.min(value, maxStock));
+        this.value = value;
+
+        updateQuantity(productId, value);
+      });
     });
-});
+  });
+
+  document.addEventListener('click', async function(event) {
+    if (event.target.closest('.remove-item')) {
+      const productId = event.target.closest('.remove-item').getAttribute('data-product-id');
+      const variantIndex = event.target.closest('.remove-item').getAttribute('data-variant-index');
+      console.log('Product ID:', productId);
+      console.log('Variant Index:', variantIndex);
+      const response = await fetch(`/cart/remove/${productId}/${variantIndex}`, {
+        method: "DELETE",
+
+      });
+      if(response.status == 200){
+        window.location.reload()
+      }
+    }
+  });
 </script>
 
 <%- include('../partials/user/footer.ejs') %>
