@@ -58,9 +58,217 @@ display: inline-block;
 		z-index: 500;
 	}
 
+    /* Base Styles */
+    :root {
+        --primary: #007bff;
+        --secondary: #6c757d;
+        --success: #28a745;
+        --background: #f8f9fa;
+        --card-bg: #ffffff;
+        --text-primary: #333;
+        --text-secondary: #6c757d;
+        --border: #dee2e6;
+    }
 
+    .main-content {
+        background-color: var(--background);
+        padding: 2rem 0;
+    }
 
+    /* Hero Section */
+    .hero-wrap {
+        background: linear-gradient(135deg, #007bff20, #007bff10);
+        padding: 4rem 0;
+        margin-bottom: 3rem;
+        border-radius: 0 0 30px 30px;
+    }
 
+    .hero-content {
+        text-align: center;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .hero-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+    }
+
+    .hero-text {
+        color: var(--text-secondary);
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+    }
+
+    /* Product Cards */
+    .block2 {
+        background: var(--card-bg);
+        border-radius: 15px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        height: 100%;
+        border: 1px solid var(--border);
+        margin-bottom: 2rem;
+    }
+
+    .block2:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .block2-pic {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .block2-pic img {
+        width: 100%;
+        height: 280px;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+
+    .block2:hover .block2-pic img {
+        transform: scale(1.05);
+    }
+
+    .block2-btn {
+        position: absolute;
+        bottom: -50px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: white;
+        color: var(--text-primary);
+        padding: 0.8rem 1.5rem;
+        border-radius: 25px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .block2-pic:hover .block2-btn {
+        bottom: 20px;
+    }
+
+    .block2-txt {
+        padding: 1.5rem;
+    }
+
+    .js-name-b2 {
+        color: var(--text-primary);
+        font-weight: 600;
+        text-decoration: none;
+        display: block;
+        margin-bottom: 0.5rem;
+        transition: color 0.3s ease;
+    }
+
+    .js-name-b2:hover {
+        color: var(--primary);
+    }
+
+    .stext-105 {
+        color: var(--primary);
+        font-size: 1.2rem;
+        font-weight: 700;
+    }
+
+    /* Banner Section */
+    .banner-section {
+        padding: 4rem 0;
+    }
+
+    .banner-wrap {
+        background: linear-gradient(135deg, #007bff20, #007bff10);
+        border-radius: 15px;
+        padding: 3rem;
+        text-align: center;
+    }
+
+    .banner-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+    }
+
+    .banner-text {
+        color: var(--text-secondary);
+        margin-bottom: 2rem;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* Category Cards */
+    .category-card {
+        background: var(--card-bg);
+        border-radius: 15px;
+        padding: 2rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        border: 1px solid var(--border);
+        height: 100%;
+        margin-bottom: 2rem;
+    }
+
+    .category-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .category-icon {
+        font-size: 2rem;
+        color: var(--primary);
+        margin-bottom: 1rem;
+    }
+
+    .category-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    /* Buttons */
+    .btn-primary {
+        background: var(--primary);
+        color: white;
+        padding: 0.8rem 2rem;
+        border-radius: 25px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: none;
+        display: inline-block;
+    }
+
+    .btn-primary:hover {
+        background: #0056b3;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .hero-title {
+            font-size: 2rem;
+        }
+
+        .hero-text {
+            font-size: 1rem;
+        }
+
+        .banner-title {
+            font-size: 1.75rem;
+        }
+
+        .block2-pic img {
+            height: 220px;
+        }
+    }
 </style>
 </head>
 <body class="animsition">

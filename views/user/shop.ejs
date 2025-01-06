@@ -1,7 +1,7 @@
 <%- include('../partials/user/header.ejs') %>
 
 <main class="bg0 m-t-100 p-b-140">
-    <div class="container">
+    <div class="container shop-container">
         <!-- Breadcrumb -->
         <div class="bread-crumb flex-w p-l-25 p-r-15 p-t-30 p-lr-0-lg">
             <a href="/" class="stext-109 cl8 hov-cl1 trans-04">
@@ -86,6 +86,11 @@
                             <option value="newest">Newest First</option>
                         </select>
                     </div>
+                    <div class="reset-filters text-center mt-4">
+                        <button id="resetAllFilters" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-undo me-2"></i>Reset All Filters
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -139,96 +144,278 @@
 </main>
 
 <style>
-    .search-wrap {
-    margin-bottom: 20px;
-}
-.search-wrap .input-group {
-    display: flex;
-    gap: 8px;
-}
-.search-wrap input {
-    border: 1px solid #e6e6e6;
-    padding: 8px 15px;
-    border-radius: 4px;
-    flex-grow: 1;
-}
-.search-wrap .btn {
-    padding: 8px 15px;
-    border-radius: 4px;
-    border-color: #717fe0;
-    color: white;
-}
-.search-wrap .btn:hover {
-    background-color: #5965c3;
-    border-color: #5965c3;
-}
+    /* Shop Page Styles */
+    .shop-container {
+        background-color: #f8f9fa;
+        padding: 2rem 0;
+    }
+
+    /* Filter Sidebar */
     .filter-sidebar {
         background: #fff;
-        padding: 20px;
-        border-radius: 4px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.05);
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
     }
+
     .filter-widget {
-        margin-bottom: 30px;
+        margin-bottom: 2rem;
     }
+
+    .filter-widget h4 {
+        color: #333;
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e9ecef;
+    }
+
+    /* Search Bar */
+    .search-wrap {
+        margin-bottom: 1.5rem;
+    }
+
+    .search-wrap .input-group {
+        display: flex;
+        gap: 8px;
+    }
+
+    .search-wrap input {
+        border: 1px solid #dee2e6;
+        padding: 0.6rem 1rem;
+        border-radius: 8px;
+        flex-grow: 1;
+        transition: all 0.3s ease;
+    }
+
+    .search-wrap input:focus {
+        border-color: #6c757d;
+        box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.25);
+        outline: none;
+    }
+
+    .search-wrap .btn {
+        padding: 0.6rem 1.2rem;
+        border-radius: 8px;
+        background-color: #6c757d;
+        border: none;
+        transition: all 0.3s ease;
+    }
+
+    .search-wrap .btn:hover {
+        background-color: #5a6268;
+        transform: translateY(-1px);
+    }
+
+    /* Filter List */
     .filter-list {
         list-style: none;
         padding: 0;
         margin: 0;
     }
+
     .filter-link {
-        color: #888;
+        color: #6c757d;
         text-decoration: none;
-        transition: color 0.3s;
         display: block;
-        padding: 5px 0;
+        padding: 0.5rem 0;
+        transition: all 0.3s ease;
+        font-size: 0.95rem;
     }
+
     .filter-link:hover,
     .filter-link-active {
         color: #007bff;
+        transform: translateX(5px);
     }
-    .price-range {
-        margin: 10px 0;
+
+    /* Price Range */
+    .price-range-wrap {
+        padding: 0.5rem 0;
     }
-    .form-range::-webkit-slider-thumb {
-        background: #007bff;
-    }
-    .form-select {
-        border: 1px solid #e6e6e6;
-        padding: 8px;
-        border-radius: 4px;
+
+    .form-range {
         width: 100%;
+        height: 1.5rem;
+        padding: 0;
+        background: transparent;
+        -webkit-appearance: none;
     }
+
+    .form-range::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #007bff;
+        cursor: pointer;
+        margin-top: -7px;
+    }
+
+    .form-range::-webkit-slider-runnable-track {
+        width: 100%;
+        height: 4px;
+        background: #e9ecef;
+        border-radius: 2px;
+    }
+
+    .price-input {
+        margin-top: 1rem;
+    }
+
+    .price-input span {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+
+    /* Sort Dropdown */
+    .form-select {
+        width: 100%;
+        padding: 0.6rem 1rem;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        color: #495057;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .form-select:focus {
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+
+    /* Reset Button */
+    #resetAllFilters {
+        width: 100%;
+        padding: 0.8rem;
+        border: 2px solid #007bff;
+        background: transparent;
+        color: #007bff;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    #resetAllFilters:hover {
+        background: #007bff;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px rgba(0, 123, 255, 0.2);
+    }
+
+    #resetAllFilters i {
+        transition: transform 0.3s ease;
+    }
+
+    #resetAllFilters:hover i {
+        transform: rotate(-180deg);
+    }
+
+    /* Product Grid */
+    .block2 {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        height: 100%;
+    }
+
+    .block2:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
     .block2-pic {
         position: relative;
         overflow: hidden;
-        border-radius: 4px;
     }
+
     .product-image {
         width: 100%;
-        height: 300px;
+        height: 280px;
         object-fit: cover;
+        transition: transform 0.3s ease;
     }
+
+    .block2:hover .product-image {
+        transform: scale(1.05);
+    }
+
     .block2-btn {
         position: absolute;
-        bottom: -100px;
+        bottom: -50px;
         left: 50%;
         transform: translateX(-50%);
-        transition: bottom 0.3s;
+        transition: all 0.3s ease;
+        background: white;
+        color: #333;
+        padding: 0.8rem 1.5rem;
+        border-radius: 25px;
+        font-weight: 500;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
+
     .block2-pic:hover .block2-btn {
         bottom: 20px;
     }
+
+    .block2-txt {
+        padding: 1.2rem;
+    }
+
+    .js-name-b2 {
+        color: #333;
+        font-weight: 600;
+        text-decoration: none;
+        display: block;
+        margin-bottom: 0.5rem;
+        transition: color 0.3s ease;
+    }
+
+    .js-name-b2:hover {
+        color: #007bff;
+    }
+
+    .stext-105 {
+        color: #007bff;
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+
+    /* Variant Colors */
     .variant-colors {
         display: flex;
-        gap: 4px;
-        margin-top: 8px;
+        gap: 6px;
+        margin-top: 0.8rem;
     }
+
     .color-dot {
-        width: 12px;
-        height: 12px;
+        width: 14px;
+        height: 14px;
         border-radius: 50%;
-        border: 1px solid #ddd;
+        border: 2px solid white;
+        box-shadow: 0 0 0 1px #dee2e6;
+        transition: transform 0.3s ease;
+    }
+
+    .color-dot:hover {
+        transform: scale(1.2);
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 768px) {
+        .filter-sidebar {
+            margin-bottom: 2rem;
+        }
+
+        .block2 {
+            margin-bottom: 1.5rem;
+        }
     }
 </style>
 
@@ -339,6 +526,46 @@
         }
         
         // ... your existing price range and sort code ...
+    });
+
+    // Reset all filters
+    document.getElementById('resetAllFilters').addEventListener('click', function() {
+        // Show loading animation
+        Swal.fire({
+            title: 'Resetting Filters',
+            text: 'Please wait...',
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            willOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        // Reset all filter inputs
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+
+        // Reset price range
+        const priceRange = document.querySelector('input[type="range"]');
+        if (priceRange) {
+            priceRange.value = priceRange.max;
+        }
+
+        // Reset search input
+        const searchInput = document.querySelector('input[type="search"]');
+        if (searchInput) {
+            searchInput.value = '';
+        }
+
+        // Reset sort dropdown
+        const sortSelect = document.querySelector('select[name="sort"]');
+        if (sortSelect) {
+            sortSelect.value = 'default';
+        }
+
+        // Reset URL parameters and reload page
+        window.location.href = '/shop';
     });
 </script>
 

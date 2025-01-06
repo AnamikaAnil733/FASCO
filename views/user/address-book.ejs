@@ -505,7 +505,8 @@
             required: true,
             minLength: 3,
             maxLength: 100,
-            message: 'Landmark should be 3-100 characters long'
+            pattern: /^[a-zA-Z\s]+$/,
+            message: 'Landmark should be 2-100 characters long and contain only letters'
         },
         city: {
             required: true,
@@ -612,11 +613,11 @@
         
         try {
             const url = currentAddressId 
-                ? `/edit-address/${currentAddressId}`
-                : '/add-address';
+                ? `/address/edit/${currentAddressId}`
+                : '/address/add';
                 
             const response = await fetch(url, {
-                method: 'POST',
+                method: currentAddressId ? 'PUT' : 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
@@ -634,6 +635,7 @@
                 showAlert(errorAlert, result.message);
             }
         } catch (error) {
+            console.error('Error:', error);
             showAlert(errorAlert, 'Failed to save address');
         }
     });
@@ -703,25 +705,49 @@
     }
 
     async function deleteAddress(addressId) {
-        if (!confirm('Are you sure you want to delete this address?')) return;
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!'
+        });
 
-        try {
-            const response = await fetch(`/delete-address/${addressId}`, {
-                method: 'DELETE'
-            });
-            const data = await response.json();
+        if (result.isConfirmed) {
+            try {
+                const response = await fetch(`/address/delete/${addressId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
 
-            if (data.success) {
-                const card = document.querySelector(`[data-id="${addressId}"]`);
-                card.style.transform = 'scale(0.9)';
-                card.style.opacity = '0';
-                setTimeout(() => card.remove(), 300);
-                showAlert(successAlert, data.message);
-            } else {
-                showAlert(errorAlert, data.message);
+                const data = await response.json();
+
+                if (data.success) {
+                    await Swal.fire(
+                        'Deleted!',
+                        'Your address has been deleted.',
+                        'success'
+                    );
+                    window.location.reload();
+                } else {
+                    await Swal.fire(
+                        'Error!',
+                        data.message || 'Failed to delete address',
+                        'error'
+                    );
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                await Swal.fire(
+                    'Error!',
+                    'Failed to delete address',
+                    'error'
+                );
             }
-        } catch (error) {
-            showAlert(errorAlert, 'Failed to delete address');
         }
     }
 

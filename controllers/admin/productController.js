@@ -294,18 +294,20 @@ const updateProduct = async (req, res) => {
         const variants = JSON.parse(updates.variants);
 
         // Handle images for each variant
-        if (req.files && req.files.length > 0) {
+        if (req.files && req.files.variantImages) {
             let currentImageIndex = 0;
-
+            
+            // First, process variants that have pending images
             for (let i = 0; i < variants.length; i++) {
                 const variant = variants[i];
                 const variantImages = [...variant.images];
 
-                // Process new images for this variant
+                // Process images for this variant
                 for (let j = 0; j < 3; j++) {
-                    if (!variantImages[j] && currentImageIndex < req.files.length) {
-                        const file = req.files[currentImageIndex];
-                        if (file) {
+                    if (variantImages[j] && variantImages[j].pending === true) {
+                        // This slot needs a new image
+                        if (currentImageIndex < req.files.variantImages.length) {
+                            const file = req.files.variantImages[currentImageIndex];
                             const filename = `${Date.now()}-${i}-${j}-${file.originalname.replace(/\s+/g, '-')}`;
                             const filepath = path.join(productImagesDir, filename);
 
@@ -320,6 +322,7 @@ const updateProduct = async (req, res) => {
                                     .jpeg({ quality: 90 })
                                     .toFile(filepath);
 
+                                // Replace the pending object with the filename
                                 variantImages[j] = filename;
                                 currentImageIndex++;
                             } catch (error) {
@@ -330,7 +333,11 @@ const updateProduct = async (req, res) => {
                                 });
                             }
                         }
+                    } else if (typeof variantImages[j] === 'object') {
+                        // If it's an object but not pending, remove it
+                        variantImages[j] = null;
                     }
+                    // If it's a string (existing image filename), keep it as is
                 }
 
                 processedVariants.push({
@@ -343,7 +350,7 @@ const updateProduct = async (req, res) => {
             // No new images, use the existing ones from variants
             processedVariants.push(...variants.map(variant => ({
                 color: variant.color,
-                images: variant.images,
+                images: variant.images.map(img => typeof img === 'object' ? null : img),
                 quantity: parseInt(variant.quantity) || 0
             })));
         }
@@ -356,7 +363,7 @@ const updateProduct = async (req, res) => {
                 description: updates.description,
                 category: updates.category,
                 regularPrice: parseFloat(updates.regularPrice),
-                salesPrice: updates.salePrice ? parseFloat(updates.salePrice) : undefined,
+                salesPrice: updates.salesPrice ? parseFloat(updates.salesPrice) : undefined,
                 variants: processedVariants,
                 totalQuantity: processedVariants.reduce((total, variant) => total + variant.quantity, 0)
             },

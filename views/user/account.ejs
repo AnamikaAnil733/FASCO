@@ -368,7 +368,7 @@
                             <form action="/update-profile" method="POST">
                                 <div class="mb-3">
                                     <label for="name" class="form-label">Full Name</label>
-                                    <input type="text" class="form-control" id="name" name="name" value="<%= user.name %>" required>
+                                    <input type="text" class="form-control" id="name" name="name" value="<%= user.name %>" >
                                 </div>
                                 <div class="mb-3">
                                     <label for="email" class="form-label">Email Address</label>
@@ -428,7 +428,220 @@
         const passwordForm = document.getElementById('passwordChangeForm');
         const errorDiv = document.getElementById('passwordError');
         const successDiv = document.getElementById('passwordSuccess');
-        
+        const profileForm = document.querySelector('form[action="/update-profile"]');
+
+        // Profile form validation
+        function validateName(name) {
+            // Allow letters, spaces, and basic punctuation, minimum 3 characters
+            return /^[a-zA-Z]+(([',. -][a-zA-Z ])?[a-zA-Z]*)*$/.test(name) && name.length >= 3;
+        }
+
+        function validateIndianPhone(phone) {
+            // Indian phone number format: +91 or starts with 6-9, followed by 9 digits
+            return /^(?:(?:\+91)|(?:91)|(?:0))?[6789]\d{9}$/.test(phone);
+        }
+
+        function showError(input, message) {
+            // Remove any existing error message
+            const existingError = input.parentNode.querySelector('.alert-danger');
+            if (existingError) {
+                existingError.remove();
+            }
+
+            // Create and show new error message
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'alert alert-danger mt-2';
+            errorDiv.textContent = message;
+            input.parentNode.appendChild(errorDiv);
+            input.style.borderColor = '#dc3545';
+        }
+
+        function removeError(input) {
+            const errorDiv = input.parentNode.querySelector('.alert-danger');
+            if (errorDiv) {
+                errorDiv.remove();
+            }
+            input.style.borderColor = '';
+        }
+
+        if (profileForm) {
+            const nameInput = document.getElementById('name');
+            const phoneInput = document.getElementById('phone');
+
+            // Real-time name validation
+            nameInput.addEventListener('input', function() {
+                if (this.value.trim() === '') {
+                    removeError(this);
+                } else if (validateName(this.value)) {
+                    removeError(this);
+                } else {
+                    showError(this, 'Please enter a valid name (minimum 3 letters, only letters, spaces, and basic punctuation allowed)');
+                }
+            });
+
+            // Real-time phone validation
+            phoneInput.addEventListener('input', function() {
+                if (this.value.trim() === '') {
+                    removeError(this);
+                } else if (validateIndianPhone(this.value)) {
+                    removeError(this);
+                } else {
+                    showError(this, 'Please enter a valid Indian phone number (e.g., +919876543210 or 9876543210)');
+                }
+            });
+
+            // Form submission validation
+            profileForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                let isValid = true;
+
+                // Validate name
+                if (!nameInput.value.trim()) {
+                    showError(nameInput, 'Name is required');
+                    isValid = false;
+                } else if (!validateName(nameInput.value)) {
+                    showError(nameInput, 'Please enter a valid name (minimum 3 letters, only letters, spaces, and basic punctuation allowed)');
+                    isValid = false;
+                }
+
+                // Validate phone
+                if (!phoneInput.value.trim()) {
+                    showError(phoneInput, 'Phone number is required');
+                    isValid = false;
+                } else if (!validateIndianPhone(phoneInput.value)) {
+                    showError(phoneInput, 'Please enter a valid Indian phone number (e.g., +919876543210 or 9876543210)');
+                    isValid = false;
+                }
+
+                if (isValid) {
+                    this.submit();
+                }
+            });
+        }
+
+        // Password validation
+        function validateStrongPassword(password) {
+            const minLength = password.length >= 8;
+            const hasUpperCase = /[A-Z]/.test(password);
+            const hasLowerCase = /[a-z]/.test(password);
+            const hasNumbers = /\d/.test(password);
+            const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+            const noSpaces = !/\s/.test(password);
+            
+            const errors = [];
+            if (!minLength) errors.push("Password must be at least 8 characters long");
+            if (!hasUpperCase) errors.push("Include at least one uppercase letter");
+            if (!hasLowerCase) errors.push("Include at least one lowercase letter");
+            if (!hasNumbers) errors.push("Include at least one number");
+            if (!hasSpecialChar) errors.push("Include at least one special character");
+            if (!noSpaces) errors.push("Password cannot contain spaces");
+
+            return {
+                isValid: minLength && hasUpperCase && hasLowerCase && hasNumbers && hasSpecialChar && noSpaces,
+                errors: errors
+            };
+        }
+
+        function showPasswordError(message) {
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('d-none');
+            successDiv.classList.add('d-none');
+        }
+
+        function hidePasswordError() {
+            errorDiv.classList.add('d-none');
+        }
+
+        if (passwordForm) {
+            const newPasswordInput = document.getElementById('newPassword');
+            const confirmPasswordInput = document.getElementById('confirmPassword');
+
+            // Real-time password validation
+            newPasswordInput.addEventListener('input', function() {
+                const validation = validateStrongPassword(this.value);
+                if (this.value) {
+                    if (!validation.isValid) {
+                        showPasswordError("Password requirements:\n" + validation.errors.join("\n"));
+                    } else {
+                        hidePasswordError();
+                    }
+                } else {
+                    hidePasswordError();
+                }
+            });
+
+            // Real-time confirm password validation
+            confirmPasswordInput.addEventListener('input', function() {
+                if (this.value && this.value !== newPasswordInput.value) {
+                    showPasswordError("Passwords do not match");
+                } else {
+                    hidePasswordError();
+                }
+            });
+
+            passwordForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const currentPassword = document.getElementById('currentPassword').value;
+                const newPassword = newPasswordInput.value;
+                const confirmPassword = confirmPasswordInput.value;
+
+                // Reset error/success messages
+                hidePasswordError();
+                successDiv.classList.add('d-none');
+
+                // Validate current password
+                if (!currentPassword) {
+                    showPasswordError('Please enter your current password');
+                    return;
+                }
+
+                // Validate new password
+                const passwordValidation = validateStrongPassword(newPassword);
+                if (!passwordValidation.isValid) {
+                    showPasswordError("Password requirements:\n" + passwordValidation.errors.join("\n"));
+                    return;
+                }
+
+                // Validate password confirmation
+                if (newPassword !== confirmPassword) {
+                    showPasswordError('Passwords do not match');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/change-password', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            currentPassword,
+                            newPassword,
+                            confirmPassword
+                        })
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        successDiv.textContent = result.message;
+                        successDiv.classList.remove('d-none');
+                        errorDiv.classList.add('d-none');
+                        
+                        // Close modal after success
+                        setTimeout(() => {
+                            closeModal();
+                        }, 2000);
+                    } else {
+                        showPasswordError(result.message);
+                    }
+                } catch (error) {
+                    showPasswordError('An error occurred. Please try again.');
+                }
+            });
+        }
+
         function openModal() {
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
@@ -461,48 +674,6 @@
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeModal();
-            }
-        });
-
-        passwordForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            const data = {
-                currentPassword: formData.get('currentPassword'),
-                newPassword: formData.get('newPassword'),
-                confirmPassword: formData.get('confirmPassword')
-            };
-
-            try {
-                const response = await fetch('/change-password', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    errorDiv.classList.add('d-none');
-                    successDiv.classList.remove('d-none');
-                    successDiv.textContent = result.message;
-                    
-                    // Close modal after success
-                    setTimeout(() => {
-                        closeModal();
-                    }, 2000);
-                } else {
-                    successDiv.classList.add('d-none');
-                    errorDiv.classList.remove('d-none');
-                    errorDiv.textContent = result.message;
-                }
-            } catch (error) {
-                successDiv.classList.add('d-none');
-                errorDiv.classList.remove('d-none');
-                errorDiv.textContent = 'An error occurred. Please try again.';
             }
         });
     });

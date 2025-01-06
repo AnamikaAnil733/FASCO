@@ -581,42 +581,33 @@ const loadAddresses = async (req, res) => {
 const addAddress = async (req, res) => {
   try {
     const userId = req.session.user._id;
-    const {
-      addressType,
-      name,
-      city,
-      landMark,
-      state,
-      pincode,
-      phone,
-      altPhone
-    } = req.body;
+    const addressData = req.body;
 
-    let addressDoc = await Address.findOne({ userId: userId });
-    
-    if (!addressDoc) {
-      addressDoc = new Address({
-        userId: userId,
+    // Find user's address document
+    let userAddress = await Address.findOne({ userId });
+
+    if (!userAddress) {
+      // Create new address document if it doesn't exist
+      userAddress = new Address({
+        userId,
         address: []
       });
     }
 
-    addressDoc.address.push({
-      addressType,
-      name,
-      city,
-      landMark,
-      state,
-      pincode,
-      phone,
-      altPhone
-    });
+    // Add new address to array
+    userAddress.address.push(addressData);
+    await userAddress.save();
 
-    await addressDoc.save();
-    res.json({ success: true, message: 'Address added successfully' });
+    res.json({
+      success: true,
+      message: 'Address added successfully'
+    });
   } catch (error) {
-    console.error('Error in addAddress:', error);
-    res.status(500).json({ success: false, message: 'Failed to add address' });
+    console.error('Error adding address:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error adding address'
+    });
   }
 };
 
@@ -624,45 +615,42 @@ const addAddress = async (req, res) => {
 const editAddress = async (req, res) => {
   try {
     const userId = req.session.user._id;
-    const addressId = req.params.id;
-    const {
-      addressType,
-      name,
-      city,
-      landMark,
-      state,
-      pincode,
-      phone,
-      altPhone
-    } = req.body;
+    const addressId = req.params.addressId;
+    const updatedData = req.body;
 
+    // Find and update the specific address
     const result = await Address.updateOne(
       { 
-        userId: userId,
+        userId,
         'address._id': addressId 
       },
-      {
+      { 
         $set: {
-          'address.$.addressType': addressType,
-          'address.$.name': name,
-          'address.$.city': city,
-          'address.$.landMark': landMark,
-          'address.$.state': state,
-          'address.$.pincode': pincode,
-          'address.$.phone': phone,
-          'address.$.altPhone': altPhone
+          'address.$': {
+            ...updatedData,
+            _id: addressId
+          }
         }
       }
     );
 
-    if (result.modifiedCount > 0) {
-      res.json({ success: true, message: 'Address updated successfully' });
-    } else {
-      res.status(404).json({ success: false, message: 'Address not found' });
+    if (result.modifiedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Address not found'
+      });
     }
+
+    res.json({
+      success: true,
+      message: 'Address updated successfully'
+    });
   } catch (error) {
-    console.error('Error in editAddress:', error);
-    res.status(500).json({ success: false, message: 'Failed to update address' });
+    console.error('Error updating address:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating address'
+    });
   }
 };
 
@@ -670,21 +658,30 @@ const editAddress = async (req, res) => {
 const deleteAddress = async (req, res) => {
   try {
     const userId = req.session.user._id;
-    const addressId = req.params.id;
+    const addressId = req.params.addressId;
 
     const result = await Address.updateOne(
-      { userId: userId },
+      { userId },
       { $pull: { address: { _id: addressId } } }
     );
 
-    if (result.modifiedCount > 0) {
-      res.json({ success: true, message: 'Address deleted successfully' });
-    } else {
-      res.status(404).json({ success: false, message: 'Address not found' });
+    if (result.modifiedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Address not found'
+      });
     }
+
+    res.json({
+      success: true,
+      message: 'Address deleted successfully'
+    });
   } catch (error) {
-    console.error('Error in deleteAddress:', error);
-    res.status(500).json({ success: false, message: 'Failed to delete address' });
+    console.error('Error deleting address:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting address'
+    });
   }
 };
 
@@ -822,19 +819,16 @@ const addToCart = async (req, res) => {
     const userId = req.session.user._id;
     const { productId, quantity, variantIndex } = req.body;
     
-    // Validate quantity
-    const MAX_QUANTITY = 5;
-    if (quantity > MAX_QUANTITY) {
-      return res.status(400).json({
-        success: false,
-        message: "Maximum quantity limit is 5 items per product"
-      });
-    }
-
     // Get product details
     const product = await Product.findById(productId);
     if (!product) {
       return res.status(404).json({ success: false, message: "Product not found" });
+    }
+
+    // Check variant stock
+    const variant = product.variants[variantIndex];
+    if (!variant) {
+      return res.status(404).json({ success: false, message: "Product variant not found" });
     }
 
     // Find or create cart
@@ -851,7 +845,17 @@ const addToCart = async (req, res) => {
 
     if (existingItem) {
       const newQuantity = existingItem.quantity + quantity;
-      if (newQuantity > MAX_QUANTITY) {
+      
+      // Check against actual stock
+      if (newQuantity > variant.quantity) {
+        return res.status(400).json({
+          success: false,
+          message: `Cannot add ${quantity} more items. Only ${variant.quantity} units available in stock. You already have ${existingItem.quantity} in your cart.`
+        });
+      }
+
+      // Also check against max limit of 5
+      if (newQuantity > 5) {
         return res.status(400).json({
           success: false,
           message: `Cannot add ${quantity} more items. Maximum limit is 5 items per product. You already have ${existingItem.quantity} in your cart.`
@@ -862,6 +866,22 @@ const addToCart = async (req, res) => {
       existingItem.quantity = newQuantity;
       existingItem.totalPrice = product.salesPrice * newQuantity;
     } else {
+      // Check new item quantity against stock
+      if (quantity > variant.quantity) {
+        return res.status(400).json({
+          success: false,
+          message: `Cannot add ${quantity} items. Only ${variant.quantity} units available in stock.`
+        });
+      }
+
+      // Check against max limit of 5
+      if (quantity > 5) {
+        return res.status(400).json({
+          success: false,
+          message: "Maximum quantity limit is 5 items per product"
+        });
+      }
+
       // Add new item
       cart.items.push({
         productId,
@@ -893,10 +913,15 @@ const getCart = async (req, res) => {
 
     console.log("Cart data:", cart);
 
+    // Get error message if exists and clear it
+    const cartError = req.session.cartError;
+    req.session.cartError = null;
+
     if (!cart) {
       return res.render('cart', { 
         cart: null,
-        message: req.session.user 
+        message: req.session.user,
+        error: cartError
       });
     }
 
@@ -921,7 +946,8 @@ const getCart = async (req, res) => {
     
     res.render('cart', { 
       cart,
-      message: req.session.user
+      message: req.session.user,
+      error: cartError
     });
   } catch (error) {
     console.error("Error getting cart:", error);
@@ -960,21 +986,23 @@ const updateCartItem = async (req, res) => {
       return res.status(404).json({ success: false, message: "Item not found in cart" });
     }
 
-    const MAX_QUANTITY = 5;
-    if (quantity > MAX_QUANTITY) {
+    // Get variant stock
+    const variantStock = item.productId.variants[item.variantIndex].quantity;
+
+    // Check against actual stock
+    if (quantity > variantStock) {
       return res.status(400).json({ 
         success: false, 
-        message: "Maximum quantity limit is 5 items per product",
+        message: `Cannot update quantity. Only ${variantStock} units available in stock.`,
         currentQuantity: item.quantity
       });
     }
 
-    // Validate quantity against stock
-    const variantStock = item.productId.variants[item.variantIndex].quantity;
-    if (quantity > variantStock) {
+    // Check against max limit of 5
+    if (quantity > 5) {
       return res.status(400).json({ 
         success: false, 
-        message: "Requested quantity exceeds available stock",
+        message: "Maximum quantity limit is 5 items per product",
         currentQuantity: item.quantity
       });
     }
@@ -1057,6 +1085,30 @@ const loadCheckout = async (req, res) => {
 
     if (!cart || !cart.items || cart.items.length === 0) {
       console.log('No cart items found, redirecting to cart');
+      return res.redirect('/cart');
+    }
+
+    // Check for out-of-stock items
+    const outOfStockItems = cart.items.filter(item => 
+      item.productId && 
+      item.productId.variants && 
+      item.productId.variants[item.variantIndex] && 
+      item.productId.variants[item.variantIndex].quantity === 0
+    );
+
+    if (outOfStockItems.length > 0) {
+      console.log('Out of stock items found, redirecting to cart');
+      req.session.cartError = 'Some items in your cart are out of stock. Please remove them to proceed with checkout.';
+      return res.redirect('/cart');
+    }
+
+    // Remove any cart items with invalid product references
+    cart.items = cart.items.filter(item => item.productId);
+    await cart.save();
+
+    // If all items were invalid, redirect to cart
+    if (cart.items.length === 0) {
+      console.log('All cart items were invalid, redirecting to cart');
       return res.redirect('/cart');
     }
 

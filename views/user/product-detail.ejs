@@ -88,29 +88,36 @@
                 <!-- Quantity -->
                 <div class="quantity-section">
                     <h3>Quantity</h3>
+                    <div class="quantity-controls">
+                        <button class="quantity-btn" onclick="updateQuantity(-1)">−</button>
+                        <input type="number" id="quantity" value="1" min="1" max="5" onchange="validateQuantity(this)">
+                        <button class="quantity-btn" onclick="updateQuantity(1)">+</button>
+                    </div>
                     <div class="stock-info">
                         <% if (product.variants && product.variants.length > 0) { %>
                             <% if (product.variants[0].quantity > 0) { %>
-                            <p class="available-stock">Available Stock: <span id="current-stock"><%= product.variants[0].quantity %></span></p>
+                                <p class="available-stock">
+                                    Available Stock: <span id="current-stock"><%= product.variants[0].quantity %></span>
+                                </p>
+                                <p class="quantity-limit">Maximum 5 items per order</p>
                             <% } else { %>
-                                <p class="out-of-stock">Out of stock</p>
+                                <p class="out-of-stock">Out of Stock</p>
                             <% } %>
-                            <%}%>
+                        <% } %>
                     </div>
-                    <div class="quantity-selector">
-                        <button class="qty-btn" onclick="updateQuantity(-1)">−</button>
-                        <input type="number" id="quantity" value="1" min="1" max="5">
-                        <button class="qty-btn" onclick="updateQuantity(1)">+</button>
-                    </div>
-                    <small class="text-muted">Maximum 5 items per order</small>
                 </div>
 
                 <!-- Actions -->
                 <div class="product-actions">
-                    <button class="btn-add-cart" onclick="addToCart()" 
-                            <%= (!product.variants || product.variants.length === 0) ? 'disabled' : '' %>>
-                        <i class="fas fa-shopping-cart"></i>
-                        <%= (!product.variants || product.variants.length === 0) ? 'Out of Stock' : 'Add to Cart' %>
+                    <button class="add-to-cart-btn" onclick="addToCart()" 
+                            <%= (!product.variants || product.variants.length === 0 || product.variants[0].quantity === 0) ? 'disabled' : '' %>>
+                        <span class="btn-icon">
+                            <i class="fas fa-shopping-cart"></i>
+                        </span>
+                        <span class="btn-text">
+                            <%= (!product.variants || product.variants.length === 0 || product.variants[0].quantity === 0) ? 'Out of Stock' : 'Add to Cart' %>
+                        </span>
+                        <span class="btn-shine"></span>
                     </button>
                 </div>
             </div>
@@ -167,485 +174,595 @@
 </section>
 
 <style>
-/* Product Detail Page Styles */
-.product-detail {
-    padding: 150px 0;
-    background-color: #fff;
-    min-height: calc(100vh - 300px); /* Adjusted for decreased padding */
-}
+    .product-detail {
+        padding: 140px 0 100px;
+        background-color: #f7f9fc;
+    }
 
-/* Breadcrumb */
-.breadcrumb-nav {
-    margin-bottom: 20px;
-}
+    .breadcrumb-nav {
+        margin-bottom: 2rem;
+    }
 
-.breadcrumb {
-    padding: 0;
-    margin: 0;
-    background: transparent;
-}
+    .breadcrumb {
+        padding: 0;
+        margin: 0;
+        background: transparent;
+    }
 
-.breadcrumb-item a {
-    color: #666;
-    text-decoration: none;
-    transition: color 0.3s ease;
-}
+    .breadcrumb-item {
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
 
-.breadcrumb-item a:hover {
-    color: #000;
-}
+    .breadcrumb-item a {
+        color: #4f46e5;
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
 
-.breadcrumb-item.active {
-    color: #000;
-}
+    .breadcrumb-item a:hover {
+        color: #4338ca;
+    }
 
-/* Product Container */
-.product-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 40px;
-    align-items: start;
-}
+    .breadcrumb-item.active {
+        color: #1a1f36;
+    }
 
-/* Product Gallery */
-.product-gallery {
-    position: sticky;
-    top: 20px;
-}
-
-.main-image {
-    background: #f8f9fa;
-    border-radius: 12px;
-    overflow: hidden;
-    margin-bottom: 20px;
-    aspect-ratio: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-}
-
-.main-image img {
-    max-width: 100%;
-    height: 100%;
-    object-fit: contain;
-    transition: transform 0.3s ease;
-}
-
-.main-image:hover img {
-    transform: scale(1.05);
-}
-
-.thumbnails {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-    gap: 10px;
-}
-
-.thumbnail {
-    aspect-ratio: 1;
-    border-radius: 8px;
-    overflow: hidden;
-    cursor: pointer;
-    border: 2px solid transparent;
-    transition: all 0.3s ease;
-}
-
-.thumbnail img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.thumbnail:hover {
-    border-color: #000;
-    transform: translateY(-2px);
-}
-
-/* Zoom Styles */
-.main-image {
-    position: relative;
-    overflow: hidden;
-}
-
-.zoom-lens {
-    position: absolute;
-    border: 1px solid #d4d4d4;
-    width: 100px;
-    height: 100px;
-    background-repeat: no-repeat;
-    cursor: crosshair;
-    display: none;
-}
-
-.zoom-result {
-    position: absolute;
-    top: 0;
-    right: -100%;
-    width: 100%;
-    height: 100%;
-    border: 1px solid #d4d4d4;
-    background-repeat: no-repeat;
-    display: none;
-    z-index: 999;
-    background-color: white;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    border-radius: 12px;
-}
-
-.main-image:hover .zoom-lens,
-.main-image:hover .zoom-result {
-    display: block;
-}
-
-/* Zoom Effect Styles */
-.wrap-pic-w {
-    position: relative;
-    overflow: hidden;
-    width: 100%;
-    height: 100%;
-}
-
-.wrap-pic-w img {
-    transition: transform 0.3s ease;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-}
-
-.wrap-pic-w.zoom-effect {
-    cursor: zoom-in;
-}
-
-.wrap-pic-w img:hover {
-    cursor: zoom-in;
-}
-
-/* Product Info */
-.product-info {
-    padding: 20px;
-}
-
-.product-title {
-    font-size: 2.5rem;
-    font-weight: 600;
-    margin-bottom: 20px;
-    color: #000;
-}
-
-.price-section {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    margin-bottom: 30px;
-}
-
-.current-price {
-    font-size: 2rem;
-    font-weight: 600;
-    color: #000;
-}
-
-.original-price {
-    font-size: 1.5rem;
-    color: #999;
-    text-decoration: line-through;
-}
-
-.discount-badge {
-    background: #ff4d4d;
-    color: white;
-    padding: 5px 10px;
-    border-radius: 5px;
-    font-size: 0.9rem;
-    font-weight: 500;
-}
-
-.product-description {
-    font-size: 1.1rem;
-    line-height: 1.6;
-    color: #666;
-    margin-bottom: 30px;
-}
-
-/* Color Selection */
-.colors-section {
-    margin-bottom: 30px;
-}
-
-.colors-section h3 {
-    font-size: 1.2rem;
-    margin-bottom: 15px;
-    color: #000;
-}
-
-.color-options {
-    display: flex;
-    gap: 15px;
-    flex-wrap: wrap;
-}
-
-.color-option {
-    position: relative;
-}
-
-.color-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: 2px solid transparent;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    position: relative;
-}
-
-.color-btn:hover {
-    transform: scale(1.1);
-}
-
-.color-btn.active {
-    border-color: #000;
-    transform: scale(1.1);
-}
-
-.color-name {
-    position: absolute;
-    bottom: -25px;
-    left: 50%;
-    transform: translateX(-50%);
-    white-space: nowrap;
-    font-size: 0.8rem;
-    color: #666;
-}
-
-/* Quantity Selector */
-.quantity-section {
-    margin-bottom: 30px;
-}
-
-.quantity-section h3 {
-    font-size: 1.2rem;
-    margin-bottom: 15px;
-    color: #000;
-}
-
-.quantity-selector {
-    display: inline-flex;
-    align-items: center;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-.qty-btn {
-    width: 40px;
-    height: 40px;
-    border: none;
-    background: #f8f9fa;
-    color: #000;
-    font-size: 1.2rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.qty-btn:hover {
-    background: #000;
-    color: #fff;
-}
-
-#quantity {
-    width: 60px;
-    height: 40px;
-    border: none;
-    border-left: 1px solid #ddd;
-    border-right: 1px solid #ddd;
-    text-align: center;
-    font-size: 1rem;
-    -moz-appearance: textfield;
-}
-
-#quantity::-webkit-outer-spin-button,
-#quantity::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
-
-.stock-info {
-    margin-bottom: 10px;
-}
-
-.available-stock {
-    font-size: 0.9em;
-    color: #666;
-    margin: 5px 0;
-}
-
-
-#current-stock {
-    font-weight: bold;
-    color: #28a745;
-}
-.out-of-stock {
-    color: red;
-    font-weight: bold;
-}
-
-
-/* Action Buttons */
-.product-actions {
-    display: flex;
-    gap: 15px;
-}
-
-.btn-add-cart {
-    flex: 1;
-    padding: 15px 30px;
-    border: none;
-    border-radius: 8px;
-    background: #000;
-    color: #fff;
-    font-size: 1.1rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-}
-
-.btn-add-cart:hover {
-    background: #333;
-    transform: translateY(-2px);
-}
-
-.btn-add-cart:disabled {
-    background: #ccc;
-    cursor: not-allowed;
-    transform: none;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
     .product-container {
-        grid-template-columns: 1fr;
-        gap: 20px;
+        background: #ffffff;
+        border-radius: 24px;
+        padding: 3rem;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4rem;
     }
 
     .product-gallery {
         position: relative;
-        top: 0;
+    }
+
+    .main-image {
+        position: relative;
+        border-radius: 16px;
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+        aspect-ratio: 1;
+        background: #f8fafc;
+    }
+
+    .main-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+
+    .main-image:hover img {
+        transform: scale(1.05);
+    }
+
+    .thumbnails {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+        gap: 1rem;
+    }
+
+    .thumbnail {
+        border-radius: 12px;
+        overflow: hidden;
+        cursor: pointer;
+        aspect-ratio: 1;
+        background: #f8fafc;
+        border: 2px solid transparent;
+        transition: all 0.2s ease;
+    }
+
+    .thumbnail img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .thumbnail:hover {
+        border-color: #4f46e5;
+        transform: translateY(-2px);
+    }
+
+    .thumbnail.active {
+        border-color: #4f46e5;
+    }
+
+    .product-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
     }
 
     .product-title {
-        font-size: 2rem;
+        font-size: 2.25rem;
+        font-weight: 600;
+        color: #1a1f36;
+        margin: 0;
+        letter-spacing: -0.5px;
+        line-height: 1.2;
+    }
+
+    .price-section {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
     }
 
     .current-price {
-        font-size: 1.8rem;
+        font-size: 2rem;
+        font-weight: 600;
+        color: #1a1f36;
+        letter-spacing: -0.5px;
     }
 
     .original-price {
-        font-size: 1.3rem;
+        font-size: 1.25rem;
+        color: #6b7280;
+        text-decoration: line-through;
     }
-}
-/* Related Products Styles */
-.sec-relate-product {
-    background-color: #f8f9fa;
-    padding: 60px 0;
-}
 
-.sec-relate-product h3 {
-    font-size: 2rem;
-    color: #333;
-    margin-bottom: 30px;
-    text-align: center;
-}
+    .discount-badge {
+        padding: 0.5rem 1rem;
+        background: #dcfce7;
+        color: #166534;
+        border-radius: 12px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
 
-.block2 {
-    position: relative;
-    margin-bottom: 30px;
-}
+    .product-description {
+        font-size: 1rem;
+        line-height: 1.6;
+        color: #4b5563;
+        margin: 0;
+    }
 
-.block2-pic {
-    position: relative;
-    overflow: hidden;
-    border-radius: 8px;
-}
+    .colors-section, .quantity-section {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
 
-.block2-pic img {
-    width: 100%;
-    height: 300px;
-    object-fit: cover;
-    transition: transform 0.3s;
-}
+    .colors-section h3, .quantity-section h3 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #1a1f36;
+        margin: 0;
+    }
 
-.block2:hover .block2-pic img {
-    transform: scale(1.05);
-}
+    .color-options {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
 
-.block2-btn {
-    position: absolute;
-    bottom: -50px;
-    left: 50%;
-    transform: translateX(-50%);
-    transition: bottom 0.3s;
-    background: white;
-    padding: 10px 20px;
-    border-radius: 4px;
-    text-decoration: none;
-    color: #333;
-}
+    .color-option {
+        position: relative;
+    }
 
-.block2:hover .block2-btn {
-    bottom: 20px;
-}
+    .color-btn {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 12px;
+        border: 2px solid transparent;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+    }
 
-.block2-txt {
-    padding: 15px;
-    text-align: center;
-}
+    .color-btn:hover {
+        transform: translateY(-2px);
+    }
 
-.block2-txt-child1 a {
-    color: #333;
-    text-decoration: none;
-    font-weight: 500;
-    margin-bottom: 8px;
-    display: block;
-}
+    .color-btn.active {
+        border-color: #4f46e5;
+    }
 
-.block2-txt-child1 .stext-105 {
-    color: #717fe0;
-    font-weight: 600;
-}
+    .color-name {
+        position: absolute;
+        bottom: -1.75rem;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 0.75rem;
+        color: #6b7280;
+        white-space: nowrap;
+    }
 
-.text-decoration-line-through {
-    text-decoration: line-through;
-    color: #999;
-    margin-left: 8px;
-}
+    .quantity-controls {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .quantity-btn {
+        width: 2.5rem;
+        height: 2.5rem;
+        border: none;
+        background: #f1f5f9;
+        color: #1a1f36;
+        border-radius: 12px;
+        font-size: 1.25rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .quantity-btn:hover:not(:disabled) {
+        background: #e2e8f0;
+    }
+
+    .quantity-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    #quantity {
+        width: 4rem;
+        height: 2.5rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        text-align: center;
+        font-size: 1rem;
+        color: #1a1f36;
+        -moz-appearance: textfield;
+    }
+
+    #quantity::-webkit-outer-spin-button,
+    #quantity::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    .stock-info {
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+
+    .available-stock {
+        margin: 0;
+        color: #059669;
+        font-weight: 500;
+    }
+
+    .quantity-limit {
+        margin: 0.25rem 0 0 0;
+        color: #6b7280;
+        font-size: 0.75rem;
+    }
+
+    .out-of-stock {
+        margin: 0;
+        color: #dc2626;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .out-of-stock::before {
+        content: "⚠️";
+    }
+
+    .quantity-error {
+        color: #dc2626;
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+        display: none;
+    }
+
+    .quantity-error.show {
+        display: block;
+        animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .product-actions {
+        margin-top: 2rem;
+    }
+
+    .add-to-cart-btn {
+        width: 100%;
+        padding: 1.25rem 2rem;
+        background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+        color: white;
+        border: none;
+        border-radius: 16px;
+        font-size: 1.125rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        letter-spacing: -0.3px;
+        box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2), 
+                   0 2px 4px -2px rgba(79, 70, 229, 0.1);
+    }
+
+    .add-to-cart-btn:not(:disabled):hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 12px -1px rgba(79, 70, 229, 0.25), 
+                   0 4px 6px -2px rgba(79, 70, 229, 0.15);
+    }
+
+    .add-to-cart-btn:not(:disabled):active {
+        transform: translateY(0);
+        box-shadow: 0 2px 4px -1px rgba(79, 70, 229, 0.15), 
+                   0 1px 2px -1px rgba(79, 70, 229, 0.1);
+    }
+
+    .add-to-cart-btn:disabled {
+        background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+        color: #94a3b8;
+        cursor: not-allowed;
+        box-shadow: none;
+    }
+
+    .btn-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+
+    .btn-text {
+        position: relative;
+        z-index: 1;
+    }
+
+    .btn-shine {
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+            120deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.1) 45%,
+            rgba(255, 255, 255, 0.2) 50%,
+            rgba(255, 255, 255, 0.1) 55%,
+            transparent 100%
+        );
+        animation: shine 8s infinite;
+    }
+
+    @keyframes shine {
+        0% { left: -100%; }
+        20% { left: 100%; }
+        100% { left: 100%; }
+    }
+
+    @media (max-width: 992px) {
+        .product-container {
+            grid-template-columns: 1fr;
+            gap: 3rem;
+            padding: 2rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .product-detail {
+            padding: 100px 0 60px;
+        }
+
+        .product-title {
+            font-size: 1.875rem;
+        }
+
+        .current-price {
+            font-size: 1.75rem;
+        }
+
+        .thumbnails {
+            grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+        }
+
+        .add-to-cart-btn {
+            padding: 1rem 1.5rem;
+            font-size: 1rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .product-container {
+            padding: 1.5rem;
+        }
+
+        .price-section {
+            flex-wrap: wrap;
+        }
+    }
 </style>
 
 <script>
 const variants = <%- JSON.stringify(product.variants) %>;
 let currentVariant = 0;
 
-function updateQuantity(change) {
-    const input = document.getElementById('quantity');
-    const currentValue = parseInt(input.value) || 1;
+async function addToCart() {
+    const quantity = parseInt(document.getElementById('quantity').value);
     const variant = variants[currentVariant];
     const maxStock = Math.min(variant.quantity, 5); // Limit to 5 or available stock
+
+    // Check if user is logged in
+    try {
+        const response = await fetch('/check-auth');
+        const data = await response.json();
+        
+        if (!data.isLoggedIn) {
+            // Show login prompt with Sweet Alert
+            Swal.fire({
+                title: 'Not Logged In',
+                text: 'Please log in to add items to your cart',
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonText: 'Login',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#4f46e5',
+                cancelButtonColor: '#6b7280',
+                customClass: {
+                    confirmButton: 'swal2-confirm btn-primary',
+                    cancelButton: 'swal2-cancel btn-secondary'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = '/login';
+                }
+            });
+            return;
+        }
+
+        // Proceed with adding to cart if logged in
+        if (quantity > maxStock) {
+            Swal.fire({
+                title: 'Invalid Quantity',
+                text: `Maximum ${maxStock} items allowed`,
+                icon: 'warning',
+                confirmButtonColor: '#4f46e5'
+            });
+            return;
+        }
+
+        // Show loading state
+        Swal.fire({
+            title: 'Adding to Cart',
+            text: 'Please wait...',
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            willOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        const productData = {
+            productId: '<%= product._id %>',
+            quantity: quantity,
+            variantIndex: currentVariant
+        };
+
+        const cartResponse = await fetch('/cart/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(productData)
+        });
+
+        const cartData = await cartResponse.json();
+
+        if (cartResponse.ok && cartData.success) {
+            Swal.fire({
+                title: 'Success!',
+                text: 'Product added to cart',
+                icon: 'success',
+                confirmButtonColor: '#4f46e5',
+                showConfirmButton: false,
+                timer: 1500
+            });
+            
+            // Update cart count
+            updateCartCount();
+        } else {
+            // Show the specific error message from the server
+            Swal.fire({
+                title: 'Error',
+                text: cartData.message || 'Failed to add item to cart. Please try again.',
+                icon: 'error',
+                confirmButtonColor: '#4f46e5'
+            });
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        Swal.fire({
+            title: 'Error',
+            text: 'Failed to add item to cart. Please try again.',
+            icon: 'error',
+            confirmButtonColor: '#4f46e5'
+        });
+    }
+}
+
+// Function to update cart count
+async function updateCartCount() {
+    try {
+        const response = await fetch('/cart/count');
+        const data = await response.json();
+        if (data.success) {
+            const cartCountElement = document.getElementById('cartCount');
+            if (cartCountElement) {
+                cartCountElement.textContent = data.count;
+            }
+        }
+    } catch (error) {
+        console.error('Error updating cart count:', error);
+    }
+}
+
+function validateQuantity(input) {
+    const maxStock = parseInt(document.getElementById('current-stock').textContent);
+    const maxLimit = 5;
+    let value = parseInt(input.value);
     
-    let newValue = currentValue + change;
+    // Remove any existing error messages
+    const existingError = document.querySelector('.quantity-error');
+    if (existingError) {
+        existingError.remove();
+    }
+
+    // Create error message element
+    const errorMsg = document.createElement('p');
+    errorMsg.className = 'quantity-error';
     
-    // Ensure the value stays between 1 and maxStock
-    newValue = Math.max(1, Math.min(newValue, maxStock));
+    if (isNaN(value) || value < 1) {
+        value = 1;
+    } else if (value > maxLimit) {
+        value = maxLimit;
+        errorMsg.textContent = 'Maximum 5 items per order';
+        errorMsg.classList.add('show');
+    } else if (value > maxStock) {
+        value = maxStock;
+        errorMsg.textContent = `Only ${maxStock} items available in stock`;
+        errorMsg.classList.add('show');
+    }
     
-    input.value = newValue;
+    input.value = value;
+    
+    // Add error message if needed
+    if (errorMsg.textContent) {
+        input.parentElement.insertAdjacentElement('afterend', errorMsg);
+        setTimeout(() => errorMsg.remove(), 3000);
+    }
     
     // Update button states
-    document.querySelector('.qty-btn:first-child').disabled = newValue <= 1;
-    document.querySelector('.qty-btn:last-child').disabled = newValue >= maxStock;
+    document.querySelector('.quantity-btn:first-child').disabled = value <= 1;
+    document.querySelector('.quantity-btn:last-child').disabled = value >= Math.min(maxLimit, maxStock);
+}
+
+function updateQuantity(change) {
+    const input = document.getElementById('quantity');
+    const currentValue = parseInt(input.value);
+    const maxStock = parseInt(document.getElementById('current-stock').textContent);
+    const maxLimit = 5;
+    
+    const newValue = Math.max(1, Math.min(currentValue + change, Math.min(maxLimit, maxStock)));
+    input.value = newValue;
+    
+    validateQuantity(input);
 }
 
 function selectColor(color, index) {
@@ -663,108 +780,10 @@ function selectColor(color, index) {
     document.getElementById('current-stock').textContent = variant.quantity;
 }
 
-function addToCart() {
-    const quantity = parseInt(document.getElementById('quantity').value);
-    const variant = variants[currentVariant];
-    const maxStock = Math.min(variant.quantity, 5); // Limit to 5 or available stock
-    
-    if (quantity > maxStock) {
-        Swal.fire({
-            title: 'Quantity Limit Exceeded',
-            text: 'Maximum quantity limit is 5 items per product',
-            icon: 'warning',
-            confirmButtonText: 'OK',
-            confirmButtonColor: '#3085d6'
-        });
-        return;
-    }
-    
-    if (quantity < 1) {
-        Swal.fire({
-            title: 'Invalid Quantity',
-            text: 'Please select at least 1 item',
-            icon: 'warning',
-            confirmButtonText: 'OK',
-            confirmButtonColor: '#3085d6'
-        });
-        return;
-    }
-    
-    // Show loading state
-    Swal.fire({
-        title: 'Adding to Cart',
-        text: 'Please wait...',
-        allowOutsideClick: false,
-        showConfirmButton: false,
-        willOpen: () => {
-            Swal.showLoading();
-        }
-    });
-
-    fetch('/cart/add', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            productId: '<%= product._id %>',
-            quantity: quantity,
-            variantIndex: currentVariant
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            updateCartCount();
-            Swal.fire({
-                title: 'Success!',
-                text: 'Product added to cart successfully!',
-                icon: 'success',
-                confirmButtonText: 'Continue Shopping',
-                showCancelButton: true,
-                cancelButtonText: 'View Cart',
-                confirmButtonColor: 'white',
-                cancelButtonColor: 'white'
-            }).then((result) => {
-                if (!result.isConfirmed) {
-                    // If user clicks "View Cart"
-                    window.location.href = '/cart';
-                }
-            });
-        } else {
-            Swal.fire({
-                title: 'Error!',
-                text: data.message || 'Error adding to cart',
-                icon: 'error',
-                confirmButtonText: 'OK',
-                confirmButtonColor: '#3085d6'
-            });
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        Swal.fire({
-            title: 'Error!',
-            text: 'Failed to add product to cart',
-            icon: 'error',
-            confirmButtonText: 'OK',
-            confirmButtonColor: '#3085d6'
-        });
-    });
-}
-
 function updateMainImage(src, variantIndex) {
     document.getElementById('mainImage').src = src;
     document.getElementById('zoomResult').style.backgroundImage = `url(${src})`;
     currentVariant = variantIndex;
-}
-
-function updateCartCount() {
-    fetch('/cart/count')
-    .then(response => response.json())
-    .then(data => {
-        document.getElementById('cart-count').innerText = data.count;
-    });
 }
 </script>
 

@@ -48,9 +48,9 @@ router.post('/change-password',userAuth, userController.changePassword);
 // Address Management Routes
 router.get('/address-book', userAuth, userController.loadAddresses);
 router.get('/manage-addresses', userAuth, userController.loadAddresses);
-router.post('/add-address', userAuth, userController.addAddress);
-router.post('/edit-address/:id', userAuth, userController.editAddress);
-router.delete('/delete-address/:id', userAuth, userController.deleteAddress);
+router.post('/address/add', userAuth, userController.addAddress);
+router.put('/address/edit/:addressId', userAuth, userController.editAddress);
+router.delete('/address/delete/:addressId', userAuth, userController.deleteAddress);
 
 // Cart Routes
 router.post('/cart/add', userAuth, userController.addToCart);
@@ -62,5 +62,10 @@ router.get('/cart/count', userAuth, userController.getCartCount);
 // Checkout Routes
 router.get('/checkout', userAuth, userController.loadCheckout);
 router.post('/checkout', userAuth, userController.placeOrder);
+
+// Check authentication status endpoint
+router.get('/check-auth', (req, res) => {
+    res.json({ isLoggedIn: req.session.user ? true : false });
+});
 
 module.exports = router;

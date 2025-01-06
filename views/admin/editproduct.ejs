@@ -258,6 +258,7 @@
                        <div class="mb-4">
                            <label for="product_description" class="form-label">Description</label>
                            <textarea placeholder="Type here" name="description" class="form-control" id="description" rows="4" required><%= product.description %></textarea>
+                           <div class="invalid-feedback">Description must be at least 10 characters long</div>
                        </div>
 
                        <div class="row">
@@ -265,12 +266,14 @@
                         <div class="mb-4">
                             <label for="sale_price" class="form-label">Sale Price</label>
                             <input type="number"  placeholder="₹" name="salesPrice" class="form-control" id="salesPrice" value="<%= product.salesPrice %>" required >
+                            <div class="invalid-feedback">Please enter a valid sale price greater than 0</div>
                         </div>
                     </div>
                            <div class="col-lg-3">
                                <div class="mb-4">
                                    <label for="regular_price" class="form-label">Regular Price</label>
                                    <input type="number" placeholder="₹" name="price" class="form-control" id="price" value="<%= product.regularPrice %>" required>
+                                   <div class="invalid-feedback">Please enter a valid price greater than 0</div>
                                </div>
                            </div>
                            <div class="col-lg-3">
@@ -284,6 +287,7 @@
                                            </option>
                                        <% }); %>
                                    </select>
+                                   <div class="invalid-feedback">Please select a category</div>
                                </div>
                            </div>
                        </div>
@@ -300,12 +304,14 @@
                                                        <div class="mb-3">
                                                            <label class="form-label">Color</label>
                                                            <input type="text" class="form-control variant-color" value="<%= variant.color %>" required>
+                                                           <div class="invalid-feedback">Please enter a color</div>
                                                        </div>
                                                    </div>
                                                    <div class="col-md-4">
                                                        <div class="mb-3">
                                                            <label class="form-label">Quantity</label>
                                                            <input type="number" class="form-control variant-quantity" value="<%= variant.quantity %>" required>
+                                                           <div class="invalid-feedback">Please enter a valid quantity (0 or greater)</div>
                                                        </div>
                                                    </div>
                                                    <div class="col-md-4">
@@ -320,7 +326,7 @@
                                                        <label class="form-label">Images (Upload exactly 3 images)</label>
                                                        <div class="d-flex gap-3">
                                                            <% for(let i = 0; i < 3; i++) { %>
-                                                               <div class="preview-box <%= variant.images && variant.images[i] ? 'has-image' : '' %>"
+                                                               <div class="preview-box variant-preview-box <%= variant.images && variant.images[i] ? 'has-image' : '' %>"
                                                                     data-variant="<%= variantIndex %>"
                                                                     data-index="<%= i %>">
                                                                    <% if (variant.images && variant.images[i]) { %>
@@ -333,11 +339,13 @@
                                                                                data-index="<%= i %>"
                                                                                data-image="<%= variant.images[i] %>">&times;</button>
                                                                    <% } else { %>
+                                                                       <img src="" alt="" class="preview-image" style="display: none;">
                                                                        <div class="upload-text">
                                                                            <i class="fas fa-cloud-upload-alt upload-icon"></i>
                                                                            <p class="upload-message">Click to upload</p>
-                                                                           <p class="upload-hint">800x800 recommended</p>
+                                                                           <p class="upload-hint">or drag and drop</p>
                                                                        </div>
+                                                                       <div class="invalid-feedback">All 3 images are required</div>
                                                                    <% } %>
                                                                    <input type="file" 
                                                                           class="variant-image" 
@@ -378,12 +386,14 @@
                 <div class="mb-3">
                     <label class="form-label">Color</label>
                     <input type="text" class="form-control variant-color" required>
+                    <div class="invalid-feedback">Please enter a color</div>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="mb-3">
                     <label class="form-label">Quantity</label>
                     <input type="number" class="form-control variant-quantity" required>
+                    <div class="invalid-feedback">Please enter a valid quantity (0 or greater)</div>
                 </div>
             </div>
             <div class="col-md-4">
@@ -398,13 +408,15 @@
                 <label class="form-label">Images (Upload exactly 3 images)</label>
                 <div class="d-flex gap-3">
                     <% for(let i = 0; i < 3; i++) { %>
-                        <div class="preview-box"
+                        <div class="preview-box variant-preview-box"
                              data-index="<%= i %>">
+                            <img src="" alt="" class="preview-image" style="display: none;">
                             <div class="upload-text">
                                 <i class="fas fa-cloud-upload-alt upload-icon"></i>
                                 <p class="upload-message">Click to upload</p>
-                                <p class="upload-hint">800x800 recommended</p>
+                                <p class="upload-hint">or drag and drop</p>
                             </div>
+                            <div class="invalid-feedback">All 3 images are required</div>
                             <input type="file" 
                                    class="variant-image" 
                                    accept="image/png, image/jpeg, image/jpg"
@@ -591,7 +603,7 @@
         
         const previewBox = e.target.closest('.preview-box');
         if (!previewBox) return;
-
+        
         // Remove preview image
         const preview = previewBox.querySelector('img.preview-image');
         if (preview) {
@@ -638,7 +650,7 @@
 
                 // Change handler for the file input
                 imageInput.addEventListener('change', function(e) {
-                    if (this.files && this.files[0]) {
+                            if (this.files && this.files[0]) {
                         handleImageSelect(e, variantIndex, imageIndex);
                     }
                 });
@@ -681,6 +693,11 @@
             setupVariantImageHandlers(newVariant);
         });
 
+        // Add click handlers to all remove buttons
+        document.querySelectorAll('.remove-image').forEach(button => {
+            button.addEventListener('click', handleImageRemove);
+        });
+
         // Cropper modal buttons
         document.querySelector('.crop-save-btn').addEventListener('click', cropImage);
         document.querySelector('.close-modal-btn').addEventListener('click', closeCropperModal);
@@ -700,7 +717,7 @@
                 formData.append('description', document.getElementById('description').value);
                 formData.append('regularPrice', document.getElementById('price').value);
                 formData.append('category', document.getElementById('category').value);
-                formData.append('salesPrice', document.getElementById('salePrice').value);
+                formData.append('salesPrice', document.getElementById('salesPrice').value);
 
                 // Add variants data
                 const variants = [];
@@ -725,8 +742,12 @@
                             // Add new image to formData
                             const file = input.files[0];
                             formData.append('variantImages', file);
-                            // Mark this slot for a new image
-                            variant.images[imageIndex] = null; // Will be replaced by server
+                            // Store the variant and image index in the variant data
+                            variant.images[imageIndex] = {
+                                pending: true,
+                                variantIndex: variantIndex,
+                                imageIndex: imageIndex
+                            };
                         }
                     });
 
@@ -805,6 +826,273 @@
             }
         });
     });
+
+    // Validation functions
+    const productName = document.getElementById('product_name');
+    const description = document.getElementById('description');
+    const regularPrice = document.getElementById('price');
+    const salePrice = document.getElementById('salesPrice');
+    const category = document.getElementById('category');
+
+    function validateDescription() {
+        const descriptionText = description.value.trim();
+        const feedback = description.nextElementSibling;
+        
+        if (!descriptionText) {
+            description.classList.add('is-invalid');
+            description.classList.remove('is-valid');
+            if (feedback) {
+                feedback.textContent = 'Description is required';
+            }
+            return false;
+        } else if (descriptionText.length < 10) {
+            description.classList.add('is-invalid');
+            description.classList.remove('is-valid');
+            if (feedback) {
+                feedback.textContent = `Description must be at least 10 characters (${descriptionText.length}/10)`;
+            }
+            return false;
+        } else {
+            description.classList.remove('is-invalid');
+            description.classList.add('is-valid');
+            return true;
+        }
+    }
+
+    function validateRegularPrice() {
+        const price = parseFloat(regularPrice.value);
+        const feedback = regularPrice.nextElementSibling;
+        
+        if (isNaN(price) || price <= 0) {
+            regularPrice.classList.add('is-invalid');
+            regularPrice.classList.remove('is-valid');
+            if (feedback) {
+                feedback.textContent = 'Please enter a valid price greater than 0';
+            }
+            return false;
+        } else {
+            regularPrice.classList.remove('is-invalid');
+            regularPrice.classList.add('is-valid');
+            return true;
+        }
+    }
+
+    function validateSalePrice() {
+        const regPrice = parseFloat(regularPrice.value);
+        const saleP = parseFloat(salePrice.value);
+        const feedback = salePrice.nextElementSibling;
+        
+        if (isNaN(saleP) || saleP <= 0) {
+            salePrice.classList.add('is-invalid');
+            salePrice.classList.remove('is-valid');
+            if (feedback) {
+                feedback.textContent = 'Please enter a valid sale price greater than 0';
+            }
+            return false;
+        } else if (!isNaN(regPrice) && saleP > regPrice) {
+            salePrice.classList.add('is-invalid');
+            salePrice.classList.remove('is-valid');
+            if (feedback) {
+                feedback.textContent = 'Sale price cannot be greater than regular price';
+            }
+            return false;
+        } else {
+            salePrice.classList.remove('is-invalid');
+            salePrice.classList.add('is-valid');
+            return true;
+        }
+    }
+
+    function validateCategory() {
+        const feedback = category.nextElementSibling;
+        if (!category.value || category.value === 'Choose...') {
+            category.classList.add('is-invalid');
+            category.classList.remove('is-valid');
+            if (feedback) {
+                feedback.textContent = 'Please select a category';
+            }
+            return false;
+        } else {
+            category.classList.remove('is-invalid');
+            category.classList.add('is-valid');
+            return true;
+        }
+    }
+
+    function validateVariantFields() {
+        let isValid = true;
+        const variants = document.querySelectorAll('.variant-item');
+        
+        variants.forEach(variant => {
+            const colorInput = variant.querySelector('.variant-color');
+            const quantityInput = variant.querySelector('.variant-quantity');
+            
+            // Validate color
+            if (!colorInput.value.trim()) {
+                colorInput.classList.add('is-invalid');
+                colorInput.classList.remove('is-valid');
+                const feedback = colorInput.nextElementSibling;
+                if (feedback) {
+                    feedback.textContent = 'Please enter a color';
+                }
+                isValid = false;
+            } else {
+                colorInput.classList.remove('is-invalid');
+                colorInput.classList.add('is-valid');
+            }
+            
+            // Validate quantity
+            const qty = parseInt(quantityInput.value);
+            if (isNaN(qty) || qty < 0) {
+                quantityInput.classList.add('is-invalid');
+                quantityInput.classList.remove('is-valid');
+                const feedback = quantityInput.nextElementSibling;
+                if (feedback) {
+                    feedback.textContent = 'Please enter a valid quantity (0 or greater)';
+                }
+                isValid = false;
+            } else {
+                quantityInput.classList.remove('is-invalid');
+                quantityInput.classList.add('is-valid');
+            }
+        });
+        
+        return isValid;
+    }
+
+    // Add event listeners for variant fields
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('variant-color')) {
+            if (!e.target.value.trim()) {
+                e.target.classList.add('is-invalid');
+                e.target.classList.remove('is-valid');
+            } else {
+                e.target.classList.remove('is-invalid');
+                e.target.classList.add('is-valid');
+            }
+        }
+        
+        if (e.target.classList.contains('variant-quantity')) {
+            const qty = parseInt(e.target.value);
+            if (isNaN(qty) || qty < 0) {
+                e.target.classList.add('is-invalid');
+                e.target.classList.remove('is-valid');
+            } else {
+                e.target.classList.remove('is-invalid');
+                e.target.classList.add('is-valid');
+            }
+        }
+    });
+
+    // Add event listeners for real-time validation
+    productName.addEventListener('input', function() {
+        if (!productName.value.trim()) {
+            productName.classList.add('is-invalid');
+            productName.classList.remove('is-valid');
+        } else {
+            productName.classList.remove('is-invalid');
+            productName.classList.add('is-valid');
+        }
+    });
+    description.addEventListener('input', validateDescription);
+    regularPrice.addEventListener('input', validateRegularPrice);
+    salePrice.addEventListener('input', validateSalePrice);
+    category.addEventListener('change', validateCategory);
+
+    // Form submission handler
+    const form = document.getElementById('productForm');
+    if (form) {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Reset all validation states
+            document.querySelectorAll('.preview-box').forEach(box => {
+                box.classList.remove('is-invalid');
+            });
+            
+            // Validate all fields including images
+            let isValid = true;
+            
+            // Field validations
+            if (!productName.value.trim()) {
+                productName.classList.add('is-invalid');
+                productName.classList.remove('is-valid');
+                isValid = false;
+            }
+            if (!validateDescription()) isValid = false;
+            if (!validateRegularPrice()) isValid = false;
+            if (!validateSalePrice()) isValid = false;
+            if (!validateCategory()) isValid = false;
+            
+            // Validate variant fields
+            if (!validateVariantFields()) isValid = false;
+
+            // Validate at least 3 images in variants
+            const variants = document.querySelectorAll('.variant-item');
+            variants.forEach(variant => {
+                const previewBoxes = variant.querySelectorAll('.variant-preview-box');
+                let validImageCount = 0;
+                
+                previewBoxes.forEach(box => {
+                    const img = box.querySelector('.preview-image');
+                    if (img && img.src && img.src !== '' && img.style.display !== 'none') {
+                        validImageCount++;
+                    }
+                });
+                
+                if (validImageCount < 3) {
+                    // Show error on all empty image boxes
+                    previewBoxes.forEach(box => {
+                        const img = box.querySelector('.preview-image');
+                        if (!img || !img.src || img.src === '' || img.style.display === 'none') {
+                            box.classList.add('is-invalid');
+                            const feedback = box.nextElementSibling;
+                            if (feedback && feedback.classList.contains('invalid-feedback')) {
+                                feedback.textContent = `Please add at least 3 images (${validImageCount}/3 added)`;
+                            }
+                        }
+                    });
+                    isValid = false;
+                }
+            });
+
+            if (!isValid) {
+                return;
+            }
+
+            try {
+                const formData = new FormData(this);
+                
+                // Send the form data
+                const response = await fetch('/admin/updateProduct/<%= product._id %>', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: 'Product updated successfully!',
+                        showConfirmButton: false,
+                        timer: 1500
+                    }).then(() => {
+                        window.location.href = '/admin/products';
+                    });
+                } else {
+                    throw new Error(result.message || 'Failed to update product');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: error.message || 'Failed to update product. Please try again.'
+                });
+            }
+        });
+    }
 </script>
 
 <%- include("../../views/partials/admin/footer") %>

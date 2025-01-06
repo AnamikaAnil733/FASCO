@@ -469,7 +469,6 @@
        margin-top: 0.25rem;
        display: none;
    }
-
    .form-control.is-invalid {
        border-color: #dc3545;
        padding-right: calc(1.5em + 0.75rem);
@@ -657,38 +656,6 @@
    .form-select:focus {
        box-shadow: 0 0 0 3px rgba(181, 216, 204, 0.3);
        border-color: var(--primary-color);
-   }
-
-   .preview-box {
-       width: 150px;
-       height: 150px;
-       border: 2px dashed var(--primary-color);
-       border-radius: 12px;
-       overflow: hidden;
-       position: relative;
-       cursor: pointer;
-       transition: all 0.3s ease;
-       background: white;
-       display: flex;
-       flex-direction: column;
-       align-items: center;
-       justify-content: center;
-       padding: 15px;
-   }
-
-   .preview-box img {
-       width: 100%;
-       height: 100%;
-       object-fit: cover;
-       display: none;
-   }
-
-   .preview-box.has-image img {
-       display: block;
-   }
-
-   .preview-box.has-image .upload-text {
-       display: none;
    }
 
    .upload-text {
@@ -1025,11 +992,14 @@
    }
 
    /* Add validation styles */
-   .error-message {
-       color: #dc3545;
-       font-size: 0.875rem;
-       margin-top: 0.25rem;
+   .invalid-feedback {
        display: none;
+       color: #dc3545;
+       font-size: 0.875em;
+       margin-top: 0.25rem;
+   }
+   .form-control.is-invalid + .invalid-feedback {
+       display: block;
    }
 
    .form-control.is-invalid {
@@ -1199,99 +1169,6 @@
        transform: scale(1.1);
    }
 
-   /* Preview Box Styles */
-   .preview-box {
-       width: 150px;
-       height: 150px;
-       border: 2px dashed #ddd;
-       border-radius: 8px;
-       position: relative;
-       overflow: hidden;
-       cursor: pointer;
-       transition: all 0.3s ease;
-       background: #f8f9fa;
-   }
-
-   .preview-box:hover {
-       border-color: var(--primary-color);
-   }
-
-   .preview-box.has-image {
-       border-style: solid;
-   }
-
-   .preview-image {
-       width: 100%;
-       height: 100%;
-       object-fit: cover;
-   }
-
-   .upload-text {
-       position: absolute;
-       top: 50%;
-       left: 50%;
-       transform: translate(-50%, -50%);
-       text-align: center;
-       color: #6c757d;
-   }
-
-   .upload-icon {
-       font-size: 2rem;
-       margin-bottom: 8px;
-   }
-
-   .upload-message {
-       margin: 0;
-       font-size: 0.9rem;
-       font-weight: 500;
-   }
-
-   .upload-hint {
-       margin: 4px 0 0;
-       font-size: 0.8rem;
-       opacity: 0.7;
-   }
-
-   .remove-image {
-       position: absolute;
-       top: 5px;
-       right: 5px;
-       width: 24px;
-       height: 24px;
-       border-radius: 50%;
-       background: rgba(220, 53, 69, 0.9);
-       color: white;
-       border: none;
-       display: none;
-       align-items: center;
-       justify-content: center;
-       cursor: pointer;
-       transition: all 0.3s ease;
-       z-index: 1;
-   }
-
-   .remove-image:hover {
-       background: #dc3545;
-       transform: scale(1.1);
-   }
-
-   .has-image .remove-image {
-       display: flex;
-   }
-
-   :root {
-       --primary-color: #B5D8CC;
-       --secondary-color: #E8B4BC;
-       --accent-color: #FFD9C0;
-       --background-light: #F8F6F4;
-       --text-dark: #2C3333;
-       --text-light: #F8F6F4;
-       --success-color: #28a745;
-       --danger-color: #dc3545;
-       --warning-color: #ffc107;
-       --info-color: #17a2b8;
-   }
-
    .variant-item {
        position: relative;
        background: var(--background-light);
@@ -1384,57 +1261,17 @@
        transform: scale(1.1);
    }
 
-   /* Preview Box Styles */
-   .preview-box {
-       width: 150px;
-       height: 150px;
-       border: 2px dashed #ddd;
-       border-radius: 8px;
-       position: relative;
-       overflow: hidden;
-       cursor: pointer;
-       transition: all 0.3s ease;
-       background: #f8f9fa;
-   }
-
-   .preview-box:hover {
-       border-color: var(--primary-color);
-   }
-
-   .preview-box.has-image {
-       border-style: solid;
-   }
-
-   .preview-image {
-       width: 100%;
-       height: 100%;
-       object-fit: cover;
-   }
-
-   .upload-text {
-       position: absolute;
-       top: 50%;
-       left: 50%;
-       transform: translate(-50%, -50%);
-       text-align: center;
-       color: #6c757d;
-   }
-
-   .upload-icon {
-       font-size: 2rem;
-       margin-bottom: 8px;
-   }
-
-   .upload-message {
-       margin: 0;
-       font-size: 0.9rem;
-       font-weight: 500;
-   }
-
-   .upload-hint {
-       margin: 4px 0 0;
-       font-size: 0.8rem;
-       opacity: 0.7;
+   :root {
+       --primary-color: #B5D8CC;
+       --secondary-color: #E8B4BC;
+       --accent-color: #FFD9C0;
+       --background-light: #F8F6F4;
+       --text-dark: #2C3333;
+       --text-light: #F8F6F4;
+       --success-color: #28a745;
+       --danger-color: #dc3545;
+       --warning-color: #ffc107;
+       --info-color: #17a2b8;
    }
 
    .remove-image {
@@ -1464,54 +1301,19 @@
        display: flex;
    }
 
-   :root {
-       --primary-color: #B5D8CC;
-       --secondary-color: #E8B4BC;
-       --accent-color: #FFD9C0;
-       --background-light: #F8F6F4;
-       --text-dark: #2C3333;
-       --text-light: #F8F6F4;
-       --success-color: #28a745;
-       --danger-color: #dc3545;
-       --warning-color: #ffc107;
-       --info-color: #17a2b8;
+   /* Add these new styles */
+   .preview-box.is-invalid {
+       border-color: #dc3545;
+       border-style: solid;
    }
 
-   .variant-item {
-       position: relative;
-       background: var(--background-light);
-       transition: all 0.3s ease;
+   .preview-box.is-invalid + .invalid-feedback {
+       display: block;
    }
 
-   .variant-item:hover {
-       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-   }
-
-   .remove-variant {
-       opacity: 0.8;
-       transition: all 0.3s ease;
-   }
-
-   .remove-variant:hover {
-       opacity: 1;
-       transform: scale(1.1);
-   }
-
-   #addVariant {
-       background-color: var(--primary-color);
+   .preview-box.dragover {
        border-color: var(--primary-color);
-       color: var(--text-dark);
-       transition: all 0.3s ease;
-   }
-
-   #addVariant:hover {
-       background-color: var(--secondary-color);
-       border-color: var(--secondary-color);
-       transform: translateY(-1px);
-   }
-
-   #addVariant i {
-       margin-right: 5px;
+       background-color: rgba(181, 216, 204, 0.1);
    }
 </style>
 <body>
@@ -1533,12 +1335,14 @@
                                     <div class="mb-3">
                                         <label for="product_name" class="form-label">Product Name</label>
                                         <input type="text" class="form-control" id="product_name" name="name" >
+                                        <div class="invalid-feedback">Please enter a product name</div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="brand" class="form-label">Brand</label>
                                         <input type="text" class="form-control" id="brand" name="brand">
+                                        <div class="invalid-feedback">Please enter a brand name</div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -1552,24 +1356,28 @@
                                                 <% }); %>
                                             <% } %>
                                         </select>
+                                        <div class="invalid-feedback">Please select a category</div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="regular_price" class="form-label">Regular Price</label>
                                         <input type="number" class="form-control" id="regular_price" name="regularPrice">
+                                        <div class="invalid-feedback">Please enter a valid regular price</div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="sale_price" class="form-label">Sale Price</label>
                                         <input type="number" class="form-control" id="sale_price" name="salePrice" >
+                                        <div class="invalid-feedback">Sale price must be less than or equal to regular price</div>
                                     </div>
                                 </div>
                                 <div class="col-12">
                                     <div class="mb-3">
                                         <label for="description" class="form-label">Description</label>
                                         <textarea class="form-control" id="description" name="description" rows="3" ></textarea>
+                                        <div class="invalid-feedback">Description must be at least 10 characters long</div>
                                     </div>
                                 </div>
                             </div>
@@ -1611,12 +1419,14 @@
                 <div class="mb-3">
                     <label class="form-label">Color</label>
                     <input type="text" class="form-control variant-color">
+                    <div class="invalid-feedback">Please enter a color name</div>
                 </div>
             </div>
             <div class="col-md-6">
                 <div class="mb-3">
                     <label class="form-label">Quantity</label>
-                    <input type="number" class="form-control variant-quantity" required min="1">
+                    <input type="number" class="form-control variant-quantity"  min="1">
+                    <div class="invalid-feedback">Please enter a valid quantity</div>
                 </div>
             </div>
             <div class="col-12">
@@ -1629,6 +1439,7 @@
                             <p class="upload-message">Click to upload</p>
                             <p class="upload-hint">or drag and drop</p>
                         </div>
+                        <div class="invalid-feedback">All 3 images are required</div>
                     </div>
                     
                     <div class="preview-box variant-preview-box" data-index="1">
@@ -1638,6 +1449,7 @@
                             <p class="upload-message">Click to upload</p>
                             <p class="upload-hint">or drag and drop</p>
                         </div>
+                        <div class="invalid-feedback">All 3 images are required</div>
                     </div>
                     
                     <div class="preview-box variant-preview-box" data-index="2">
@@ -1647,6 +1459,7 @@
                             <p class="upload-message">Click to upload</p>
                             <p class="upload-hint">or drag and drop</p>
                         </div>
+                        <div class="invalid-feedback">All 3 images are required</div>
                     </div>
                 </div>
             </div>
@@ -1704,23 +1517,23 @@
                     const reader = new FileReader();
                     reader.onload = (e) => {
                         openCropperModal(box, e.target.result);
+                        box.classList.remove('is-invalid');
                     };
                     reader.readAsDataURL(file);
                 } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Invalid File Type',
-                        text: 'Please select an image file.'
-                    });
+                    const feedback = box.nextElementSibling;
+                    if (feedback && feedback.classList.contains('invalid-feedback')) {
+                        feedback.textContent = 'Please select an image file';
+                    }
                 }
             }
         });
         
         box.appendChild(input);
-
+        
         // Single click handler for the box
         const clickHandler = (e) => {
-            if (!box.classList.contains('has-image')) {
+            if (!cropper) {
                 input.click();
             }
         };
@@ -1729,7 +1542,7 @@
         box.removeEventListener('click', clickHandler);
         // Add new click listener
         box.addEventListener('click', clickHandler);
-
+        
         // Add remove button if it doesn't exist
         let removeBtn = box.querySelector('.remove-image');
         if (!removeBtn) {
@@ -1751,6 +1564,46 @@
             });
             
             box.appendChild(removeBtn);
+        }
+        
+        box.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            box.classList.add('dragover');
+        });
+        
+        box.addEventListener('dragleave', () => {
+            box.classList.remove('dragover');
+        });
+        
+        box.addEventListener('drop', (e) => {
+            e.preventDefault();
+            box.classList.remove('dragover');
+            
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                input.files = e.dataTransfer.files;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    openCropperModal(box, e.target.result);
+                    box.classList.remove('is-invalid');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                const feedback = box.nextElementSibling;
+                if (feedback && feedback.classList.contains('invalid-feedback')) {
+                    feedback.textContent = 'Please drop an image file';
+                }
+            }
+        });
+    }
+
+    function validateImageBox(box) {
+        const img = box.querySelector('.preview-image');
+        if (!img || !img.src || img.src === '' || img.style.display === 'none') {
+            return false;
+        } else {
+            box.classList.remove('is-invalid');
+            return true;
         }
     }
 
@@ -1839,11 +1692,6 @@
                 const variantCount = variantsContainer.children.length;
                 
                 if (variantCount >= maxVariants) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Maximum Variants Reached',
-                        text: 'You can only add up to 5 variants.'
-                    });
                     return;
                 }
 
@@ -1859,32 +1707,311 @@
             });
         }
 
+        // Real-time validation for all input fields
+        const productName = document.getElementById('product_name');
+        const brand = document.getElementById('brand');
+        const category = document.getElementById('category');
+        const regularPrice = document.getElementById('regular_price');
+        const salePrice = document.getElementById('sale_price');
+        const description = document.getElementById('description');
+
+        function validateProductName() {
+            if (!productName.value.trim()) {
+                productName.classList.add('is-invalid');
+                productName.classList.remove('is-valid');
+                return false;
+            } else {
+                productName.classList.remove('is-invalid');
+                productName.classList.add('is-valid');
+                return true;
+            }
+        }
+
+        function validateBrand() {
+            if (!brand.value.trim()) {
+                brand.classList.add('is-invalid');
+                brand.classList.remove('is-valid');
+                return false;
+            } else {
+                brand.classList.remove('is-invalid');
+                brand.classList.add('is-valid');
+                return true;
+            }
+        }
+
+        function validateCategory() {
+            if (!category.value) {
+                category.classList.add('is-invalid');
+                category.classList.remove('is-valid');
+                return false;
+            } else {
+                category.classList.remove('is-invalid');
+                category.classList.add('is-valid');
+                return true;
+            }
+        }
+
+        function validateRegularPrice() {
+            const price = parseFloat(regularPrice.value);
+            if (!regularPrice.value || price <= 0) {
+                regularPrice.classList.add('is-invalid');
+                regularPrice.classList.remove('is-valid');
+                return false;
+            } else {
+                regularPrice.classList.remove('is-invalid');
+                regularPrice.classList.add('is-valid');
+                validateSalePrice(); // Revalidate sale price when regular price changes
+                return true;
+            }
+        }
+
+        function validateSalePrice() {
+            if (!salePrice.value) {
+                salePrice.classList.remove('is-invalid');
+                salePrice.classList.remove('is-valid');
+                return true;
+            }
+
+            const regularPriceValue = parseFloat(regularPrice.value) || 0;
+            const salePriceValue = parseFloat(salePrice.value) || 0;
+
+            if (salePriceValue <= 0) {
+                salePrice.classList.add('is-invalid');
+                salePrice.classList.remove('is-valid');
+                salePrice.nextElementSibling.textContent = 'Sale price must be greater than 0';
+                return false;
+            } else if (salePriceValue > regularPriceValue) {
+                salePrice.classList.add('is-invalid');
+                salePrice.classList.remove('is-valid');
+                salePrice.nextElementSibling.textContent = 'Sale price cannot be greater than regular price';
+                return false;
+            } else {
+                salePrice.classList.remove('is-invalid');
+                salePrice.classList.add('is-valid');
+                return true;
+            }
+        }
+
+        function validateDescription() {
+            const descriptionText = description.value.trim();
+            const feedback = description.nextElementSibling;
+            
+            if (!descriptionText) {
+                description.classList.add('is-invalid');
+                description.classList.remove('is-valid');
+                if (feedback) {
+                    feedback.textContent = 'Description is required';
+                }
+                return false;
+            } else if (descriptionText.length < 10) {
+                description.classList.add('is-invalid');
+                description.classList.remove('is-valid');
+                if (feedback) {
+                    feedback.textContent = `Description must be at least 10 characters (${descriptionText.length}/10)`;
+                }
+                return false;
+            } else {
+                description.classList.remove('is-invalid');
+                description.classList.add('is-valid');
+                return true;
+            }
+        }
+
+        // Add event listeners for real-time validation
+        productName.addEventListener('input', validateProductName);
+        brand.addEventListener('input', validateBrand);
+        category.addEventListener('change', validateCategory);
+        regularPrice.addEventListener('input', validateRegularPrice);
+        salePrice.addEventListener('input', validateSalePrice);
+        description.addEventListener('input', validateDescription);
+
+        // Also validate sale price when regular price changes
+        regularPrice.addEventListener('input', validateSalePrice);
+
+        // Validate variants in real-time
+        function initializeVariantValidation(variantItem) {
+            const colorInput = variantItem.querySelector('.variant-color');
+            const quantityInput = variantItem.querySelector('.variant-quantity');
+
+            function validateColor() {
+                if (!colorInput.value.trim()) {
+                    colorInput.classList.add('is-invalid');
+                    colorInput.classList.remove('is-valid');
+                    return false;
+                } else {
+                    colorInput.classList.remove('is-invalid');
+                    colorInput.classList.add('is-valid');
+                    return true;
+                }
+            }
+
+            function validateQuantity() {
+                if (!quantityInput.value || parseInt(quantityInput.value) <= 0) {
+                    quantityInput.classList.add('is-invalid');
+                    quantityInput.classList.remove('is-valid');
+                    return false;
+                } else {
+                    quantityInput.classList.remove('is-invalid');
+                    quantityInput.classList.add('is-valid');
+                    return true;
+                }
+            }
+
+            colorInput.addEventListener('input', validateColor);
+            quantityInput.addEventListener('input', validateQuantity);
+        }
+
+        // Initialize validation for existing variants
+        document.querySelectorAll('.variant-item').forEach(initializeVariantValidation);
+
+        // Add validation initialization to variant addition
+        const originalAddVariantClick = addVariantBtn.onclick;
+        addVariantBtn.onclick = function(e) {
+            if (originalAddVariantClick) {
+                originalAddVariantClick.call(this, e);
+            }
+            // Initialize validation for the newly added variant
+            const newVariant = document.querySelector('.variant-item:last-child');
+            if (newVariant) {
+                initializeVariantValidation(newVariant);
+            }
+        };
+
         // Form submission handler
         const form = document.getElementById('addProductForm');
         if (form) {
             form.addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
-                // Basic validation
-                const requiredFields = this.querySelectorAll('[required]');
+                // Reset all image validation states
+                document.querySelectorAll('.preview-box').forEach(box => {
+                    box.classList.remove('is-invalid');
+                });
+                
+                // Validate all fields including images
                 let isValid = true;
                 
-                requiredFields.forEach(field => {
-                    if (!field.value) {
+                // Product Name validation
+                if (!productName.value.trim()) {
+                    productName.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    productName.classList.remove('is-invalid');
+                    productName.classList.add('is-valid');
+                }
+                
+                // Brand validation
+                if (!brand.value.trim()) {
+                    brand.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    brand.classList.remove('is-invalid');
+                    brand.classList.add('is-valid');
+                }
+                
+                // Category validation
+                if (!category.value) {
+                    category.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    category.classList.remove('is-invalid');
+                    category.classList.add('is-valid');
+                }
+                
+                // Regular Price validation
+                if (!regularPrice.value || parseFloat(regularPrice.value) <= 0) {
+                    regularPrice.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    regularPrice.classList.remove('is-invalid');
+                    regularPrice.classList.add('is-valid');
+                }
+                
+                // Sale Price validation
+                if (salePrice.value && (parseFloat(salePrice.value) <= 0 || parseFloat(salePrice.value) > parseFloat(regularPrice.value))) {
+                    salePrice.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    salePrice.classList.remove('is-invalid');
+                    if (salePrice.value) {
+                        salePrice.classList.add('is-valid');
+                    }
+                }
+                
+                // Description validation
+                const descriptionText = description.value.trim();
+                const feedback = description.nextElementSibling;
+                
+                if (!descriptionText) {
+                    description.classList.add('is-invalid');
+                    description.classList.remove('is-valid');
+                    if (feedback) {
+                        feedback.textContent = 'Description is required';
+                    }
+                    isValid = false;
+                } else if (descriptionText.length < 10) {
+                    description.classList.add('is-invalid');
+                    description.classList.remove('is-valid');
+                    if (feedback) {
+                        feedback.textContent = `Description must be at least 10 characters (${descriptionText.length}/10)`;
+                    }
+                    isValid = false;
+                } else {
+                    description.classList.remove('is-invalid');
+                    description.classList.add('is-valid');
+                }
+                
+                // Validate variants if any exist
+                const variants = document.querySelectorAll('.variant-item');
+                variants.forEach(variant => {
+                    const colorInput = variant.querySelector('.variant-color');
+                    const quantityInput = variant.querySelector('.variant-quantity');
+                    
+                    if (!colorInput.value.trim()) {
+                        colorInput.classList.add('is-invalid');
                         isValid = false;
-                        field.classList.add('is-invalid');
                     } else {
-                        field.classList.remove('is-invalid');
-                        field.classList.add('is-valid');
+                        colorInput.classList.remove('is-invalid');
+                        colorInput.classList.add('is-valid');
+                    }
+                    
+                    if (!quantityInput.value || parseInt(quantityInput.value) <= 0) {
+                        quantityInput.classList.add('is-invalid');
+                        isValid = false;
+                    } else {
+                        quantityInput.classList.remove('is-invalid');
+                        quantityInput.classList.add('is-valid');
+                    }
+                });
+
+                // Validate at least one image in variants
+                const variantBoxes = document.querySelectorAll('.variant-item');
+                variantBoxes.forEach(variant => {
+                    const previewBoxes = variant.querySelectorAll('.variant-preview-box');
+                    let validImageCount = 0;
+                    
+                    previewBoxes.forEach(box => {
+                        if (validateImageBox(box)) {
+                            validImageCount++;
+                        }
+                    });
+                    
+                    if (validImageCount < 3) {
+                        // Show error on all empty image boxes
+                        previewBoxes.forEach(box => {
+                            if (!validateImageBox(box)) {
+                                box.classList.add('is-invalid');
+                                const feedback = box.nextElementSibling;
+                                if (feedback && feedback.classList.contains('invalid-feedback')) {
+                                    feedback.textContent = `Please add at least 3 images (${validImageCount}/3 added)`;
+                                }
+                            }
+                        });
+                        isValid = false;
                     }
                 });
 
                 if (!isValid) {
-                    Swal.fire({
-                        title: 'Error!',
-                        text: 'Please fill in all required fields',
-                        icon: 'error'
-                    });
                     return;
                 }
 
@@ -1925,17 +2052,6 @@
                         }
                     }
 
-                    // Show loading state
-                    Swal.fire({
-                        title: 'Uploading...',
-                        text: 'Please wait while we upload your product',
-                        allowOutsideClick: false,
-                        showConfirmButton: false,
-                        willOpen: () => {
-                            Swal.showLoading();
-                        }
-                    });
-
                     // Send the form data
                     const response = await fetch('/admin/addProducts', {
                         method: 'POST',
@@ -1948,7 +2064,7 @@
                         Swal.fire({
                             icon: 'success',
                             title: 'Success!',
-                            text: result.message,
+                            text: 'Product added successfully!',
                             showConfirmButton: false,
                             timer: 1500
                         }).then(() => {
@@ -1962,7 +2078,7 @@
                     Swal.fire({
                         icon: 'error',
                         title: 'Error!',
-                        text: error.message || 'Something went wrong. Please try again.'
+                        text: error.message || 'Failed to add product. Please try again.'
                     });
                 }
             });

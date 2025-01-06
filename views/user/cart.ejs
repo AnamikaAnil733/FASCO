@@ -1,115 +1,352 @@
 <%- include('../partials/user/header.ejs') %>
 
+<style>
+.cart-page {
+    padding: 120px 0 80px;
+    background-color: #f8fafc;
+    min-height: 100vh;
+}
+
+.bread-crumb {
+    margin-bottom: 2rem;
+    padding: 1rem 0;
+}
+
+.bread-crumb a {
+    color: #4f46e5;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s ease;
+}
+
+.bread-crumb a:hover {
+    color: #4338ca;
+}
+
+.bread-crumb .cl4 {
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.card {
+    border-radius: 16px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05) !important;
+}
+
+.card-body {
+    padding: 2rem !important;
+}
+
+.font-weight-bold {
+    font-weight: 600 !important;
+    color: #1e293b;
+    letter-spacing: -0.5px;
+}
+
+.alert-danger {
+    background-color: #fee2e2;
+    border: none;
+    color: #991b1b;
+    border-radius: 12px;
+    padding: 1rem;
+}
+
+.img-fluid {
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+}
+
+.img-fluid:hover {
+    transform: scale(1.05);
+}
+
+.text-muted {
+    color: #64748b !important;
+}
+
+.quantity-selector {
+    background: #f1f5f9;
+    border-radius: 12px;
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.btn-outline-secondary {
+    border: none;
+    background: white;
+    color: #1e293b;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.btn-outline-secondary:hover:not(:disabled) {
+    background: #e2e8f0;
+    transform: translateY(-1px);
+}
+
+.btn-outline-secondary:disabled {
+    background: #f1f5f9;
+    opacity: 0.7;
+}
+
+.quantity-input {
+    border: none;
+    background: transparent;
+    font-weight: 500;
+    color: #1e293b;
+}
+
+.remove-item {
+    color: #ef4444 !important;
+    transition: all 0.2s ease;
+}
+
+.remove-item:hover {
+    color: #dc2626 !important;
+    transform: scale(1.1);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+    border: none;
+    padding: 1rem 1.5rem;
+    font-weight: 500;
+    letter-spacing: -0.3px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+}
+
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 12px -1px rgba(79, 70, 229, 0.25);
+}
+
+.btn-primary:disabled {
+    background: #e2e8f0;
+    cursor: not-allowed;
+}
+
+.btn-outline-secondary.btn-block {
+    border: 2px solid #e2e8f0;
+    background: white;
+    color: #4b5563;
+    transition: all 0.2s ease;
+}
+
+.btn-outline-secondary.btn-block:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+}
+
+.border-bottom {
+    border-color: #e2e8f0 !important;
+}
+
+hr {
+    border-color: #e2e8f0;
+    margin: 1.5rem 0;
+}
+
+.text-success {
+    color: #059669 !important;
+}
+
+/* Empty cart styling */
+.text-center.py-5 {
+    border-radius: 24px;
+    background: white !important;
+    padding: 4rem 2rem !important;
+}
+
+.zmdi-shopping-cart {
+    color: #9ca3af !important;
+    margin-bottom: 1.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .cart-page {
+        padding: 100px 0 60px;
+    }
+    
+    .card-body {
+        padding: 1.5rem !important;
+    }
+    
+    .quantity-selector {
+        margin-top: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .font-weight-bold {
+        font-size: 1.5rem;
+    }
+    
+    .img-fluid {
+        width: 80px !important;
+        height: 80px !important;
+    }
+}
+</style>
 
 <!-- Space after header -->
-<div style="margin-top: 100px;"></div>
-
-<!-- Breadcrumb -->
-<div class="container">
-  <div class="bread-crumb flex-w p-l-25 p-r-15 p-t-30 p-lr-0-lg">
-    <a href="/" class="stext-109 cl8 hov-cl1 trans-04">
-      Home
-      <i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
-    </a>
-    <span class="stext-109 cl4">
-      Shopping Cart
-    </span>
+<div class="cart-page">
+  <!-- Breadcrumb -->
+  <div class="container">
+    <div class="bread-crumb flex-w p-l-25 p-r-15 p-t-30 p-lr-0-lg">
+      <a href="/" class="stext-109 cl8 hov-cl1 trans-04">
+        Home
+        <i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+      </a>
+      <span class="stext-109 cl4">
+        Shopping Cart
+      </span>
+    </div>
   </div>
-</div>
 
-<!-- Space between breadcrumb and content -->
-<div style="margin-top: 50px;"></div>
+  <!-- Cart Content -->
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8">
+        <h2 class="mb-4 font-weight-bold">Your Shopping Cart</h2>
+        
+        <% if (error) { %>
+          <div class="alert alert-danger mb-4" role="alert">
+            <%= error %>
+          </div>
+        <% } %>
 
-<!-- Cart Content -->
-<div class="container">
-  <div class="row">
-    <div class="col-lg-8">
-      <h2 class="mb-4 font-weight-bold">Your Shopping Cart</h2>
-      <% if (!cart || !cart.items || cart.items.length === 0) { %>
-      <div class="text-center py-5 bg-light rounded shadow-sm">
-        <i class="zmdi zmdi-shopping-cart" style="font-size: 4rem; color: #ccc;"></i>
-        <h4 class="mt-4 mb-3">Your cart is empty</h4>
-        <p class="text-muted mb-4">Looks like you haven't added anything to your cart yet.</p>
-        <a href="/" class="btn btn-primary px-4 py-2">Start Shopping</a>
-      </div>
-      <% } else { %>
-      <div class="card border-0 shadow-sm">
-        <div class="card-body p-4">
-          <% cart.items.forEach(item => { %>
-          <div class="row align-items-center mb-4 pb-3 border-bottom" data-product-id="<%= item.productId._id %>">
-            <div class="col-md-2">
-              <% if (item.productId.variants && item.productId.variants.length > 0 && 
-                                          item.productId.variants[item.variantIndex].images && item.productId.variants[item.variantIndex].images.length > 0) { %>
-              <img src="/uploads/product-images/<%= item.productId.variants[item.variantIndex].images[0] %>" alt="<%= item.productId.productName %>" class="img-fluid rounded shadow-sm" style="width: 100px; height: 100px; object-fit: cover;">
-              <% } else { %>
-              <img src="/images/no-image.png" alt="No image available" class="img-fluid rounded shadow-sm" style="width: 100px; height: 100px; object-fit: cover;">
-              <% } %>
-            </div>
-            <div class="col-md-4">
-              <h5 class="mb-2"><%= item.productId.productName %></h5>
-              <p class="mb-0 text-muted">Price: ₹<span class="item-price" id="price-<%= item.productId._id %>"><%= item.price.toFixed(2) %></span></p>
-              <% if (item.productId.variants && item.productId.variants[item.variantIndex]) { %>
-              <p class="mb-0 text-muted">Color: <%= item.productId.variants[item.variantIndex].color %></p>
-              <p class="mb-0 text-muted">Available Stock: <%= item.productId.variants[item.variantIndex].quantity %></p>
-              <% } %>
-            </div>
-            <div class="col-md-3">
-              <div class="d-flex align-items-center justify-content-start quantity-selector">
-                <button class="btn btn-outline-secondary decrease-quantity rounded-circle p-2" style="width: 35px; height: 35px;">
-                  <i class="zmdi zmdi-minus"></i>
-                </button>
-                <input type="number" class="form-control quantity-input mx-2 text-center" value="<%= item.quantity %>" min="1" max="5" data-stock="<%= Math.min(item.productId.variants[item.variantIndex].quantity, 5) %>" style="width: 60px;">
-                <button class="btn btn-outline-secondary increase-quantity rounded-circle p-2" style="width: 35px; height: 35px;" <%= item.quantity >= Math.min(item.productId.variants[item.variantIndex].quantity, 5) ? 'disabled' : '' %>>
-                  <i class="zmdi zmdi-plus"></i>
+        <% if (!cart || !cart.items || cart.items.length === 0) { %>
+        <div class="text-center py-5 bg-light rounded shadow-sm">
+          <i class="zmdi zmdi-shopping-cart" style="font-size: 4rem; color: #ccc;"></i>
+          <h4 class="mt-4 mb-3">Your cart is empty</h4>
+          <p class="text-muted mb-4">Looks like you haven't added anything to your cart yet.</p>
+          <a href="/" class="btn btn-primary px-4 py-2">
+            Start Shopping
+          </a>
+        </div>
+        <% } else { %>
+        <div class="card border-0 shadow-sm">
+          <div class="card-body p-4">
+            <% cart.items.forEach(item => { %>
+            <div class="row align-items-center mb-4 pb-3 border-bottom" data-product-id="<%= item.productId._id %>">
+              <div class="col-md-2">
+                <% if (item.productId.variants && item.productId.variants.length > 0 && 
+                                              item.productId.variants[item.variantIndex].images && item.productId.variants[item.variantIndex].images.length > 0) { %>
+                <img src="/uploads/product-images/<%= item.productId.variants[item.variantIndex].images[0] %>" alt="<%= item.productId.productName %>" class="img-fluid rounded shadow-sm" style="width: 100px; height: 100px; object-fit: cover;">
+                <% } else { %>
+                <img src="/images/no-image.png" alt="No image available" class="img-fluid rounded shadow-sm" style="width: 100px; height: 100px; object-fit: cover;">
+                <% } %>
+              </div>
+              <div class="col-md-4">
+                <h5 class="mb-2"><%= item.productId.productName %></h5>
+                <p class="mb-0 text-muted">Price: ₹<span class="item-price" id="price-<%= item.productId._id %>"><%= item.price.toFixed(2) %></span></p>
+                <% if (item.productId.variants && item.productId.variants[item.variantIndex]) { %>
+                  <p class="mb-0 text-muted">Color: <%= item.productId.variants[item.variantIndex].color %></p>
+                  <% if (item.productId.variants[item.variantIndex].quantity === 0) { %>
+                    <p class="mb-0 text-danger font-weight-bold">Out of Stock</p>
+                  <% } else { %>
+                    <p class="mb-0 text-muted">Available Stock: <%= item.productId.variants[item.variantIndex].quantity %></p>
+                  <% } %>
+                <% } %>
+              </div>
+              <div class="col-md-3">
+                <div class="d-flex align-items-center justify-content-start quantity-selector">
+                  <button class="btn btn-outline-secondary decrease-quantity rounded-circle p-2" style="width: 35px; height: 35px;" 
+                          <%= item.productId.variants[item.variantIndex].quantity === 0 ? 'disabled' : '' %>>
+                    <i class="zmdi zmdi-minus"></i>
+                  </button>
+                  <input type="number" class="form-control quantity-input mx-2 text-center" 
+                         value="<%= item.quantity %>" 
+                         min="1" 
+                         max="<%= Math.min(item.productId.variants[item.variantIndex].quantity, 5) %>" 
+                         data-stock="<%= item.productId.variants[item.variantIndex].quantity %>" 
+                         style="width: 60px;"
+                         <%= item.productId.variants[item.variantIndex].quantity === 0 ? 'disabled' : '' %>>
+                  <button class="btn btn-outline-secondary increase-quantity rounded-circle p-2" 
+                          style="width: 35px; height: 35px;" 
+                          <%= (item.quantity >= item.productId.variants[item.variantIndex].quantity || item.quantity >= 5) ? 'disabled' : '' %>>
+                    <i class="zmdi zmdi-plus"></i>
+                  </button>
+                </div>
+                <% if (item.productId.variants[item.variantIndex].quantity === 0) { %>
+                  <small class="text-danger">Item is out of stock</small>
+                <% } else if (item.quantity >= item.productId.variants[item.variantIndex].quantity) { %>
+                  <small class="text-danger">Maximum stock reached</small>
+                <% } else if (item.quantity >= 5) { %>
+                  <small class="text-danger">Maximum quantity limit reached</small>
+                <% } %>
+              </div>
+              <div class="col-md-2">
+                <h6 class="mb-0">₹<%= item.totalPrice.toFixed(2) %></h6>
+              </div>
+              <div class="col-md-1">
+                <button class="btn btn-link text-danger remove-item p-0" data-product-id="<%= item.productId._id %>" data-variant-index="<%= item.variantIndex %>">
+                  <i class="zmdi zmdi-close"></i>
                 </button>
               </div>
-              <% if (item.quantity >= Math.min(item.productId.variants[item.variantIndex].quantity, 5)) { %>
-              <small class="text-danger">Maximum quantity reached</small>
-              <% } %>
             </div>
-            <div class="col-md-2">
-              <h6 class="mb-0">₹<%= item.totalPrice.toFixed(2) %></h6>
-            </div>
-            <div class="col-md-1">
-              <button class="btn btn-link text-danger remove-item p-0" data-product-id="<%= item.productId._id %>" data-variant-index="<%= item.variantIndex %>">
-                <i class="zmdi zmdi-close"></i>
-              </button>
-            </div>
+            <% }); %>
           </div>
-          <% }); %>
+        </div>
+        <% } %>
+      </div>
+
+      <% if (cart && cart.items && cart.items.length > 0) { %>
+      <div class="col-lg-4 mt-4 mt-lg-0">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body p-4">
+            <h4 class="mb-4">Order Summary</h4>
+            <div class="d-flex justify-content-between mb-3">
+              <span>Subtotal</span>
+              <span>₹<span id="cart-subtotal"><%= cart.items.reduce((total, item) => total + item.totalPrice, 0).toFixed(2) %></span></span>
+            </div>
+            <div class="d-flex justify-content-between mb-3">
+              <span>Shipping</span>
+              <span class="text-success">Free</span>
+            </div>
+            <hr>
+            <div class="d-flex justify-content-between mb-4">
+              <strong>Total</strong>
+              <strong>₹<span id="cart-total"><%= cart.items.reduce((total, item) => total + item.totalPrice, 0).toFixed(2) %></span></strong>
+            </div>
+            <% 
+              let hasOutOfStock = false;
+              cart.items.forEach(item => {
+                if (item.productId.variants[item.variantIndex].quantity === 0) {
+                  hasOutOfStock = true;
+                }
+              });
+            %>
+
+            <% if (hasOutOfStock) { %>
+              <div class="alert alert-danger" role="alert">
+                Some items in your cart are out of stock. Please remove them to proceed with checkout.
+              </div>
+              <button class="btn btn-primary btn-block" disabled>
+                Proceed to Checkout
+              </button>
+            <% } else { %>
+              <a href="/checkout" class="btn btn-primary btn-block py-2">
+                Proceed to Checkout
+              </a>
+            <% } %>
+            <a href="/" class="btn btn-outline-secondary btn-block mt-2 py-2">
+              Continue Shopping
+            </a>
+          </div>
         </div>
       </div>
       <% } %>
     </div>
-
-    <% if (cart && cart.items && cart.items.length > 0) { %>
-    <div class="col-lg-4 mt-4 mt-lg-0">
-      <div class="card border-0 shadow-sm">
-        <div class="card-body p-4">
-          <h4 class="mb-4">Order Summary</h4>
-          <div class="d-flex justify-content-between mb-3">
-            <span>Subtotal</span>
-            <span>₹<span id="cart-subtotal"><%= cart.items.reduce((total, item) => total + item.totalPrice, 0).toFixed(2) %></span></span>
-          </div>
-          <div class="d-flex justify-content-between mb-3">
-            <span>Shipping</span>
-            <span class="text-success">Free</span>
-          </div>
-          <hr>
-          <div class="d-flex justify-content-between mb-4">
-            <strong>Total</strong>
-            <strong>₹<span id="cart-total"><%= cart.items.reduce((total, item) => total + item.totalPrice, 0).toFixed(2) %></span></strong>
-          </div>
-          <a href="/checkout" class="btn btn-primary btn-block py-2">
-            Proceed to Checkout
-          </a>
-          <a href="/" class="btn btn-outline-secondary btn-block mt-2 py-2">
-            Continue Shopping
-          </a>
-        </div>
-      </div>
-    </div>
-    <% } %>
   </div>
 </div>
 
@@ -132,18 +369,33 @@
       document.getElementById('cart-total').textContent = formattedSubtotal;
     }
 
+    // Function to update button states
+    function updateButtonStates(row) {
+      const input = row.querySelector('.quantity-input');
+      const currentQuantity = parseInt(input.value);
+      const maxStock = parseInt(input.dataset.stock);
+      const increaseBtn = row.querySelector('.increase-quantity');
+      const decreaseBtn = row.querySelector('.decrease-quantity');
+
+      // Enable/disable decrease button
+      decreaseBtn.disabled = currentQuantity <= 1;
+
+      // Enable/disable increase button based on stock and max limit
+      increaseBtn.disabled = currentQuantity >= maxStock || currentQuantity >= 5;
+    }
+
     // Update quantity
     function updateQuantity(productId, quantity) {
       const row = document.querySelector(`[data-product-id="${productId}"]`);
       const input = row.querySelector('.quantity-input');
-      const maxStock = Math.min(parseInt(input.dataset.stock), 5);
+      const maxStock = parseInt(input.dataset.stock);
 
       // Validate against stock and max limit
       if (quantity > maxStock) {
         quantity = maxStock;
-        input.value = maxStock;
-        alert('Maximum quantity limit is 5 items per product');
-        return;
+      }
+      if (quantity > 5) {
+        quantity = 5;
       }
 
       fetch('/cart/update', {
@@ -168,16 +420,21 @@
               priceElement.textContent = (data.newTotal / data.newQuantity).toFixed(2);
             }
 
+            // Update button states
+            updateButtonStates(row);
+
             // Update cart totals
             updateCartTotals();
           } else {
             alert(data.message || 'Error updating quantity');
             input.value = data.currentQuantity || 1;
+            updateButtonStates(row);
           }
         })
         .catch(error => {
           console.error('Error:', error);
           alert('Error updating quantity');
+          updateButtonStates(row);
         });
     }
 
@@ -188,8 +445,8 @@
         const input = row.querySelector('.quantity-input');
         const productId = row.dataset.productId;
         if (input.value > 1) {
-          input.value = parseInt(input.value) - 1;
-          updateQuantity(productId, input.value);
+          const newQuantity = parseInt(input.value) - 1;
+          updateQuantity(productId, newQuantity);
         }
       });
     });
@@ -199,45 +456,36 @@
         const row = this.closest('.row');
         const input = row.querySelector('.quantity-input');
         const productId = row.dataset.productId;
-        const maxStock = Math.min(parseInt(input.dataset.stock), 5);
-        if (parseInt(input.value) < maxStock) {
-          input.value = parseInt(input.value) + 1;
-          updateQuantity(productId, input.value);
+        const maxStock = parseInt(input.dataset.stock);
+        const currentQuantity = parseInt(input.value);
+        
+        if (currentQuantity < maxStock && currentQuantity < 5) {
+          const newQuantity = currentQuantity + 1;
+          updateQuantity(productId, newQuantity);
         }
       });
     });
 
-    // Event listener for direct input changes
-    document.querySelectorAll('.quantity-input').forEach(input => {
-      input.addEventListener('change', function() {
-        const row = this.closest('.row');
-        const productId = row.dataset.productId;
-        let value = parseInt(this.value) || 1;
-        const maxStock = Math.min(parseInt(this.dataset.stock), 5);
-
-        // Ensure value is between 1 and maxStock
-        value = Math.max(1, Math.min(value, maxStock));
-        this.value = value;
-
-        updateQuantity(productId, value);
-      });
+    // Initialize button states
+    document.querySelectorAll('.row[data-product-id]').forEach(row => {
+      updateButtonStates(row);
     });
-  });
 
-  document.addEventListener('click', async function(event) {
-    if (event.target.closest('.remove-item')) {
-      const productId = event.target.closest('.remove-item').getAttribute('data-product-id');
-      const variantIndex = event.target.closest('.remove-item').getAttribute('data-variant-index');
-      console.log('Product ID:', productId);
-      console.log('Variant Index:', variantIndex);
-      const response = await fetch(`/cart/remove/${productId}/${variantIndex}`, {
-        method: "DELETE",
+    document.addEventListener('click', async function(event) {
+      if (event.target.closest('.remove-item')) {
+        const productId = event.target.closest('.remove-item').getAttribute('data-product-id');
+        const variantIndex = event.target.closest('.remove-item').getAttribute('data-variant-index');
+        console.log('Product ID:', productId);
+        console.log('Variant Index:', variantIndex);
+        const response = await fetch(`/cart/remove/${productId}/${variantIndex}`, {
+          method: "DELETE",
 
-      });
-      if(response.status == 200){
-        window.location.reload()
+        });
+        if(response.status == 200){
+          window.location.reload()
+        }
       }
-    }
+    });
   });
 </script>
 
