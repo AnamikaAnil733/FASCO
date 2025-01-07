@@ -72,6 +72,6 @@ router.get('/orderList', adminAuth, orderController.getAllOrders);  // Keep the 
 router.get('/orders', adminAuth, orderController.getAllOrders);
 router.get('/orders/:orderId', adminAuth, orderController.getOrderDetails);
 router.post('/updateOrderStatus', adminAuth, orderController.updateOrderStatus);
-router.post('/cancelOrder', adminAuth, orderController.cancelOrder);
+router.post('/orders/update-status', adminAuth, orderController.cancelOrder);
 
 module.exports = router

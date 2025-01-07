@@ -221,12 +221,12 @@ const login = async(req,res)=>{
       return res.redirect("/login")
     }
     if(findUser.isBlocked){
-      return res.render("login",{message:"User is blocked by admin"})
+      return res.render("login",{message:"User is blocked by admin", success: false})
     }
 
     const passwordMatch = await bcrypt.compare(password,findUser.password);
     if(!passwordMatch){
-      return res.render("login",{message:"Incorrect password"})
+      return res.render("login",{message:"Incorrect password", success: false})
     }
    
     req.session.user = findUser;
@@ -1285,6 +1285,35 @@ const cancelOrder = async (req, res) => {
         success: false,
         message: 'Order cannot be cancelled in its current status'
       });
+    }
+
+    // Restock the products
+    for (const item of order.items) {
+      try {
+        const product = await Product.findById(item.productId);
+        if (product && product.variants) {
+          // Use first variant if variantIndex is not specified
+          const variantIndex = item.variantIndex || 0;
+          
+          // Ensure the variant exists
+          if (!product.variants[variantIndex]) {
+            product.variants[variantIndex] = {
+              color: 'default',
+              images: [],
+              quantity: 0
+            };
+          }
+
+          // Update the quantity
+          const currentQuantity = product.variants[variantIndex].quantity || 0;
+          product.variants[variantIndex].quantity = currentQuantity + parseInt(item.quantity);
+          await product.save();
+          
+          console.log(`Restocked product ${product._id}, variant ${variantIndex}, new quantity: ${product.variants[variantIndex].quantity}`);
+        }
+      } catch (err) {
+        console.error('Error restocking product:', err);
+      }
     }
 
     // Update order status

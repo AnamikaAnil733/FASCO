@@ -1,4 +1,5 @@
 const Order = require("../../models/orderSchema");
+const Product = require("../../models/productSchema");
 const moment = require('moment');  // Add moment.js
 
 const orderController = {
@@ -129,14 +130,16 @@ const orderController = {
                 success: false,
                 message: 'Error updating order status'
             });
-        }
+        }  
     },
 
     // Cancel order
     cancelOrder: async (req, res) => {
         try {
             const { orderId } = req.body;
+            console.log('Cancelling order:', orderId);
 
+            // Find and populate the order with product details
             const order = await Order.findById(orderId);
             if (!order) {
                 return res.status(404).json({
@@ -145,25 +148,74 @@ const orderController = {
                 });
             }
 
-            // Check if order can be cancelled
-            if (order.status === 'Delivered' || order.status === 'Cancelled') {
+            // Only allow cancellation if not already cancelled or delivered
+            if (order.status === 'Cancelled' || order.status === 'Delivered') {
                 return res.status(400).json({
                     success: false,
-                    message: `Cannot cancel ${order.status.toLowerCase()} order`
+                    message: `Cannot cancel order in ${order.status} status`
                 });
             }
 
-            // Update order status to cancelled
+            console.log('Processing cancellation for order items:', order.items);
+            
+            // Restock the products
+            for (const item of order.items) {
+                try {
+                    // Get the product
+                    const product = await Product.findById(item.productId);
+                    if (!product) {
+                        console.log('Product not found:', item.productId);
+                        continue;
+                    }
+
+                    // Get the variant index, default to 0 if not specified
+                    const variantIndex = typeof item.variantIndex === 'number' ? item.variantIndex : 0;
+                    
+                    // Ensure variant exists
+                    if (!product.variants || !product.variants[variantIndex]) {
+                        console.log('Variant not found:', {
+                            productId: item.productId,
+                            variantIndex: variantIndex
+                        });
+                        continue;
+                    }
+
+                    // Log current state
+                    console.log('Before restock:', {
+                        productId: product._id,
+                        variantIndex: variantIndex,
+                        currentQuantity: product.variants[variantIndex].quantity,
+                        toAdd: item.quantity
+                    });
+
+                    // Update the quantity
+                    product.variants[variantIndex].quantity = (product.variants[variantIndex].quantity || 0) + Number(item.quantity);
+                    
+                    // Save the product
+                    await product.save();
+
+                    console.log('After restock:', {
+                        productId: product._id,
+                        variantIndex: variantIndex,
+                        newQuantity: product.variants[variantIndex].quantity
+                    });
+                } catch (err) {
+                    console.error('Error restocking product:', err);
+                }
+            }
+
+            // Update order status
             order.status = 'Cancelled';
+            order.cancelledAt = new Date();
             await order.save();
 
-            res.json({
+            return res.status(200).json({
                 success: true,
-                message: 'Order cancelled successfully'
+                message: 'Order cancelled and products restocked successfully'
             });
         } catch (error) {
             console.error('Error cancelling order:', error);
-            res.status(500).json({
+            return res.status(500).json({
                 success: false,
                 message: 'Error cancelling order'
             });
