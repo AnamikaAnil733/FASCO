@@ -115,11 +115,9 @@ const orderController = {
                     message: `Cannot change status of ${order.status.toLowerCase()} order`
                 });
             }
-
-            // Update the status
+ // Update the status
             order.status = status;
             await order.save();
-
             res.json({
                 success: true,
                 message: 'Order status updated successfully'

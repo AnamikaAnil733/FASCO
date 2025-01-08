@@ -282,7 +282,17 @@
 
 <script>
     async function cancelOrder(orderId) {
-        if (confirm('Are you sure you want to cancel this order?')) {
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: "You want to cancel this order?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, cancel it!'
+        });
+
+        if (result.isConfirmed) {
             try {
                 const response = await fetch(`/cancel-order/${orderId}`, {
                     method: 'POST',
@@ -292,14 +302,26 @@
                 });
                 const data = await response.json();
                 if (data.success) {
-                    alert('Order cancelled successfully');
+                    await Swal.fire({
+                        title: 'Cancelled!',
+                        text: 'Your order has been cancelled.',
+                        icon: 'success'
+                    });
                     location.reload();
                 } else {
-                    alert(data.message || 'Failed to cancel order');
+                    await Swal.fire({
+                        title: 'Error!',
+                        text: data.message || 'Failed to cancel order',
+                        icon: 'error'
+                    });
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('An error occurred while cancelling the order');
+                await Swal.fire({
+                    title: 'Error!',
+                    text: 'An error occurred while cancelling the order',
+                    icon: 'error'
+                });
             }
         }
     }

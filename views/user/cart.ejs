@@ -278,11 +278,9 @@ hr {
                   </button>
                 </div>
                 <% if (item.productId.variants[item.variantIndex].quantity === 0) { %>
-                  <small class="text-danger">Item is out of stock</small>
-                <% } else if (item.quantity >= item.productId.variants[item.variantIndex].quantity) { %>
-                  <small class="text-danger">Maximum stock reached</small>
-                <% } else if (item.quantity >= 5) { %>
-                  <small class="text-danger">Maximum quantity limit reached</small>
+                  <small class="text-danger stock-message">Item is out of stock</small>
+                <% } else { %>
+                  <small class="text-danger stock-message" style="display: none;"></small>
                 <% } %>
               </div>
               <div class="col-md-2">
@@ -384,6 +382,23 @@ hr {
       increaseBtn.disabled = currentQuantity >= maxStock || currentQuantity >= 5;
     }
 
+    // Function to update stock message
+    function updateStockMessage(row, quantity, maxStock) {
+      const stockMessage = row.querySelector('.stock-message');
+      if (maxStock === 0) {
+        stockMessage.textContent = 'Item is out of stock';
+        stockMessage.style.display = 'block';
+      } else if (quantity >= maxStock) {
+        stockMessage.textContent = 'Maximum stock reached';
+        stockMessage.style.display = 'block';
+      } else if (quantity >= 5) {
+        stockMessage.textContent = 'Maximum quantity limit reached';
+        stockMessage.style.display = 'block';
+      } else {
+        stockMessage.style.display = 'none';
+      }
+    }
+
     // Update quantity
     function updateQuantity(productId, quantity) {
       const row = document.querySelector(`[data-product-id="${productId}"]`);
@@ -414,27 +429,56 @@ hr {
             // Update quantity input
             input.value = data.newQuantity;
 
-            // Update item price display
-            const priceElement = document.getElementById(`price-${productId}`);
-            if (priceElement) {
-              priceElement.textContent = (data.newTotal / data.newQuantity).toFixed(2);
-            }
+            // Update item total price display
+            const itemRow = document.querySelector(`[data-product-id="${productId}"]`);
+            const pricePerUnit = parseFloat(itemRow.querySelector('.item-price').textContent);
+            const totalPriceElement = itemRow.querySelector('.col-md-2 h6');
+            const newTotalPrice = (pricePerUnit * data.newQuantity).toFixed(2);
+            totalPriceElement.textContent = `₹${newTotalPrice}`;
 
             // Update button states
             updateButtonStates(row);
 
+            // Update stock message
+            updateStockMessage(row, data.newQuantity, maxStock);
+
             // Update cart totals
             updateCartTotals();
+
+            // Show success message using SweetAlert2
+            const Toast = Swal.mixin({
+              toast: true,
+              position: 'top-end',
+              showConfirmButton: false,
+              timer: 1500,
+              timerProgressBar: true
+            });
+            Toast.fire({
+              icon: 'success',
+              title: 'Quantity updated'
+            });
           } else {
-            alert(data.message || 'Error updating quantity');
+            // Show error message using SweetAlert2
+            Swal.fire({
+              icon: 'error',
+              title: 'Oops...',
+              text: data.message || 'Error updating quantity'
+            });
             input.value = data.currentQuantity || 1;
             updateButtonStates(row);
+            updateStockMessage(row, parseInt(input.value), maxStock);
           }
         })
         .catch(error => {
           console.error('Error:', error);
-          alert('Error updating quantity');
+          // Show error message using SweetAlert2
+          Swal.fire({
+            icon: 'error',
+            title: 'Oops...',
+            text: 'Error updating quantity'
+          });
           updateButtonStates(row);
+          updateStockMessage(row, parseInt(input.value), maxStock);
         });
     }
 
@@ -473,16 +517,66 @@ hr {
 
     document.addEventListener('click', async function(event) {
       if (event.target.closest('.remove-item')) {
-        const productId = event.target.closest('.remove-item').getAttribute('data-product-id');
-        const variantIndex = event.target.closest('.remove-item').getAttribute('data-variant-index');
-        console.log('Product ID:', productId);
-        console.log('Variant Index:', variantIndex);
-        const response = await fetch(`/cart/remove/${productId}/${variantIndex}`, {
-          method: "DELETE",
-
+        const button = event.target.closest('.remove-item');
+        const productId = button.getAttribute('data-product-id');
+        const variantIndex = button.getAttribute('data-variant-index');
+        
+        // Show confirmation dialog using SweetAlert2
+        const result = await Swal.fire({
+          title: 'Are you sure?',
+          text: "You want to remove this item from cart?",
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#3085d6',
+          cancelButtonColor: '#d33',
+          confirmButtonText: 'Yes, remove it!'
         });
-        if(response.status == 200){
-          window.location.reload()
+
+        if (result.isConfirmed) {
+          try {
+            const response = await fetch(`/cart/remove/${productId}/${variantIndex}`, {
+              method: "DELETE"
+            });
+            
+            if (response.status === 200) {
+              // Remove the item row from DOM
+              const itemRow = button.closest('.row');
+              itemRow.remove();
+              
+              // Update cart totals
+              updateCartTotals();
+              
+              // Check if cart is empty
+              const remainingItems = document.querySelectorAll('.row[data-product-id]');
+              if (remainingItems.length === 0) {
+                // Reload page to show empty cart template
+                window.location.reload();
+                return;
+              }
+              
+              // Show success message
+              const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 1500,
+                timerProgressBar: true
+              });
+              Toast.fire({
+                icon: 'success',
+                title: 'Item removed from cart'
+              });
+            } else {
+              throw new Error('Failed to remove item');
+            }
+          } catch (error) {
+            console.error('Error:', error);
+            Swal.fire({
+              icon: 'error',
+              title: 'Oops...',
+              text: 'Error removing item from cart'
+            });
+          }
         }
       }
     });
