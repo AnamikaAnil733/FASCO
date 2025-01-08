@@ -261,27 +261,43 @@ display: inline-block;
 	
 
 
-<script>
-// Update cart count
-function updateCartCount() {
-    if (<%- locals.user ? 'true' : 'false' %>) {
-        fetch('/cart/count')
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('cart-icon').setAttribute('data-notify', data.count);
-                document.getElementById('cart-icon-mobile').setAttribute('data-notify', data.count);
-            })
-            .catch(error => console.error('Error:', error));
-    }
-}
-
-// Update cart count when page loads
-document.addEventListener('DOMContentLoaded', () => {
-    updateCartCount();
-});
-</script>
 	<!-- SweetAlert2 CSS -->
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 	<!-- SweetAlert2 JS -->
 	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+	
+	<!-- Load jQuery first -->
+    <script src="/vendor/jquery/jquery-3.2.1.min.js"></script>
+    
+    <!-- Cart count functionality -->
+    <script>
+        $(document).ready(function() {
+            function updateCartCount() {
+                if (<%- locals.user ? 'true' : 'false' %>) {
+                    fetch('/cart/count')
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            const cartIcon = $('#cart-icon');
+                            const cartIconMobile = $('#cart-icon-mobile');
+                            if (cartIcon.length) cartIcon.attr('data-notify', data.count);
+                            if (cartIconMobile.length) cartIconMobile.attr('data-notify', data.count);
+                        })
+                        .catch(error => {
+                            console.error('Error updating cart count:', error);
+                        });
+                }
+            }
+            
+            // Update on page load
+            updateCartCount();
+            
+            // Make updateCartCount available globally
+            window.updateCartCount = updateCartCount;
+        });
+    </script>
 </header>

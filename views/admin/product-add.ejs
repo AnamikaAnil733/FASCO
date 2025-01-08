@@ -1338,13 +1338,7 @@
                                         <div class="invalid-feedback">Please enter a product name</div>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="brand" class="form-label">Brand</label>
-                                        <input type="text" class="form-control" id="brand" name="brand">
-                                        <div class="invalid-feedback">Please enter a brand name</div>
-                                    </div>
-                                </div>
+                              
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="category" class="form-label">Category</label>
@@ -1709,7 +1703,7 @@
 
         // Real-time validation for all input fields
         const productName = document.getElementById('product_name');
-        const brand = document.getElementById('brand');
+       
         const category = document.getElementById('category');
         const regularPrice = document.getElementById('regular_price');
         const salePrice = document.getElementById('sale_price');
@@ -1727,17 +1721,7 @@
             }
         }
 
-        function validateBrand() {
-            if (!brand.value.trim()) {
-                brand.classList.add('is-invalid');
-                brand.classList.remove('is-valid');
-                return false;
-            } else {
-                brand.classList.remove('is-invalid');
-                brand.classList.add('is-valid');
-                return true;
-            }
-        }
+       
 
         function validateCategory() {
             if (!category.value) {
@@ -1819,7 +1803,7 @@
 
         // Add event listeners for real-time validation
         productName.addEventListener('input', validateProductName);
-        brand.addEventListener('input', validateBrand);
+      
         category.addEventListener('change', validateCategory);
         regularPrice.addEventListener('input', validateRegularPrice);
         salePrice.addEventListener('input', validateSalePrice);
@@ -1900,14 +1884,7 @@
                     productName.classList.add('is-valid');
                 }
                 
-                // Brand validation
-                if (!brand.value.trim()) {
-                    brand.classList.add('is-invalid');
-                    isValid = false;
-                } else {
-                    brand.classList.remove('is-invalid');
-                    brand.classList.add('is-valid');
-                }
+              
                 
                 // Category validation
                 if (!category.value) {
