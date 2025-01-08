@@ -697,21 +697,7 @@ async function addToCart() {
     }
 }
 
-// Function to update cart count
-async function updateCartCount() {
-    try {
-        const response = await fetch('/cart/count');
-        const data = await response.json();
-        if (data.success) {
-            const cartCountElement = document.getElementById('cartCount');
-            if (cartCountElement) {
-                cartCountElement.textContent = data.count;
-            }
-        }
-    } catch (error) {
-        console.error('Error updating cart count:', error);
-    }
-}
+
 
 function validateQuantity(input) {
     const maxStock = parseInt(document.getElementById('current-stock').textContent);

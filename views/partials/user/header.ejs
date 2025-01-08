@@ -270,34 +270,24 @@ display: inline-block;
     <script src="/vendor/jquery/jquery-3.2.1.min.js"></script>
     
     <!-- Cart count functionality -->
-    <script>
-        $(document).ready(function() {
-            function updateCartCount() {
-                if (<%- locals.user ? 'true' : 'false' %>) {
-                    fetch('/cart/count')
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error('Network response was not ok');
-                            }
-                            return response.json();
-                        })
-                        .then(data => {
-                            const cartIcon = $('#cart-icon');
-                            const cartIconMobile = $('#cart-icon-mobile');
-                            if (cartIcon.length) cartIcon.attr('data-notify', data.count);
-                            if (cartIconMobile.length) cartIconMobile.attr('data-notify', data.count);
-                        })
-                        .catch(error => {
-                            console.error('Error updating cart count:', error);
-                        });
-                }
-            }
-            
-            // Update on page load
-            updateCartCount();
-            
-            // Make updateCartCount available globally
-            window.updateCartCount = updateCartCount;
-        });
-    </script>
+	<script>
+		// Update cart count on page load
+		document.addEventListener('DOMContentLoaded', function() {
+			updateCartCount();
+		});
+	
+		// Function to update cart count
+		function updateCartCount() {
+			fetch('/cart/count')
+				.then(response => response.json())
+				.then(data => {
+					const cartIcons = document.querySelectorAll('#cart-icon');
+					cartIcons.forEach(icon => {
+						icon.setAttribute('data-notify', data.count || 0);
+					});
+				})
+				.catch(error => console.error('Error updating cart count:', error));
+		}
+	</script>
+	
 </header>
