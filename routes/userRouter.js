@@ -18,8 +18,8 @@ router.get("/logout",userController.logout);
 router.get('/product/:id', userController.loadProductDetails);
 
 // Account Routes
-router.get("/userProfile", userController.loadAccount);
-router.post("/update-profile", userController.updateProfile);
+router.get("/userProfile",userAuth, userController.loadAccount);
+router.post("/update-profile",userAuth, userController.updateProfile);
 
 // Order management routes
 router.get('/orders', userAuth, userController.getOrders);

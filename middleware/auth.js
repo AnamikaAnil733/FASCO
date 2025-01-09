@@ -9,7 +9,9 @@ const userAuth = async (req, res, next) => {
         }
 
         const user = await User.findById(req.session.user);
-        if (!user || user.isBlocked) {
+        if (user && user.isBlocked) {
+            return res.redirect("/login");
+        }else if(!user){
             return res.redirect("/login");
         }
 
@@ -20,24 +22,14 @@ const userAuth = async (req, res, next) => {
     }
 };
 
-// const adminAuth = async (req, res, next) => {
-    // try {
-    //     const admin = await User.findOne({ isAdmin: true });
-    //     if (!admin) {
-    //         return res.redirect("admin/login");
-    //     }
-    //     next();
-    // } catch (error) {
-    //     console.error("Error in admin auth middleware:", error);
-    //     res.status(500).json({ success: false, message: "Internal Server Error" });
-    // }
+
 
 
     const adminAuth = (req,res,next)=>{
         if(req.session?.admin){
             next()
         }else{
-            res.redirect('admin/login')
+            res.redirect('/admin/login')
         }
     }
 // };
