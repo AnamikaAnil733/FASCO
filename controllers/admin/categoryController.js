@@ -30,7 +30,7 @@ const  categoryInfo = async(req,res)=>{
         
     } catch (error) {
         console.error(error)
-        res.redirect("/pageerror")
+        res.redirect("/admin/pageerror")
         
     }
 
@@ -67,7 +67,7 @@ const getListCategory = async (req,res)=>{
         res.redirect("/admin/category")
         
     } catch (error) {
-        res.redirect("/pageerror")
+        res.redirect("/admin/pageerror")
         
     }
 }
@@ -82,7 +82,7 @@ const getUnListCategory = async (req,res)=>{
         res.redirect("/admin/category")
         
     } catch (error) {
-        res.redirect("/pageerror")
+        res.redirect("/admin/pageerror")
         
     }
 }
@@ -97,7 +97,7 @@ const getEditCategory = async (req,res)=>{
          res.render("edit-category",{category:category})        
     } catch (error) {
 
-        res.redirect("/pageerror")
+        res.redirect("/admin/pageerror")
         
     }
 }

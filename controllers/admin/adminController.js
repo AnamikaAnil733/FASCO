@@ -72,7 +72,7 @@ const pageerror = async (req, res) => {
     try {
       res.render("page-404");
     } catch (error) {
-      res.redirect("/pageerror")   
+      res.redirect("/admin/pageerror")   
     }
   };
 
