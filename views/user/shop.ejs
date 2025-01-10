@@ -140,9 +140,21 @@
                 </div>
             </div>
         </div>
+        <div class="d-flex justify-content-center">
+            <nav aria-label="Page navigation">
+                <ul class="pagination">
+                    <% for(let i=1; i<=totalpages; i++) { %>
+                        <li class="page-item <%=(i===currentPage) ? 'active' : '' %>">
+                            <a class="page-link" href="?page=<%=i%>"><%=i%></a>
+                        </li>
+                    <% } %>
+                </ul>
+            </nav>
+        </div>
+    </main>
+    
     </div>
-</main>
-
+  
 <style>
     /* Shop Page Styles */
     .shop-container {
@@ -406,6 +418,31 @@
     .color-dot:hover {
         transform: scale(1.2);
     }
+
+      /* Pagination Styling */
+   .pagination {
+        margin: 2rem 0;
+        gap: 0.5rem;
+    }
+
+    .page-item .page-link {
+        border: none;
+        padding: 0.5rem 1rem;
+        color: var(--text-secondary);
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .page-item:not(.active) .page-link:hover {
+        background: black;
+        color: rgb(29, 97, 223);
+    }
+
+    .page-item.active .page-link {
+        background: var(--primary-color);
+        color:rgb(44, 192, 214);
+    }
+
 
     /* Responsive Adjustments */
     @media (max-width: 768px) {

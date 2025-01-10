@@ -262,7 +262,7 @@ const loadProductDetails = async (req, res) => {
         const productId = req.params.id;
         const product = await Product.findById(productId)
             .populate('category')
-            .select('productName description brand category regularPrice salesPrice productOffer variants')
+            .select('productName description category regularPrice salesPrice productOffer variants')
             .lean();
 
         if (!product) {
@@ -1344,6 +1344,9 @@ const cancelOrder = async (req, res) => {
 // Load shop page
 const loadShop = async (req, res) => {
   try {
+    const page = parseInt(req.query.page)||1;
+    const limit = 9;
+    const skip = (page-1)*limit;
     const category = req.query.category;
     const maxPrice = parseInt(req.query.maxPrice) || 100000;
     const search = req.query.search ? req.query.search.trim() : '';
@@ -1399,12 +1402,16 @@ const loadShop = async (req, res) => {
     const products = await Product.find(query)
       .populate('category')
       .sort(sort)
+      .skip(skip)
+      .limit(limit)
       .lean();
 
     console.log('Found Products:', products.length);
 
     // Get all categories for filter
     const categories = await Category.find({ isListed: true });
+    const totalPages = Math.ceil(await Product.countDocuments(query) / limit);
+
 
     res.render("shop", {
       products,
@@ -1413,7 +1420,9 @@ const loadShop = async (req, res) => {
       maxPrice,
       search,
       sort: req.query.sort || 'default',
-      message: req.session.user
+      message: req.session.user,
+      currentPage:page,
+      totalpages:totalPages,
     });
   } catch (error) {
     console.error("Error loading shop page:", error);
@@ -1454,5 +1463,6 @@ module.exports = {
     getCartCount,
     loadCheckout,
     placeOrder,
-    cancelOrder
+    cancelOrder,
+    
 };
