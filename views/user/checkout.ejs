@@ -617,7 +617,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const selectedAddress = document.querySelector('input[name="addressId"]:checked');
             
             if (!selectedAddress) {
-                alert('Please select a delivery address');
+                Swal.fire({
+              icon: 'warning', // Icon to indicate a warning
+             title: 'Please select a delivery address', // Message to be displayed
+            });
                 return;
             }
 
@@ -637,11 +640,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.success) {
                     window.location.href = `/orders/${data.orderId}`;
                 } else {
-                    alert(data.message || 'Error placing order');
+                   
+                    Swal.fire({
+              icon: data.message ? 'success' : 'error ', // Choose 'success' if there's a message, otherwise 'error'
+                title: data.message || 'Error placing order', // Display the message or default text
+                  });
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error placing order');
+                Swal.fire({
+               icon: 'error', // Icon to represent an error
+             title: 'Error placing order', // The message to display
+             });
             }
         });
     }
