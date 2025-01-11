@@ -285,7 +285,7 @@ document.querySelectorAll('.cancel-order').forEach(button => {
 
         if (result.isConfirmed) {
             try {
-                const response = await fetch('/admin/cancelOrder', {
+                const response = await fetch('/admin/orders/cancel', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
