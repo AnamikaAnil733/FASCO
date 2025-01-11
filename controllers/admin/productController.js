@@ -244,7 +244,7 @@ const getEditProduct = async (req, res) => {
         });
     } catch (error) {
         console.error("Error fetching product:", error);
-        res.redirect("/pageerror");
+        res.redirect("/admin/pageerror");
     }
 };
 
