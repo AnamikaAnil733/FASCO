@@ -1391,7 +1391,7 @@ const loadShop = async (req, res) => {
       query.$or = [
         { productName: searchRegex },
         { description: searchRegex },
-        { brand: searchRegex }
+       
       ];
     }
 
