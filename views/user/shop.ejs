@@ -696,16 +696,31 @@
                 console.log('Wishlist response:', data);
 
                 if (data.success) {
-                    alert('Product added to wishlist!');
+                    Swal.fire({
+  icon: 'success',
+  title: 'Success!',
+  text: 'Product added to wishlist!',
+});
+
                     const heartIcon = this.querySelector('i');
                     heartIcon.classList.remove('far');
                     heartIcon.classList.add('fas');
                 } else {
-                    alert(data.message || 'Failed to add to wishlist');
+                    Swal.fire({
+  icon: data.message ? 'success' : 'error', // Use success icon if message exists, otherwise error
+  title: data.message ? 'Success!' : 'Oops...',
+  text: data.message || 'Failed to add to wishlist',
+});
+
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Failed to add to wishlist: ' + error.message);
+                Swal.fire({
+  icon: 'error',
+  title: 'Oops...',
+  text: 'Failed to add to wishlist: ' + error.message,
+});
+
             }
         });
     });

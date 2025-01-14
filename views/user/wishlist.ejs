@@ -233,27 +233,44 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    productCard.style.opacity = '0';
-                    productCard.style.transform = 'scale(0.8)';
-                    
-                    setTimeout(() => {
-                        productCard.remove();
-                        // Force grid reflow
-                        const grid = document.querySelector('.wishlist-grid');
-                        grid.style.display = 'none';
-                        grid.offsetHeight; // Force reflow
-                        grid.style.display = 'grid';
-                        
-                        if (document.querySelectorAll('.wishlist-item').length === 0) {
-                            location.reload();
-                        }
-                    }, 300);
-                } else {
+    Swal.fire({
+        icon: 'success',
+        title: 'Removed!',
+        text: 'The item has been removed from your wishlist.',
+        showConfirmButton: false,
+        timer: 1500, // Auto-close the alert after 1.5 seconds
+    }).then(() => {
+        // Smoothly remove the product card
+        productCard.classList.add('fade-out');
+
+        setTimeout(() => {
+            productCard.remove();
+
+            const grid = document.querySelector('.wishlist-grid');
+            grid.style.display = 'none';
+            grid.offsetHeight; // Force reflow
+            grid.style.display = 'grid';
+
+            // If the wishlist is empty, show a message
+            if (document.querySelectorAll('.wishlist-item').length === 0) {
+                const emptyMessage = document.createElement('p');
+                emptyMessage.textContent = 'Your wishlist is empty.';
+                grid.appendChild(emptyMessage);
+            }
+        }, 300);
+    });
+}
+else {
                     throw new Error(data.message || 'Failed to remove from wishlist');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Failed to remove from wishlist: ' + error.message);
+                Swal.fire({
+             icon: 'error',
+             title: 'Oops...',
+             text: 'Failed to remove from wishlist: ' + error.message,
+             });
+
             }
         });
     });
