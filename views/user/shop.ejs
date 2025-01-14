@@ -61,7 +61,7 @@
                                 <input type="range" class="form-range" min="0" max="100000" step="100" value="<%= maxPrice || 5000 %>" id="priceRange">
                             </div>
                             <div class="price-input mt-2">
-                                <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex justify-content-between align-items-center w-100">
                                     <span class="stext-106 cl6">₹0</span>
                                     <span class="stext-106 cl2">₹<span id="priceValue"><%= maxPrice || 5000 %></span></span>
                                     <span class="stext-106 cl6">₹100000</span>
@@ -101,12 +101,15 @@
                         <% products.forEach((product) => { %>
                             <div class="col-sm-6 col-md-4 p-b-35 isotope-item">
                                 <div class="block2">
-                                    <div class="block2-pic hov-img0">
+                                    <div class="block2-pic hov-img0 position-relative">
                                         <% if (product.variants && product.variants.length > 0 && product.variants[0].images && product.variants[0].images.length > 0) { %>
                                             <img src="/uploads/product-images/<%= product.variants[0].images[0] %>" alt="<%= product.productName %>" class="product-image">
                                         <% } else { %>
                                             <img src="/images/no-image.png" alt="No image available" class="product-image">
                                         <% } %>
+                                        <button class="add-to-wishlist-icon" data-product-id="<%= product._id %>">
+                                            <i class="<%= product.inWishlist ? 'fas' : 'far' %> fa-heart"></i>
+                                        </button>
                                         <a href="/product/<%= product._id %>" class="block2-btn flex-c-m stext-103 cl2 size-102 bg0 bor2 hov-btn1 p-lr-15 trans-04">
                                             View Details
                                         </a>
@@ -117,16 +120,11 @@
                                             <a href="/product/<%= product._id %>" class="stext-104 cl4 hov-cl1 trans-04 js-name-b2 p-b-6">
                                                 <%= product.productName %>
                                             </a>
-                                            <span class="stext-105 cl3">
-                                                ₹<%= product.salesPrice %>
-                                            </span>
-                                            <% if (product.variants && product.variants.length > 0) { %>
-                                                <div class="variant-colors mt-2">
-                                                    <% product.variants.forEach(variant => { %>
-                                                        <span class="color-dot" style="background-color: <%= variant.color %>" title="<%= variant.color %>"></span>
-                                                    <% }); %>
-                                                </div>
-                                            <% } %>
+                                            <div class="d-flex justify-content-between align-items-center w-100">
+                                                <span class="stext-105 cl3">
+                                                    ₹<%= product.salesPrice %>
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -454,8 +452,66 @@
             margin-bottom: 1.5rem;
         }
     }
-</style>
 
+    .bg4 { background-color: #6c757d; }
+    .hov-btn4:hover { background-color: #5a6268; }
+    
+    .btn-group {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .btn-addcart-b2,
+    .js-addcart-detail {
+        display: none;
+    }
+    
+    .add-to-wishlist i.fas {
+        color: #dc3545;
+    }
+    
+    .add-to-wishlist i.far {
+        color: inherit;
+    }
+    
+    .position-relative {
+        position: relative;
+    }
+    
+    .add-to-wishlist-icon {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(255, 255, 255, 0.9);
+        border: none;
+        border-radius: 50%;
+        width: 35px;
+        height: 35px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        z-index: 1;
+    }
+    
+    .add-to-wishlist-icon:hover {
+        transform: scale(1.1);
+    }
+    
+    .add-to-wishlist-icon i {
+        font-size: 18px;
+    }
+    
+    .add-to-wishlist-icon i.fas {
+        color: #dc3545;
+    }
+    
+    .add-to-wishlist-icon i.far {
+        color: #666;
+    }
+</style>
+    
 <script>
     // Price Range Slider
     const priceRange = document.getElementById('priceRange');
@@ -603,6 +659,55 @@
 
         // Reset URL parameters and reload page
         window.location.href = '/shop';
+    });
+
+    document.querySelectorAll('.add-to-wishlist-icon').forEach(button => {
+        button.addEventListener('click', async function(e) {
+            e.preventDefault(); // Prevent any default button behavior
+            const productId = this.dataset.productId;
+            console.log('Adding product to wishlist:', productId);
+            
+            try {
+                // Check login status
+                const loginCheck = await fetch('/check-auth');
+                const loginStatus = await loginCheck.json();
+                
+                if (!loginStatus.isLoggedIn) {
+                    if (confirm('Please login to add items to wishlist. Go to login page?')) {
+                        window.location.href = '/login';
+                    }
+                    return;
+                }
+
+                // Add to wishlist
+                const response = await fetch('/wishlist/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ productId })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const data = await response.json();
+                console.log('Wishlist response:', data);
+
+                if (data.success) {
+                    alert('Product added to wishlist!');
+                    const heartIcon = this.querySelector('i');
+                    heartIcon.classList.remove('far');
+                    heartIcon.classList.add('fas');
+                } else {
+                    alert(data.message || 'Failed to add to wishlist');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to add to wishlist: ' + error.message);
+            }
+        });
     });
 </script>
 

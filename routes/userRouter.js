@@ -63,6 +63,11 @@ router.get('/cart/count', userAuth, userController.getCartCount);
 router.get('/checkout', userAuth, userController.loadCheckout);
 router.post('/checkout', userAuth, userController.placeOrder);
 
+// Wishlist Routes
+router.get('/wishlist', userAuth, userController.loadWishlist);
+router.post('/wishlist/add', userAuth, userController.addToWishlist);
+router.delete('/wishlist/remove/:productId', userAuth, userController.removeFromWishlist);
+
 // Check authentication status endpoint
 router.get('/check-auth', (req, res) => {
     res.json({ isLoggedIn: req.session.user ? true : false });
