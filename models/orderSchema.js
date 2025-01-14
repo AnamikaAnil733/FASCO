@@ -30,6 +30,10 @@ const orderSchema = new Schema({
         totalPrice: {
             type: Number,
             required: true
+        },
+        variantIndex: {
+            type: Number,
+            required: true
         }
     }],
     totalAmount: {
@@ -73,14 +77,19 @@ const orderSchema = new Schema({
     paymentMethod: {
         type: String,
         required: true,
-        enum: ['COD', 'Online']
+        enum: ['COD', 'RAZORPAY']
     },
     paymentStatus: {
         type: String,
         required: true,
-        enum: ['Pending', 'Paid', 'Failed']
+        enum: ['PENDING', 'COMPLETED', 'FAILED']
     },
-   
+    razorpayOrderId: {
+        type: String
+    },
+    razorpayPaymentId: {
+        type: String
+    },
     status: {
         type: String,
         enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],

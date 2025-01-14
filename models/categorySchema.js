@@ -17,7 +17,14 @@ const categorySchema = new mongoose.Schema({
     categoryOffer:{
         type:Number,
         default:0
-
+    },
+    offerStartDate: {
+        type: Date,
+        default: null
+    },
+    offerEndDate: {
+        type: Date,
+        default: null
     },
     createdAt: {
         type : Date,

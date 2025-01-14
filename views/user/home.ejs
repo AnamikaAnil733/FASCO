@@ -269,6 +269,61 @@ display: inline-block;
             height: 220px;
         }
     }
+
+    /* Price Section Styling */
+    .price-section {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 10px 0;
+    }
+
+    .current-price {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    .original-price {
+        font-size: 1rem;
+        color: #95a5a6;
+        text-decoration: line-through;
+        margin-left: 8px;
+    }
+
+    .discount-badge {
+        background-color: #e74c3c;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        margin-left: auto;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.05);
+        }
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    /* Hover effect for price section */
+    .price-section:hover .current-price {
+        color: #16a085;
+        transition: color 0.3s ease;
+    }
+
+    .price-section:hover .discount-badge {
+        background-color: #c0392b;
+        transition: background-color 0.3s ease;
+    }
 </style>
 </head>
 <body class="animsition">
@@ -824,9 +879,15 @@ display: inline-block;
 									<a href="/product/<%= product._id %>" class="stext-104 cl4 hov-cl1 trans-04 js-name-b2 p-b-6">
 										<%= product.productName %>
 									</a>
-									<span class="stext-105 cl3">
-										₹<%= product.salesPrice %>
-									</span>
+									<div class="price-section">
+										<div class="current-price">₹<%= product.salesPrice %></div>
+										<% if (product.regularPrice > product.salesPrice) { %>
+											<div class="original-price">₹<%= product.regularPrice %></div>
+											<div class="discount-badge">
+												<%= Math.round((product.regularPrice - product.salesPrice) / product.regularPrice * 100) %>% OFF
+											</div>
+										<% } %>
+									</div>
 								</div>
 							</div>
 						</div>

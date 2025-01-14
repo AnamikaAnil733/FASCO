@@ -53,9 +53,10 @@ router.get("/listCategory",adminAuth,categoryController.getListCategory);
 router.get("/unlistCategory",adminAuth,categoryController.getUnListCategory)
 router.get("/editCategory",adminAuth,categoryController.getEditCategory)
 router.post("/editCategory/:id",adminAuth,categoryController.editCategory)
+router.post("/updateCategoryOffer", adminAuth, categoryController.updateCategoryOffer);
+router.post("/removeCategoryOffer", adminAuth, categoryController.removeCategoryOffer);
 
-
-
+// Product routes
 router.get("/addproducts",adminAuth,productController.getProductAddPage)
 
 // Product routes
@@ -66,6 +67,8 @@ router.post("/addProducts", adminAuth, productUpload, productController.addProdu
 router.get("/editProduct/:id", adminAuth, productController.getEditProduct);
 router.post("/updateProduct/:id", adminAuth, updateProductUpload, productController.updateProduct);
 router.delete("/deleteProductImage", adminAuth, productController.deleteProductImage);
+router.post("/updateProductOffer", adminAuth, productController.updateProductOffer);
+router.post("/removeProductOffer", adminAuth, productController.removeProductOffer);
 
 // Order Management Routes
 router.get('/orderList', adminAuth, orderController.getAllOrders);  // Keep the old route for compatibility

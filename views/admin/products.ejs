@@ -29,10 +29,12 @@
                         <th scope="col">Category</th>
                         <th scope="col">Regular Price</th>
                         <th scope="col">Sale Price</th>
+                        <th scope="col">Offer</th>
                         <th scope="col">Quantity</th>
                         <th scope="col">Status</th>
                         <th scope="col">Action</th>
                         <th scope="col">Edit Product</th>
+                        <th scope="col">Offer Management</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -57,6 +59,19 @@
                                 <td><%= product.category ? product.category.name : 'N/A' %></td>
                                 <td>₹<%= product.regularPrice %></td>
                                 <td>₹<%= product.salesPrice %></td>
+                                <td>
+                                    <% if (product.productOffer > 0) { %>
+                                        <span class="badge bg-success"><%=product.productOffer%>% OFF</span>
+                                        <% if (product.offerStartDate && product.offerEndDate) { %>
+                                            <small class="d-block text-muted">
+                                                <%= new Date(product.offerStartDate).toLocaleDateString() %> - 
+                                                <%= new Date(product.offerEndDate).toLocaleDateString() %>
+                                            </small>
+                                        <% } %>
+                                    <% } else { %>
+                                        <span class="badge bg-secondary">No Offer</span>
+                                    <% } %>
+                                </td>
                                 <td><%= product.totalQuantity || 0 %></td>
                                 <td>
                                     <% if (product.isBlocked) { %>
@@ -81,11 +96,27 @@
                                 <td>
                                     <a class="btn btn-sm btn-outline-primary" href="/admin/editProduct/<%= product._id %>">Edit</a>
                                 </td>
+                                <td>
+                                    <% if (product.productOffer > 0) { %>
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-sm btn-outline-primary" onclick="openOfferModal('<%=product._id%>', '<%=product.productName%>', <%=product.productOffer%>)">
+                                                Update Offer
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="removeProductOffer('<%=product._id%>')">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    <% } else { %>
+                                        <button class="btn btn-sm btn-success" onclick="openOfferModal('<%=product._id%>', '<%=product.productName%>', 0)">
+                                            Add Offer
+                                        </button>
+                                    <% } %>
+                                </td>
                             </tr>
                         <% }); %>
                     <% } else { %>
                         <tr>
-                            <td colspan="8" class="text-center">No products found</td>
+                            <td colspan="10" class="text-center">No products found</td>
                         </tr>
                     <% } %>
                 </tbody>
@@ -159,6 +190,45 @@
     }
 </style>
 
+<!-- Product Offer Modal -->
+<div class="modal fade" id="productOfferModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Update Product Offer</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="productOfferForm">
+          <input type="hidden" id="offerProductId">
+          <div class="mb-3">
+            <label for="productName" class="form-label">Product Name</label>
+            <input type="text" class="form-control" id="offerProductName" readonly>
+          </div>
+          <div class="mb-3">
+            <label for="offerPercentage" class="form-label">Offer Percentage</label>
+            <input type="number" class="form-control" id="offerPercentage" min="0" max="100" required>
+            <div class="form-text">Enter a value between 0 and 100</div>
+          </div>
+          <div class="mb-3">
+            <label for="offerStartDate" class="form-label">Offer Start Date</label>
+            <input type="datetime-local" class="form-control" id="offerStartDate" required>
+          </div>
+          <div class="mb-3">
+            <label for="offerEndDate" class="form-label">Offer End Date</label>
+            <input type="datetime-local" class="form-control" id="offerEndDate" required>
+            <div class="form-text">End date must be after start date</div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" onclick="updateProductOffer()">Update Offer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
 <script>
 
@@ -196,7 +266,131 @@
         });
     }
 
-    
+    function openOfferModal(productId, productName, currentOffer) {
+      document.getElementById('offerProductId').value = productId;
+      document.getElementById('offerProductName').value = productName;
+      document.getElementById('offerPercentage').value = currentOffer || 0;
+      
+      const modal = new bootstrap.Modal(document.getElementById('productOfferModal'));
+      modal.show();
+    }
+
+    async function updateProductOffer() {
+      try {
+        const productId = document.getElementById('offerProductId').value;
+        const offerPercentage = document.getElementById('offerPercentage').value;
+        const offerStartDate = document.getElementById('offerStartDate').value;
+        const offerEndDate = document.getElementById('offerEndDate').value;
+
+        // Validate dates
+        const startDate = new Date(offerStartDate);
+        const endDate = new Date(offerEndDate);
+
+        if (endDate <= startDate) {
+          throw new Error('End date must be after start date');
+        }
+
+        const response = await fetch('/admin/updateProductOffer', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            productId,
+            offerPercentage,
+            offerStartDate,
+            offerEndDate
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Success!',
+            text: data.message,
+            showConfirmButton: false,
+            timer: 1500
+          }).then(() => {
+            window.location.reload();
+          });
+        } else {
+          throw new Error(data.error || 'Failed to update offer');
+        }
+
+      } catch (error) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error!',
+          text: error.message,
+          confirmButtonText: 'OK'
+        });
+      }
+    }
+
+    async function removeProductOffer(productId) {
+      try {
+        const result = await Swal.fire({
+          title: 'Remove Offer?',
+          text: "This will remove the offer from this product. Are you sure?",
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#d33',
+          cancelButtonColor: '#3085d6',
+          confirmButtonText: 'Yes, remove it!'
+        });
+
+        if (result.isConfirmed) {
+          const response = await fetch('/admin/removeProductOffer', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ productId })
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            Swal.fire({
+              icon: 'success',
+              title: 'Success!',
+              text: data.message,
+              showConfirmButton: false,
+              timer: 1500
+            }).then(() => {
+              window.location.reload();
+            });
+          } else {
+            throw new Error(data.error || 'Failed to remove offer');
+          }
+        }
+      } catch (error) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error!',
+          text: error.message,
+          confirmButtonText: 'OK'
+        });
+      }
+    }
+
+    // Set minimum date for offer start and end dates
+    document.addEventListener('DOMContentLoaded', function() {
+      const now = new Date();
+      const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+      
+      const startDateInput = document.getElementById('offerStartDate');
+      const endDateInput = document.getElementById('offerEndDate');
+      
+      startDateInput.min = localDateTime;
+      
+      // Update end date minimum when start date changes
+      startDateInput.addEventListener('change', function() {
+        endDateInput.min = this.value;
+      });
+    });
 </script>
 
 <%- include("../partials/admin/footer") %>

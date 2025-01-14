@@ -172,6 +172,121 @@ const editCategory = async(req,res)=>{
 };
 
 
+const updateCategoryOffer = async (req, res) => {
+    try {
+        const { categoryId, offerPercentage, offerStartDate, offerEndDate } = req.body;
+        
+        // Validate offer percentage
+        const offer = parseInt(offerPercentage);
+        if (isNaN(offer) || offer < 0 || offer > 100) {
+            return res.status(400).json({ error: "Invalid offer percentage" });
+        }
+
+        // Validate dates
+        const startDate = new Date(offerStartDate);
+        const endDate = new Date(offerEndDate);
+        const now = new Date();
+
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            return res.status(400).json({ error: "Invalid dates provided" });
+        }
+
+        if (endDate <= startDate) {
+            return res.status(400).json({ error: "End date must be after start date" });
+        }
+
+        // Update category offer
+        const category = await Category.findByIdAndUpdate(
+            categoryId,
+            { 
+                categoryOffer: offer,
+                offerStartDate: startDate,
+                offerEndDate: endDate
+            },
+            { new: true }
+        );
+
+        if (!category) {
+            return res.status(404).json({ error: "Category not found" });
+        }
+
+        // Update product prices in this category
+        const products = await Product.find({ category: categoryId });
+        
+        for (const product of products) {
+            const regularPrice = product.regularPrice;
+            const productOffer = product.productOffer || 0;
+            
+            // Calculate the best offer (higher of product or category offer)
+            const bestOffer = Math.max(productOffer, offer);
+            
+            // Calculate new sales price with the offer
+            const salesPrice = Math.round(regularPrice - (regularPrice * bestOffer / 100));
+            
+            // Update the product
+            await Product.findByIdAndUpdate(product._id, { salesPrice });
+        }
+
+        return res.json({ 
+            success: true, 
+            message: "Category offer updated successfully",
+            category
+        });
+
+    } catch (error) {
+        console.error("Error updating category offer:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+
+const removeCategoryOffer = async (req, res) => {
+    try {
+        const { categoryId } = req.body;
+
+        // Update category to remove offer
+        const category = await Category.findByIdAndUpdate(
+            categoryId,
+            { 
+                categoryOffer: 0,
+                offerStartDate: null,
+                offerEndDate: null
+            },
+            { new: true }
+        );
+
+        if (!category) {
+            return res.status(404).json({ error: "Category not found" });
+        }
+
+        // Update product prices in this category
+        const products = await Product.find({ category: categoryId });
+        
+        for (const product of products) {
+            const regularPrice = product.regularPrice;
+            const productOffer = product.productOffer || 0;
+            
+            // Use only product offer since category offer is removed
+            const salesPrice = productOffer > 0 
+                ? Math.round(regularPrice - (regularPrice * productOffer / 100))
+                : regularPrice;
+            
+            // Update the product
+            await Product.findByIdAndUpdate(product._id, { salesPrice });
+        }
+
+        return res.json({ 
+            success: true, 
+            message: "Category offer removed successfully",
+            category
+        });
+
+    } catch (error) {
+        console.error("Error removing category offer:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+};
+
 module.exports = {
     categoryInfo,
     addCategory,
@@ -179,6 +294,6 @@ module.exports = {
     getUnListCategory,
     getEditCategory,
     editCategory,
-    
-    
-}
+    updateCategoryOffer,
+    removeCategoryOffer
+};

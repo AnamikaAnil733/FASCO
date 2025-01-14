@@ -383,13 +383,15 @@
                 <div class="row align-items-center">
                     <div class="col-md-6">
                         <div class="order-id">#<%= order.orderId %></div>
-                        <div class="order-date">Ordered on <%= 
-                            order.createdOn ? new Date(order.createdOn).toLocaleDateString('en-IN', { 
-                                year: 'numeric', 
-                                month: 'long', 
-                                day: 'numeric' 
-                            }) : 'N/A'
-                        %></div>
+                        <div class="order-date">
+                            Ordered on: <%= new Date(order.createdAt).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            }) %>
+                        </div>
                     </div>
                     <div class="col-md-6 text-md-end">
                         <div class="d-flex align-items-center justify-content-end">
@@ -439,13 +441,14 @@
                             <h3 class="info-title">Order Information</h3>
                             <div class="info-content">
                                 Status: <%= order.status || 'Processing' %><br>
-                                Order Date: <%= 
-                                    order.createdOn ? new Date(order.createdOn).toLocaleDateString('en-IN', { 
-                                        year: 'numeric', 
-                                        month: 'long', 
-                                        day: 'numeric' 
-                                    }) : 'N/A'
-                                %><br>
+                                Order Date: <%= new Date(order.createdAt).toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                }) %>
+                            </div><br>
                                 <% if (order.invoiceDate) { %>
                                     Invoice Date: <%= new Date(order.invoiceDate).toLocaleDateString('en-IN', { 
                                         year: 'numeric', 
@@ -505,7 +508,7 @@
                             <div class="timeline-point"></div>
                             <div class="timeline-content">
                                 <h4>Order Placed</h4>
-                                <p><%= order.createdOn ? new Date(order.createdOn).toLocaleString('en-IN') : 'N/A' %></p>
+                                <p><%= order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-US') : 'N/A' %></p>
                             </div>
                         </div>
                         <% if (order.status === 'Processing' || order.status === 'Shipped' || order.status === 'Delivered') { %>

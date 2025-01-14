@@ -21,15 +21,13 @@ router.get('/product/:id', userController.loadProductDetails);
 router.get("/userProfile",userAuth, userController.loadAccount);
 router.post("/update-profile",userAuth, userController.updateProfile);
 
-// Order management routes
+// Order Routes
 router.get('/orders', userAuth, userController.getOrders);
+router.get('/order/success/:orderId', userAuth, userController.getOrderSuccess);
 router.get('/order/:orderId', userAuth, userController.getOrderDetails);
 router.post('/cancel-order/:orderId', userAuth, userController.cancelOrder);
-
-// Order Routes
-router.get("/orders", userAuth, userController.getOrders);
-router.get("/order/:orderId", userAuth, userController.getOrderDetails);
-router.get("/orders/:orderId", userAuth, userController.getOrderSuccess);
+router.post('/order/create', userAuth, userController.createOrder);
+router.post('/order/verify-payment', userAuth, userController.verifyPayment);
 
 // Forgot Password Routes
 router.get("/forgot-password", userController.loadForgotPassword);
@@ -61,7 +59,6 @@ router.get('/cart/count', userAuth, userController.getCartCount);
 
 // Checkout Routes
 router.get('/checkout', userAuth, userController.loadCheckout);
-router.post('/checkout', userAuth, userController.placeOrder);
 
 // Wishlist Routes
 router.get('/wishlist', userAuth, userController.loadWishlist);

@@ -429,6 +429,95 @@ const deleteProductImage = async (req, res) => {
     }
 };
 
+const updateProductOffer = async (req, res) => {
+    try {
+        const { productId, offerPercentage, offerStartDate, offerEndDate } = req.body;
+        
+        // Validate offer percentage
+        const offer = parseInt(offerPercentage);
+        if (isNaN(offer) || offer < 0 || offer > 100) {
+            return res.status(400).json({ error: "Invalid offer percentage" });
+        }
+
+        // Validate dates
+        const startDate = new Date(offerStartDate);
+        const endDate = new Date(offerEndDate);
+
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            return res.status(400).json({ error: "Invalid dates provided" });
+        }
+
+        if (endDate <= startDate) {
+            return res.status(400).json({ error: "End date must be after start date" });
+        }
+
+        // Get product and update offer
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({ error: "Product not found" });
+        }
+
+        // Calculate new sales price with the offer
+        const salesPrice = Math.round(product.regularPrice - (product.regularPrice * offer / 100));
+
+        // Update product
+        const updatedProduct = await Product.findByIdAndUpdate(
+            productId,
+            { 
+                productOffer: offer,
+                offerStartDate: startDate,
+                offerEndDate: endDate,
+                salesPrice: salesPrice
+            },
+            { new: true }
+        );
+
+        return res.json({ 
+            success: true, 
+            message: "Product offer updated successfully",
+            product: updatedProduct
+        });
+
+    } catch (error) {
+        console.error("Error updating product offer:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+const removeProductOffer = async (req, res) => {
+    try {
+        const { productId } = req.body;
+
+        // Get product
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({ error: "Product not found" });
+        }
+
+        // Update product to remove offer
+        const updatedProduct = await Product.findByIdAndUpdate(
+            productId,
+            { 
+                productOffer: 0,
+                offerStartDate: null,
+                offerEndDate: null,
+                salesPrice: product.regularPrice
+            },
+            { new: true }
+        );
+
+        return res.json({ 
+            success: true, 
+            message: "Product offer removed successfully",
+            product: updatedProduct
+        });
+
+    } catch (error) {
+        console.error("Error removing product offer:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+};
+
 module.exports = {
     getProductAddPage,
     addProducts,
@@ -437,5 +526,7 @@ module.exports = {
     unblockProduct,
     getEditProduct,
     updateProduct,
-    deleteProductImage
+    deleteProductImage,
+    updateProductOffer,
+    removeProductOffer
 };

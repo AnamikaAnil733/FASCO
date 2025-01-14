@@ -46,6 +46,14 @@ const productSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    offerStartDate: {
+        type: Date,
+        default: null
+    },
+    offerEndDate: {
+        type: Date,
+        default: null
+    },
     variants: [variantSchema],
     defaultVariant: {
         type: Schema.Types.ObjectId,
