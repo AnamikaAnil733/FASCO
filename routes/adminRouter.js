@@ -49,7 +49,11 @@ router.get("/users",adminAuth,customerController.customerInfo)
 router.get("/blockCustomer",adminAuth,customerController.customerBlocked)
 router.get("/unblockCustomer",adminAuth,customerController.customerunBlocked)
 router.get("/category",adminAuth,categoryController.categoryInfo)
-router.post("/addCategory",adminAuth,categoryController.addCategory)
+
+// Add download routes
+router.get("/download-excel-report", adminAuth, adminController.downloadExcelReport);
+router.get("/download-pdf-report", adminAuth, adminController.downloadPdfReport);
+
 router.get("/listCategory",adminAuth,categoryController.getListCategory);
 router.get("/unlistCategory",adminAuth,categoryController.getUnListCategory)
 router.get("/editCategory",adminAuth,categoryController.getEditCategory)
@@ -84,4 +88,5 @@ router.post('/coupons/create', adminAuth, couponController.createCoupon);
 router.delete('/coupons/delete/:id', adminAuth, couponController.deleteCoupon);
 
 router.get('/download-sales-report', adminAuth, adminController.downloadSalesReport);
-module.exports = router
+
+module.exports = router;

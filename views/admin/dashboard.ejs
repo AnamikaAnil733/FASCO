@@ -9,7 +9,7 @@
 
     <!-- Filters -->
     <div class="card mb-4">
-        <div class="card-body">
+        <div class="card-body " style="padding-bottom: 5rem;" >
             <form id="filterForm" class="row g-3">
                 <!-- Quick Filters -->
                 <div class="col-md-3">
@@ -34,9 +34,23 @@
 
                 <div class="col-md-3 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary me-2">Apply Filters</button>
-                    <button type="button" class="btn btn-outline-primary" onclick="downloadReport()">
-                        <i class="fas fa-download"></i> Download
-                    </button>
+                    <div class="dropdown">
+                        <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="fas fa-download me-1"></i> Download
+                        </button>
+                        <ul class="dropdown-menu" style="position: absolute; transform: translate3d(0px, 40px, 0px); top: 0; left: 0; will-change: transform; z-index: 100000;">
+                            <li>
+                                <button type="button" class="dropdown-item" onclick="downloadReport('excel')">
+                                    <i class="fas fa-file-excel me-2"></i>Excel
+                                </button>
+                            </li>
+                            <li>
+                                <button type="button" class="dropdown-item" onclick="downloadReport('pdf')">
+                                    <i class="fas fa-file-pdf me-2"></i>PDF
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </form>
         </div>
@@ -242,9 +256,51 @@
             font-weight: 500;
             padding: 0.5em 0.75em;
         }
+        .dropdown {
+            position: relative;
+        }
+        .dropdown-menu {
+            position: absolute;
+            min-width: 150px;
+            padding: 0.5rem 0;
+            margin: 0;
+            background-color: #fff;
+            border: 1px solid rgba(0, 0, 0, 0.15);
+            border-radius: 0.25rem;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+        .dropdown-item {
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            display: flex;
+            align-items: center;
+        }
+        .dropdown-item:hover {
+            background-color: #f8f9fa;
+        }
+        .dropdown-toggle::after {
+            margin-left: 0.5em;
+        }
+        .card-body {
+            position: relative;
+            overflow: visible !important;
+        }
     </style>
 
     <script>
+        // Initialize dropdowns when the document is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize all dropdowns
+            const dropdownElementList = [].slice.call(document.querySelectorAll('[data-bs-toggle="dropdown"]'));
+            dropdownElementList.forEach(function(dropdownToggleEl) {
+                new bootstrap.Dropdown(dropdownToggleEl);
+            });
+        });
+
         function handlePeriodChange(select) {
             if (select.value) {
                 document.querySelector('input[name="startDate"]').value = '';
@@ -252,11 +308,69 @@
             }
         }
 
-        function downloadReport() {
-            const form = document.getElementById('filterForm');
-            const formData = new FormData(form);
-            const queryString = new URLSearchParams(formData).toString();
-            window.location.href = `/admin/download-sales-report?${queryString}`;
+        function downloadReport(format) {
+            try {
+                const form = document.getElementById('filterForm');
+                const formData = new FormData(form);
+                
+                // Build query string
+                const params = new URLSearchParams();
+                formData.forEach((value, key) => {
+                    if (value) params.append(key, value);
+                });
+                
+                // Set endpoint
+                const endpoint = format === 'excel' ? '/admin/download-excel-report' : '/admin/download-pdf-report';
+                const fileName = format === 'excel' ? 'sales-report.xlsx' : 'sales-report.pdf';
+                
+                // Show loading state
+                const downloadBtn = document.querySelector('.dropdown-toggle');
+                const originalText = downloadBtn.innerHTML;
+                downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading...';
+                downloadBtn.disabled = true;
+                
+                fetch(endpoint + '?' + params.toString())
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.blob();
+                    })
+                    .then(blob => {
+                        // Create download link
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.style.display = 'none';
+                        a.href = url;
+                        a.download = fileName;
+                        
+                        // Trigger download
+                        document.body.appendChild(a);
+                        a.click();
+                        
+                        // Cleanup
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                        
+                        // Reset button state
+                        downloadBtn.innerHTML = originalText;
+                        downloadBtn.disabled = false;
+                    })
+                    .catch(error => {
+                        console.error('Download error:', error);
+                        alert('Error downloading report. Please try again.');
+                        
+                        // Reset button state
+                        downloadBtn.innerHTML = originalText;
+                        downloadBtn.disabled = false;
+                    });
+            } catch (error) {
+                console.error('Error preparing download:', error);
+                alert('Error preparing download. Please try again.');
+            }
+            
+            // Prevent form submission
+            return false;
         }
 
         // Prevent selecting both period and custom date range
