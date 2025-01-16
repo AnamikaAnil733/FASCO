@@ -5,6 +5,7 @@ const customerController =require("../controllers/admin/customerController")
 const categoryController =require("../controllers/admin/categoryController")
 const productController =require("../controllers/admin/productController")
 const orderController = require("../controllers/admin/orderController")
+const couponController = require('../controllers/admin/couponController');
 const {userAuth,adminAuth} = require("../middleware/auth");
 const multer = require("multer");
 const path = require("path");
@@ -76,5 +77,10 @@ router.get('/orders', adminAuth, orderController.getAllOrders);
 router.get('/orders/:orderId', adminAuth, orderController.getOrderDetails);
 router.post('/orders/update-status', adminAuth, orderController.updateOrderStatus);
 router.post('/orders/cancel', adminAuth, orderController.cancelOrder);
+
+// Coupon Management Routes
+router.get('/coupons', adminAuth, couponController.getAllCoupons);
+router.post('/coupons/create', adminAuth, couponController.createCoupon);
+router.delete('/coupons/delete/:id', adminAuth, couponController.deleteCoupon);
 
 module.exports = router

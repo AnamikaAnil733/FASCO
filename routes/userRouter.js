@@ -50,13 +50,16 @@ router.post('/address/add', userAuth, userController.addAddress);
 router.put('/address/edit/:addressId', userAuth, userController.editAddress);
 router.delete('/address/delete/:addressId', userAuth, userController.deleteAddress);
 
+// Coupon Routes
+router.get('/coupons/available', userAuth, userController.getAvailableCoupons);
+router.post('/coupons/validate', userAuth, userController.validateCoupon);
+
 // Cart Routes
 router.post('/cart/add', userAuth, userController.addToCart);
 router.get('/cart', userAuth, userController.getCart);
 router.put('/cart/update', userAuth, userController.updateCartItem);
 router.delete('/cart/remove/:productId/:variantIndex', userAuth, userController.removeFromCart);
 router.get('/cart/count', userAuth, userController.getCartCount);
-
 // Checkout Routes
 router.get('/checkout', userAuth, userController.loadCheckout);
 

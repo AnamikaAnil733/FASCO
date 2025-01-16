@@ -40,6 +40,21 @@ const orderSchema = new Schema({
         type: Number,
         required: true
     },
+    coupon: {
+        code: {
+            type: String
+        },
+        discountType: {
+            type: String,
+            enum: ['percentage', 'fixed']
+        },
+        discountAmount: {
+            type: Number
+        },
+        discountedAmount: {
+            type: Number
+        }
+    },
     shippingAddress: {
         addressType: {
             type: String,

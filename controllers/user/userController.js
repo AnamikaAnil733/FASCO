@@ -4,6 +4,7 @@ const Product = require("../../models/productSchema");
 const Order = require("../../models/orderSchema");
 const Cart = require("../../models/cartSchema");
 const Wishlist = require('../../models/wishlistSchema');
+const Coupon = require('../../models/couponSchema');
 const env = require("dotenv").config();
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcrypt");
@@ -747,6 +748,8 @@ const getOrderDetails = async (req, res) => {
       return res.redirect('/orders');
     }
 
+    console.log('Found order:', order);
+
     // Format the order data
     const formattedOrder = {
       _id: order._id,
@@ -757,7 +760,9 @@ const getOrderDetails = async (req, res) => {
       paymentMethod: order.paymentMethod,
       paymentStatus: order.paymentStatus,
       createdAt: order.createdAt,
-      shippingAddress: order.shippingAddress
+      shippingAddress: order.shippingAddress,
+      coupon: order.coupon,
+      finalAmount: order.coupon ? (order.totalAmount - order.coupon.discountedAmount) : order.totalAmount
     };
 
     res.render('order-details', {
@@ -798,9 +803,15 @@ const getOrderSuccess = async (req, res) => {
 
     console.log('Found order:', order);
 
+    // Calculate final amount
+    const finalAmount = order.coupon ? (order.totalAmount - order.coupon.discountedAmount) : order.totalAmount;
+
     res.render('order-success', {
       title: 'Order Success',
-      order,
+      order: {
+        ...order.toObject(),
+        finalAmount
+      },
       user: req.session.user
     });
   } catch (error) {
@@ -1147,11 +1158,12 @@ const loadCheckout = async (req, res) => {
 const createOrder = async (req, res) => {
     try {
         const userId = req.session.user._id;
-        const { addressId, paymentMethod } = req.body;
+        const { addressId, paymentMethod, couponCode } = req.body;
         
         console.log('Creating order for user:', userId);
         console.log('Address ID:', addressId);
         console.log('Payment Method:', paymentMethod);
+        console.log('Coupon Code:', couponCode);
 
         // Get cart and address
         const [cart, addressDoc] = await Promise.all([
@@ -1202,8 +1214,48 @@ const createOrder = async (req, res) => {
     }
 
         const total = cart.items.reduce((sum, item) => sum + item.totalPrice, 0);
-        console.log('Order total:', total);
+        console.log('Order subtotal:', total);
         
+        // Handle coupon if provided
+        let finalAmount = total;
+        let couponDetails = null;
+        console.log("COUPON CODE",couponCode)
+        if (couponCode) {
+            const coupon = await Coupon.findOne({ 
+                code: couponCode.toUpperCase(),
+                startDate: { $lte: new Date() },
+                endDate: { $gte: new Date() },
+                isActive: true
+            });
+
+            if (coupon && total >= coupon.minimumPurchase) {
+                let discountAmount = 0;
+                if (coupon.discountType === 'percentage') {
+                    discountAmount = (total * coupon.discountAmount) / 100;
+                    if (coupon.maximumDiscount) {
+                        discountAmount = Math.min(discountAmount, coupon.maximumDiscount);
+                    }
+                } else {
+                    discountAmount = coupon.discountAmount;
+                }
+
+                finalAmount = total - discountAmount;
+                couponDetails = {
+                    code: coupon.code,
+                    discountType: coupon.discountType,
+                    discountAmount: coupon.discountAmount,
+                    discountedAmount: discountAmount
+                };
+                console.log("ivide ethiiiii",finalAmount);
+                // Increment coupon usage count
+                await Coupon.findByIdAndUpdate(coupon._id, {
+                    $inc: { usedCount: 1 }
+                });
+            }
+        }
+
+        console.log('Final amount after discount:', finalAmount);
+
         // Map cart items to order items
         const orderItems = cart.items.map(item => {
             console.log('Processing item:', {
@@ -1237,6 +1289,7 @@ const createOrder = async (req, res) => {
                 altPhone: selectedAddress.altPhone
             },
             totalAmount: total,
+            coupon: couponDetails,
             paymentMethod,
             paymentStatus: 'PENDING',
             status: 'Pending'
@@ -1298,9 +1351,9 @@ const createOrder = async (req, res) => {
         }
 
         // Create Razorpay order
-        console.log('Creating Razorpay order for amount:', total * 100);
+        console.log('Creating Razorpay order for amount:', finalAmount * 100);
         const razorpayOrder = await razorpay.orders.create({
-            amount: total * 100, // Convert to paise
+            amount: finalAmount * 100, // Convert to paise
             currency: 'INR',
             receipt: order._id.toString()
         });
@@ -1314,7 +1367,7 @@ const createOrder = async (req, res) => {
         res.json({
             success: true,
             orderId: order._id,
-            amount: total * 100,
+            amount: finalAmount * 100,
             razorpayOrderId: razorpayOrder.id
         });
 
@@ -1776,12 +1829,128 @@ const removeFromWishlist = async (req, res) => {
   }
 };
 
+
+// Validate coupon
+const validateCoupon = async (req, res) => {
+    try {
+        const { code, totalAmount } = req.body;
+        const userId = req.session.user._id;
+
+        console.log('Validating coupon:', { code, totalAmount, userId });
+
+        // Find the coupon
+        const coupon = await Coupon.findOne({ 
+            code: code.toUpperCase(),
+            startDate: { $lte: new Date() },
+            endDate: { $gte: new Date() },
+            isActive: true
+        });
+
+        console.log('Found coupon:', coupon);
+
+        if (!coupon) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Invalid coupon code or coupon has expired' 
+            });
+        }
+
+        // Check if usage limit is reached
+        if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Coupon usage limit has been reached' 
+            });
+        }
+
+        // Check minimum purchase amount
+        if (totalAmount < coupon.minimumPurchase) {
+            return res.status(400).json({ 
+                success: false, 
+                message: `Minimum purchase amount of ₹${coupon.minimumPurchase} required` 
+            });
+        }
+
+        // Check if user has already used this coupon
+        const order = await Order.findOne({
+            user: userId,
+            'coupon.code': code.toUpperCase()
+        });
+
+        if (order) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'You have already used this coupon' 
+            });
+        }
+
+        res.json({
+            success: true,
+            coupon: {
+                code: coupon.code,
+                discountType: coupon.discountType,
+                discountAmount: coupon.discountAmount,
+                maximumDiscount: coupon.maximumDiscount
+            }
+        });
+
+    } catch (error) {
+        console.error('Error validating coupon:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error validating coupon: ' + error.message
+        });
+    }
+};
+
+// Get available coupons
+const getAvailableCoupons = async (req, res) => {
+    try {
+        console.log('Fetching available coupons...');
+        const currentDate = new Date();
+        
+        const coupons = await Coupon.find({
+            startDate: { $lte: currentDate },
+            endDate: { $gte: currentDate },
+            isActive: true,
+            $or: [
+                { usageLimit: { $exists: false } },
+                {
+                    $expr: {
+                        $or: [
+                            { $eq: ["$usageLimit", null] },
+                            { $gt: ["$usageLimit", "$usedCount"] }
+                        ]
+                    }
+                }
+            ]
+        }).select('code description discountType discountAmount minimumPurchase maximumDiscount');
+
+        console.log('Found coupons:', coupons);
+
+        res.json({
+            success: true,
+            coupons: coupons
+        });
+    } catch (error) {
+        console.error('Detailed error fetching coupons:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching available coupons: ' + error.message
+        });
+    }
+};
+
+
 module.exports = {
     loadHomepage,
     loadShop,
     loadSignup,
+    generateOtp,
+    sendVerificationEmail,
     Signup,
     pageNotFound,
+    securePassword,
     verifyOtp,
     resendOtp,
     loadLogin,
@@ -1792,6 +1961,7 @@ module.exports = {
     forgotPassword,
     loadResetPassword,
     resetPassword,
+    sendPasswordResetEmail,
     loadAccount,
     updateProfile,
     changePassword,
@@ -1814,4 +1984,6 @@ module.exports = {
     loadWishlist,
     addToWishlist,
     removeFromWishlist,
+    validateCoupon,
+    getAvailableCoupons
 };

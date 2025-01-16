@@ -465,6 +465,26 @@
                 </div>
 
                 <div class="info-section">
+                    <h3 class="info-title">Order Summary</h3>
+                    <div class="order-summary">
+                        <div class="summary-item">
+                            <span>Subtotal:</span>
+                            <span>₹<%= order.totalAmount.toFixed(2) %></span>
+                        </div>
+                        <% if (order.coupon) { %>
+                            <div class="summary-item text-success">
+                                <span>Coupon Discount (<%= order.coupon.code %>):</span>
+                                <span>-₹<%= order.coupon.discountedAmount.toFixed(2) %></span>
+                            </div>
+                        <% } %>
+                        <div class="summary-item total">
+                            <span>Total Amount:</span>
+                            <span>₹<%= order.finalAmount.toFixed(2) %></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-section">
                     <h3 class="info-title">Ordered Items</h3>
                     <div class="ordered-items">
                         <% order.items.forEach(item => { %>

@@ -201,7 +201,7 @@
             </div>
             <div class="info-item">
                 <div class="info-label">Total Amount</div>
-                <div class="info-value">₹<%= order.totalAmount.toFixed(2) %></div>
+                <div class="info-value">₹<%= order.finalAmount.toFixed(2) %></div>
             </div>
             <div class="info-item">
                 <div class="info-label">Payment Method</div>
@@ -262,14 +262,25 @@
                 </div>
             <% }); %>
         </div>
+    </div>
 
-        <div class="summary-row">
-            <span>Subtotal</span>
-            <span>₹<%= order.totalAmount.toFixed(2) %></span>
-        </div>
-        <div class="summary-row total-row">
-            <span>Total Amount</span>
-            <span>₹<%= order.totalAmount.toFixed(2) %></span>
+    <div class="order-section">
+        <h2 class="section-title">Order Summary</h2>
+        <div class="summary-details">
+            <div class="summary-row">
+                <span>Subtotal</span>
+                <span>₹<%= order.totalAmount.toFixed(2) %></span>
+            </div>
+            <% if (order.coupon) { %>
+                <div class="summary-row text-success">
+                    <span>Coupon Discount (<%= order.coupon.code %>)</span>
+                    <span>-₹<%= order.coupon.discountedAmount.toFixed(2) %></span>
+                </div>
+            <% } %>
+            <div class="summary-row total">
+                <span>Total Amount</span>
+                <span>₹<%= order.finalAmount.toFixed(2) %></span>
+            </div>
         </div>
     </div>
 

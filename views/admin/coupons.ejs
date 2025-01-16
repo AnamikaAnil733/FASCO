@@ -1,0 +1,239 @@
+<%- include("../partials/admin/header") %>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Coupons</h3>
+                    <button class="btn btn-primary float-right" onclick="openCreateCouponModal()">
+                        Create Coupon
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Code</th>
+                                    <th>Description</th>
+                                    <th>Discount</th>
+                                    <th>Min Purchase</th>
+                                    <th>Max Discount</th>
+                                    <th>Valid Until</th>
+                                    <th>Usage</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% coupons.forEach(coupon => { %>
+                                    <tr>
+                                        <td><%= coupon.code %></td>
+                                        <td><%= coupon.description %></td>
+                                        <td>
+                                            <%= coupon.discountType === 'percentage' ? 
+                                                coupon.discountAmount + '%' : 
+                                                '₹' + coupon.discountAmount %>
+                                        </td>
+                                        <td>₹<%= coupon.minimumPurchase %></td>
+                                        <td>₹<%= coupon.maximumDiscount %></td>
+                                        <td><%= new Date(coupon.endDate).toLocaleDateString() %></td>
+                                        <td><%= coupon.usedCount %>/<%= coupon.usageLimit %></td>
+                                        <td>
+                                            <% const now = new Date(); %>
+                                            <% if (!coupon.isActive) { %>
+                                                <span class="badge bg-danger">Inactive</span>
+                                            <% } else if (now > new Date(coupon.endDate)) { %>
+                                                <span class="badge bg-warning">Expired</span>
+                                            <% } else if (now < new Date(coupon.startDate)) { %>
+                                                <span class="badge bg-info">Upcoming</span>
+                                            <% } else { %>
+                                                <span class="badge bg-success">Active</span>
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-danger" onclick="deleteCoupon('<%= coupon._id %>')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Coupon Modal -->
+<div class="modal fade" id="createCouponModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create Coupon</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createCouponForm">
+                    <div class="mb-3">
+                        <label class="form-label">Coupon Code</label>
+                        <input type="text" class="form-control" name="code" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Discount Type</label>
+                        <select class="form-control" name="discountType" required>
+                            <option value="percentage">Percentage</option>
+                            <option value="fixed">Fixed Amount</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Discount Amount</label>
+                        <input type="number" class="form-control" name="discountAmount" min="0" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Minimum Purchase</label>
+                        <input type="number" class="form-control" name="minimumPurchase" min="0" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Maximum Discount</label>
+                        <input type="number" class="form-control" name="maximumDiscount" min="0" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Start Date</label>
+                        <input type="datetime-local" class="form-control" name="startDate" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">End Date</label>
+                        <input type="datetime-local" class="form-control" name="endDate" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Usage Limit</label>
+                        <input type="number" class="form-control" name="usageLimit" min="1" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary" form="createCouponForm">Create</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openCreateCouponModal() {
+    // Set minimum date for start date
+    const now = new Date();
+    const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    document.querySelector('input[name="startDate"]').min = localDateTime;
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('createCouponModal'));
+    modal.show();
+}
+
+// Handle form submission
+document.getElementById('createCouponForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    try {
+        const formData = new FormData(this);
+        const data = {};
+        formData.forEach((value, key) => {
+            data[key] = value;
+        });
+
+        console.log('Sending coupon data:', data);  
+
+        const response = await fetch('/admin/coupons/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        console.log('Server response:', result);  
+
+        if (result.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: result.message || 'Coupon created successfully',
+                showConfirmButton: false,
+                timer: 1500
+            }).then(() => {
+                window.location.reload();
+            });
+        } else {
+            throw new Error(result.message || 'Failed to create coupon');
+        }
+    } catch (error) {
+        console.error('Error creating coupon:', error);  
+        Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: error.message || 'An error occurred while creating the coupon',
+            confirmButtonText: 'OK'
+        });
+    }
+});
+
+// Update end date minimum when start date changes
+document.querySelector('input[name="startDate"]').addEventListener('change', function() {
+    document.querySelector('input[name="endDate"]').min = this.value;
+});
+
+async function deleteCoupon(couponId) {
+    try {
+        const result = await Swal.fire({
+            title: 'Delete Coupon?',
+            text: "This action cannot be undone!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!'
+        });
+
+        if (result.isConfirmed) {
+            const response = await fetch(`/admin/coupons/${couponId}`, {
+                method: 'DELETE'
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: data.message,
+                    showConfirmButton: false,
+                    timer: 1500
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                throw new Error(data.message);
+            }
+        }
+    } catch (error) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: error.message,
+            confirmButtonText: 'OK'
+        });
+    }
+}
+</script>
+
+<%- include("../partials/admin/footer") %>
