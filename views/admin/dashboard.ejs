@@ -3,9 +3,270 @@
 <section class="content-main">
     <div class="content-header">
         <div>
-            <h2 class="content-title card-title">Dashboard </h2>
+            <h2 class="content-title card-title">Dashboard</h2>
         </div>
-       
     </div>
-</section>
-<%- include("../../views/partials/admin/footer") %>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form id="filterForm" class="row g-3">
+                <!-- Quick Filters -->
+                <div class="col-md-3">
+                    <label class="form-label">Quick Filters</label>
+                    <select class="form-select" name="period" onchange="handlePeriodChange(this)">
+                        <option value="">Select Period</option>
+                        <option value="day" <%= filters.period === 'day' ? 'selected' : '' %>>Last 24 Hours</option>
+                        <option value="week" <%= filters.period === 'week' ? 'selected' : '' %>>Last Week</option>
+                        <option value="month" <%= filters.period === 'month' ? 'selected' : '' %>>Last Month</option>
+                    </select>
+                </div>
+
+                <!-- Custom Date Range -->
+                <div class="col-md-3">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" class="form-control" name="startDate" value="<%= filters.startDate %>">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">End Date</label>
+                    <input type="date" class="form-control" name="endDate" value="<%= filters.endDate %>">
+                </div>
+
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">Apply Filters</button>
+                    <button type="button" class="btn btn-outline-primary" onclick="downloadReport()">
+                        <i class="fas fa-download"></i> Download
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3">
+            <div class="card card-body mb-4">
+                <article class="icontext">
+                    <span class="icon icon-sm rounded-circle bg-primary-light">
+                        <i class="fas fa-shopping-cart text-primary"></i>
+                    </span>
+                    <div class="text">
+                        <h6 class="mb-1">Total Orders</h6>
+                        <span><%= summary.totalOrders %></span>
+                    </div>
+                </article>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <div class="card card-body mb-4">
+                <article class="icontext">
+                    <span class="icon icon-sm rounded-circle bg-success-light">
+                        <i class="fas fa-money-bill text-success"></i>
+                    </span>
+                    <div class="text">
+                        <h6 class="mb-1">Total Revenue</h6>
+                        <span>₹<%= summary.totalAmount.toFixed(2) %></span>
+                    </div>
+                </article>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <div class="card card-body mb-4">
+                <article class="icontext">
+                    <span class="icon icon-sm rounded-circle bg-warning-light">
+                        <i class="fas fa-tags text-warning"></i>
+                    </span>
+                    <div class="text">
+                        <h6 class="mb-1">Total Discounts</h6>
+                        <span>₹<%= summary.totalDiscount.toFixed(2) %></span>
+                    </div>
+                </article>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <div class="card card-body mb-4">
+                <article class="icontext">
+                    <span class="icon icon-sm rounded-circle bg-info-light">
+                        <i class="fas fa-ticket-alt text-info"></i>
+                    </span>
+                    <div class="text">
+                        <h6 class="mb-1">Coupon Usage</h6>
+                        <span><%= summary.discountBreakdown.count %></span>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </div>
+
+    <!-- Orders Table -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="text-center">Order ID</th>
+                            <th>Date</th>
+                            <th>Customer</th>
+                            <th style="min-width: 200px;">Items</th>
+                            <th class="text-end">Regular Price</th>
+                            <th class="text-end">Sales Price</th>
+                            <th class="text-end">Discount</th>
+                            <th class="text-end">Final Amount</th>
+                            <th class="text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% orders.forEach(order => { %>
+                            <tr>
+                                <td class="text-center">
+                                    <span class="fw-bold text-primary">#<%= order.orderId %></span>
+                                </td>
+                                <td>
+                                    <div class="text-muted small"><%= new Date(order.orderDate).toLocaleDateString() %></div>
+                                </td>
+                                <td>
+                                    <div class="fw-bold"><%= order.shippingAddress.name %></div>
+                                </td>
+                                <td>
+                                    <div class="order-items">
+                                        <% order.items.forEach((item, index) => { %>
+                                            <div class="item-row <%= index !== order.items.length - 1 ? 'mb-1' : '' %>">
+                                                <% if (item.productId) { %>
+                                                    <span class="product-name"><%= item.productId.productName || 'Deleted Product' %></span>
+                                                    <span class="quantity-badge"><%= item.quantity %></span>
+                                                <% } else { %>
+                                                    <span class="product-name text-muted">Deleted Product</span>
+                                                    <span class="quantity-badge"><%= item.quantity %></span>
+                                                <% } %>
+                                            </div>
+                                        <% }); %>
+                                    </div>
+                                </td>
+                                <td class="text-end">
+                                    <span class="text-muted">₹<%= order.regularPrice.toFixed(2) %></span>
+                                </td>
+                                <td class="text-end">
+                                    <span>₹<%= order.totalAmount.toFixed(2) %></span>
+                                </td>
+                                <td class="text-end">
+                                    <% if (order.coupon && order.coupon.discountedAmount) { %>
+                                        <div>
+                                            <span class="text-danger">-₹<%= order.coupon.discountedAmount.toFixed(2) %></span>
+                                            <% if (order.coupon.code) { %>
+                                                <div class="small text-muted"><%= order.coupon.code %></div>
+                                            <% } %>
+                                        </div>
+                                    <% } else { %>
+                                        <span>-</span>
+                                    <% } %>
+                                </td>
+                                <td class="text-end">
+                                    <span class="fw-bold">₹<%= ((order.coupon && order.coupon.discountedAmount) ? 
+                                        (order.totalAmount - order.coupon.discountedAmount) : 
+                                        order.totalAmount).toFixed(2) %></span>
+                                </td>
+                                <td class="text-center">
+                                    <% const statusColors = {
+                                        'Delivered': 'success',
+                                        'Pending': 'warning',
+                                        'Processing': 'info',
+                                        'Shipped': 'primary',
+                                        'Cancelled': 'danger',
+                                        'Returned': 'secondary'
+                                    } %>
+                                    <span class="badge bg-<%= statusColors[order.status] || 'secondary' %>">
+                                        <%= order.status %>
+                                    </span>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .order-items {
+            max-width: 300px;
+        }
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+        .product-name {
+            flex: 1;
+            font-size: 0.9rem;
+        }
+        .quantity-badge {
+            background-color: #e9ecef;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            color: #495057;
+        }
+        .table td {
+            vertical-align: middle;
+            padding: 1rem 0.75rem;
+        }
+        .table th {
+            font-weight: 600;
+            padding: 0.75rem;
+            white-space: nowrap;
+        }
+        .text-end {
+            text-align: right !important;
+        }
+        .text-center {
+            text-align: center !important;
+        }
+        .text-primary {
+            color: #0d6efd !important;
+        }
+        .text-danger {
+            color: #dc3545 !important;
+        }
+        .text-muted {
+            color: #6c757d !important;
+        }
+        .fw-bold {
+            font-weight: 600 !important;
+        }
+        .small {
+            font-size: 0.875rem;
+        }
+        .badge {
+            font-weight: 500;
+            padding: 0.5em 0.75em;
+        }
+    </style>
+
+    <script>
+        function handlePeriodChange(select) {
+            if (select.value) {
+                document.querySelector('input[name="startDate"]').value = '';
+                document.querySelector('input[name="endDate"]').value = '';
+            }
+        }
+
+        function downloadReport() {
+            const form = document.getElementById('filterForm');
+            const formData = new FormData(form);
+            const queryString = new URLSearchParams(formData).toString();
+            window.location.href = `/admin/download-sales-report?${queryString}`;
+        }
+
+        // Prevent selecting both period and custom date range
+        document.querySelectorAll('input[type="date"]').forEach(input => {
+            input.addEventListener('change', () => {
+                if (input.value) {
+                    document.querySelector('select[name="period"]').value = '';
+                }
+            });
+        });
+    </script>
+
+    <%- include("../../views/partials/admin/footer") %>
