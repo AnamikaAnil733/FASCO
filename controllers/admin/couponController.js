@@ -1,18 +1,5 @@
 const Coupon = require('../../models/couponSchema');
 
-// Temporary function to fix index issue
-const fixIndexIssue = async () => {
-    try {
-        await Coupon.collection.dropIndex('name_1');
-        console.log('Successfully dropped the problematic index');
-    } catch (error) {
-        console.log('Index might not exist or other error:', error);
-    }
-};
-
-// Call this once
-fixIndexIssue();
-
 // Get all coupons
 const getAllCoupons = async (req, res) => {
     try {

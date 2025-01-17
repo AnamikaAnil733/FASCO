@@ -707,12 +707,20 @@ const getOrders = async (req, res) => {
       })
       .sort({ createdAt: -1 });
 
-    // Add default value for totalAmount if undefined and map createdAt to createdOn
-    const processedOrders = orders.map(order => ({
-      ...order.toObject(),
-      totalAmount: order.totalAmount || 0,
-      createdOn: order.createdAt // Map createdAt to createdOn for consistency
-    }));
+    // Add default value for totalAmount if undefined and calculate finalAmount
+    const processedOrders = orders.map(order => {
+      const orderObj = order.toObject();
+      const totalAmount = orderObj.totalAmount || 0;
+      const discountedAmount = orderObj.coupon?.discountedAmount || 0;
+      const finalAmount = totalAmount - discountedAmount;
+
+      return {
+        ...orderObj,
+        totalAmount,
+        finalAmount,
+        createdOn: orderObj.createdAt
+      };
+    });
 
     res.render('orders', {
       orders: processedOrders,

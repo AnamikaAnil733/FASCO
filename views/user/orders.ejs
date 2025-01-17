@@ -254,9 +254,9 @@
                             </div>
                             <div class="order-body">
                                 <div class="order-info">
-                                    <div class="order-amount">₹<%= (order.totalAmount || 0).toLocaleString('en-IN') %></div>
+                                    <div class="order-amount">₹<%= (order.finalAmount || 0).toLocaleString('en-IN') %></div>
                                     <div class="order-status <%= order.status.toLowerCase() %>">
-                                        Status: <%= order.status %>
+                                        <%= order.status %>
                                     </div>
                                     <div class="order-actions">
                                         <a href="/order/<%= order._id %>" class="btn btn-view">View Details</a>
