@@ -53,14 +53,49 @@
                                             <% } %>
                                         </td>
                                         <td>
-                                            <button class="btn btn-sm btn-danger" onclick="deleteCoupon('<%= coupon._id %>')">
-                                                <i class="fas fa-trash"></i>
+                                            <button class="btn btn-icon btn-delete" onclick="deleteCoupon('<%= coupon._id %>')" title="Delete Coupon">
+                                                <i class="fa-solid fa-trash"></i>
                                             </button>
                                         </td>
                                     </tr>
                                 <% }); %>
                             </tbody>
                         </table>
+                        
+                        <!-- Pagination -->
+                        <div class="pagination-area mt-4 d-flex align-items-center justify-content-between">
+                            <div class="pagination-info">
+                                Showing <%= (pagination.page - 1) * pagination.limit + 1 %> to 
+                                <%= Math.min(pagination.page * pagination.limit, pagination.totalCoupons) %> 
+                                of <%= pagination.totalCoupons %> entries
+                            </div>
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination">
+                                    <!-- Previous button -->
+                                    <li class="page-item <%= pagination.page <= 1 ? 'disabled' : '' %>">
+                                        <a class="page-link" href="?page=<%= pagination.page - 1 %>&limit=<%= pagination.limit %>">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </a>
+                                    </li>
+                                    
+                                    <!-- Page numbers -->
+                                    <% for(let i = 1; i <= pagination.totalPages; i++) { %>
+                                        <li class="page-item <%= pagination.page === i ? 'active' : '' %>">
+                                            <a class="page-link" href="?page=<%= i %>&limit=<%= pagination.limit %>">
+                                                <%= i %>
+                                            </a>
+                                        </li>
+                                    <% } %>
+                                    
+                                    <!-- Next button -->
+                                    <li class="page-item <%= pagination.page >= pagination.totalPages ? 'disabled' : '' %>">
+                                        <a class="page-link" href="?page=<%= pagination.page + 1 %>&limit=<%= pagination.limit %>">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -126,6 +161,86 @@
         </div>
     </div>
 </div>
+
+<style>
+    .btn-icon {
+        width: 35px;
+        height: 35px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+    }
+
+    .btn-delete {
+        background-color: #fff;
+        border: 1px solid #dc3545;
+        color: #dc3545;
+    }
+
+    .btn-delete:hover {
+        background-color: #dc3545;
+        color: #fff;
+        transform: scale(1.05);
+        box-shadow: 0 2px 5px rgba(220, 53, 69, 0.2);
+    }
+
+    .btn-delete:active {
+        transform: scale(0.95);
+    }
+
+    .btn-delete i {
+        font-size: 1.1rem;
+    }
+
+    /* Table styles */
+    .table {
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .table thead th {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        color: #495057;
+        font-weight: 600;
+    }
+
+    .table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+
+    .table td {
+        vertical-align: middle;
+    }
+
+    /* Badge styles */
+    .badge {
+        padding: 0.5em 1em;
+        font-weight: 500;
+        letter-spacing: 0.3px;
+    }
+
+    .badge.bg-success {
+        background-color: #28a745 !important;
+    }
+
+    .badge.bg-warning {
+        background-color: #ffc107 !important;
+        color: #000;
+    }
+
+    .badge.bg-danger {
+        background-color: #dc3545 !important;
+    }
+
+    .badge.bg-info {
+        background-color: #17a2b8 !important;
+    }
+</style>
 
 <script>
 function openCreateCouponModal() {
@@ -206,30 +321,44 @@ async function deleteCoupon(couponId) {
 
         if (result.isConfirmed) {
             const response = await fetch(`/admin/coupons/${couponId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
             });
 
-            const data = await response.json();
+            let data;
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                data = await response.json();
+            } else {
+                throw new Error('Received non-JSON response from server');
+            }
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to delete coupon');
+            }
 
             if (data.success) {
-                Swal.fire({
+                await Swal.fire({
                     icon: 'success',
                     title: 'Success!',
-                    text: data.message,
+                    text: data.message || 'Coupon deleted successfully',
                     showConfirmButton: false,
                     timer: 1500
-                }).then(() => {
-                    window.location.reload();
                 });
+                window.location.reload();
             } else {
-                throw new Error(data.message);
+                throw new Error(data.message || 'Failed to delete coupon');
             }
         }
     } catch (error) {
+        console.error('Error deleting coupon:', error);
         Swal.fire({
             icon: 'error',
             title: 'Error!',
-            text: error.message,
+            text: error.message || 'Failed to delete coupon',
             confirmButtonText: 'OK'
         });
     }

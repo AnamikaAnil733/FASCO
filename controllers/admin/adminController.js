@@ -47,6 +47,11 @@ const loadDashbord = async (req, res) => {
         let query = {}; 
         let dateQuery = {};
 
+        // Pagination parameters
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+
         // Handle date filtering
         if (startDate && endDate) {
             dateQuery = {
@@ -93,7 +98,11 @@ const loadDashbord = async (req, res) => {
 
         query = { ...query, ...dateQuery };
 
-        // Get all orders
+        // Get total count for pagination
+        const totalOrders = await Order.countDocuments(query);
+        const totalPages = Math.ceil(totalOrders / limit);
+
+        // Get paginated orders
         const orders = await Order.find(query)
             .populate({
                 path: 'items.productId',
@@ -101,11 +110,12 @@ const loadDashbord = async (req, res) => {
                 match: { _id: { $ne: null } }
             })
             .sort({ orderDate: -1 })
-            .lean();
+            .skip(skip)
+            .limit(limit);
 
         // Calculate summary with status breakdown
         let summary = {
-            totalOrders: orders.length,
+            totalOrders: totalOrders,
             totalAmount: 0,
             totalDiscount: 0,
             discountBreakdown: {
@@ -161,6 +171,12 @@ const loadDashbord = async (req, res) => {
                 startDate: startDate || currentStartDate,
                 endDate: endDate || currentEndDate,
                 period: period || ''
+            },
+            pagination: {
+                page,
+                limit,
+                totalPages,
+                totalOrders
             }
         });
 

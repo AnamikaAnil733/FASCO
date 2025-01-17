@@ -86,7 +86,7 @@ router.post('/orders/:orderId/return/:productId/:action', adminAuth, orderContro
 // Coupon Management Routes
 router.get('/coupons', adminAuth, couponController.getAllCoupons);
 router.post('/coupons/create', adminAuth, couponController.createCoupon);
-router.delete('/coupons/delete/:id', adminAuth, couponController.deleteCoupon);
+router.delete('/coupons/:id', adminAuth, couponController.deleteCoupon);
 
 router.get('/download-sales-report', adminAuth, adminController.downloadSalesReport);
 

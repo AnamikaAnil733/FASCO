@@ -16,11 +16,31 @@ fixIndexIssue();
 // Get all coupons
 const getAllCoupons = async (req, res) => {
     try {
-        const coupons = await Coupon.find().sort({ createdAt: -1 });
+        // Pagination parameters
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+
+        // Get total count for pagination
+        const totalCoupons = await Coupon.countDocuments();
+        const totalPages = Math.ceil(totalCoupons / limit);
+
+        // Get paginated coupons
+        const coupons = await Coupon.find()
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
         res.render('coupons', { 
             coupons,
             admin: true,
-            title: 'Coupon Management'
+            title: 'Coupon Management',
+            pagination: {
+                page,
+                limit,
+                totalPages,
+                totalCoupons
+            }
         });
     } catch (error) {
         console.error('Error fetching coupons:', error);
@@ -117,27 +137,40 @@ const createCoupon = async (req, res) => {
 const deleteCoupon = async (req, res) => {
     try {
         const { id } = req.params;
-        const coupon = await Coupon.findByIdAndDelete(id);
+        
+        if (!id) {
+            return res.status(400).json({
+                success: false,
+                message: 'Coupon ID is required'
+            });
+        }
 
+        const coupon = await Coupon.findById(id);
         if (!coupon) {
-            console.log('Coupon not found:', id);
             return res.status(404).json({
                 success: false,
                 message: 'Coupon not found'
             });
         }
 
+        await Coupon.findByIdAndDelete(id);
+
         console.log('Coupon deleted successfully:', id);
-        res.json({
+        
+        // Set content type header explicitly
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(200).json({
             success: true,
             message: 'Coupon deleted successfully'
         });
 
     } catch (error) {
-        console.error('Detailed error in coupon deletion:', error);  
-        res.status(500).json({
+        console.error('Error in coupon deletion:', error);
+        // Set content type header explicitly
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(500).json({
             success: false,
-            message: 'Error deleting coupon: ' + error.message
+            message: 'Failed to delete coupon'
         });
     }
 };

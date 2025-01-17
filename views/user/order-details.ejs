@@ -635,28 +635,7 @@
 </section>
 
 <script>
-    // async function cancelOrder(orderId) {
-    //     if (confirm('Are you sure you want to cancel this order?')) {
-    //         try {
-    //             const response = await fetch(`/cancel-order/${orderId}`, {
-    //                 method: 'POST',
-    //                 headers: {
-    //                     'Content-Type': 'application/json'
-    //                 }
-    //             });
-    //             const data = await response.json();
-    //             if (data.success) {
-    //                 alert('Order cancelled successfully');
-    //                 location.reload();
-    //             } else {
-    //                 alert(data.message || 'Failed to cancel order');
-    //             }
-    //         } catch (error) {
-    //             console.error('Error:', error);
-    //             alert('An error occurred while cancelling the order');
-    //         }
-    //     }
-    // }
+  
     async function cancelOrder(orderId) {
     // Confirm the cancellation using SweetAlert
     const result = await Swal.fire({
