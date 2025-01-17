@@ -26,6 +26,7 @@ router.get('/orders', userAuth, userController.getOrders);
 router.get('/order/success/:orderId', userAuth, userController.getOrderSuccess);
 router.get('/order/:orderId', userAuth, userController.getOrderDetails);
 router.post('/cancel-order/:orderId', userAuth, userController.cancelOrder);
+router.post('/orders/:orderId/return/:productId', userAuth, userController.returnProduct);
 router.post('/order/create', userAuth, userController.createOrder);
 router.post('/order/verify-payment', userAuth, userController.verifyPayment);
 
@@ -67,6 +68,9 @@ router.get('/checkout', userAuth, userController.loadCheckout);
 router.get('/wishlist', userAuth, userController.loadWishlist);
 router.post('/wishlist/add', userAuth, userController.addToWishlist);
 router.delete('/wishlist/remove/:productId', userAuth, userController.removeFromWishlist);
+
+
+router.get('/wallet', userAuth, userController.getWallet);
 
 // Check authentication status endpoint
 router.get('/check-auth', (req, res) => {

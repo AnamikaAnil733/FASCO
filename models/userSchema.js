@@ -40,8 +40,29 @@ const userSchema = new Schema({
         ref: "Cart"
     }],
     wallet: {
-        type: Schema.Types.ObjectId,
-        ref: "Wishlist"
+        balance: {
+            type: Number,
+            default: 0
+        },
+        transactions: [{
+            amount: {
+                type: Number,
+                required: true
+            },
+            type: {
+                type: String,
+                enum: ['credit', 'debit'],
+                required: true
+            },
+            description: {
+                type: String,
+                required: true
+            },
+            date: {
+                type: Date,
+                default: Date.now
+            }
+        }]
     },
     resetPasswordToken: {
         type: String,
@@ -55,14 +76,6 @@ const userSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: "Order"
     }],
-    resetPasswordToken: {
-        type: String,
-        default: undefined
-    },
-    resetPasswordExpires: {
-        type: Date,
-        default: undefined
-    },
     createdOn: {
         type: Date,
         default: Date.now

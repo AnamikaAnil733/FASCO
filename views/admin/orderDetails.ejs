@@ -74,6 +74,8 @@
                             <th>Quantity</th>
                             <th>Price</th>
                             <th>Total</th>
+                            <th>Return Status</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -83,13 +85,66 @@
                                 <td><%= item.quantity %></td>
                                 <td>₹<%= (item.price || 0).toFixed(2) %></td>
                                 <td>₹<%= ((item.quantity || 0) * (item.price || 0)).toFixed(2) %></td>
+                                <td>
+                                    <% if (item.isReturned) { %>
+                                        <span class="badge bg-warning">Return Requested</span>
+                                        <div class="return-details mt-2">
+                                            <div class="alert alert-light border p-2 mb-0">
+                                                <small class="d-block text-muted mb-1">Return Reason:</small>
+                                                <span class="text-dark"><%= item.returnReason || 'No reason provided' %></span>
+                                            </div>
+                                        </div>
+                                    <% } else if (item.returnStatus === 'Approved') { %>
+                                        <span class="badge bg-success">Return Approved</span>
+                                    <% } else if (item.returnStatus === 'Rejected') { %>
+                                        <span class="badge bg-danger">Return Rejected</span>
+                                    <% } else { %>
+                                        <span class="badge bg-secondary">No Return</span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <% if (item.isReturned && !item.returnStatus) { %>
+                                        <button class="btn btn-sm btn-success approve-return" 
+                                                data-order-id="<%= order._id %>" 
+                                                data-product-id="<%= item.productId._id %>"
+                                                onclick="handleReturn('<%= order._id %>', '<%= item.productId._id %>', 'approve')">
+                                            Approve Return
+                                        </button>
+                                        <button class="btn btn-sm btn-danger reject-return"
+                                                data-order-id="<%= order._id %>" 
+                                                data-product-id="<%= item.productId._id %>"
+                                                onclick="handleReturn('<%= order._id %>', '<%= item.productId._id %>', 'reject')">
+                                            Reject Return
+                                        </button>
+                                    <% } %>
+                                </td>
                             </tr>
                         <% }); %>
                     </tbody>
                     <tfoot>
                         <tr>
-                            <td colspan="4" class="text-end"><strong>Total Amount:</strong></td>
+                            <td colspan="5" class="text-end"><strong>Subtotal:</strong></td>
                             <td><strong>₹<%= (order.totalAmount || 0).toFixed(2) %></strong></td>
+                        </tr>
+                        <% if (order.coupon) { %>
+                            <tr>
+                                <td colspan="5" class="text-end text-success">
+                                    <strong>Coupon Discount (<%= order.coupon.code %>):</strong>
+                                </td>
+                                <td class="text-success">
+                                    <strong>-₹<%= (order.coupon.discountedAmount || 0).toFixed(2) %></strong>
+                                </td>
+                            </tr>
+                        <% } %>
+                        <tr>
+                            <td colspan="5" class="text-end">
+                                <strong class="fs-5">Final Amount:</strong>
+                            </td>
+                            <td>
+                                <strong class="fs-5 text-primary">
+                                    ₹<%= ((order.totalAmount || 0) - (order.coupon ? order.coupon.discountedAmount : 0)).toFixed(2) %>
+                                </strong>
+                            </td>
                         </tr>
                     </tfoot>
                 </table>
@@ -124,7 +179,94 @@
     </div>
 </section>
 
+<style>
+    .return-details {
+        font-size: 0.9rem;
+    }
+    
+    .return-details .alert {
+        border-radius: 6px;
+    }
+    
+    .return-details small {
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .badge {
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+    }
+    
+    .btn-sm {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.875rem;
+    }
+</style>
+
 <script>
+// Handle return actions
+async function handleReturn(orderId, productId, action) {
+    try {
+        // Show confirmation dialog
+        const result = await Swal.fire({
+            title: `${action === 'approve' ? 'Approve' : 'Reject'} Return Request`,
+            html: `
+                <div class="text-start">
+                    <p>Are you sure you want to ${action} this return request?</p>
+                    ${action === 'approve' ? 
+                        '<div class="alert alert-info">Note: Approving will refund the amount to customer\'s wallet.</div>' 
+                        : 
+                        '<div class="alert alert-warning">Note: Rejecting will cancel the return request.</div>'
+                    }
+                </div>
+            `,
+            icon: action === 'approve' ? 'question' : 'warning',
+            showCancelButton: true,
+            confirmButtonText: action === 'approve' ? 'Yes, Approve' : 'Yes, Reject',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: action === 'approve' ? '#28a745' : '#dc3545',
+            cancelButtonColor: '#6c757d',
+            reverseButtons: true
+        });
+
+        if (result.isConfirmed) {
+            const response = await fetch(`/admin/orders/${orderId}/return/${productId}/${action}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: `Return request ${action === 'approve' ? 'approved' : 'rejected'} successfully`,
+                    confirmButtonColor: '#4CAF50'
+                });
+                window.location.reload();
+            } else {
+                const data = await response.json();
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: data.message || `Failed to ${action} return`,
+                    confirmButtonColor: '#4CAF50'
+                });
+            }
+        }
+    } catch (error) {
+        console.error(`Error ${action}ing return:`, error);
+        await Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: `Failed to ${action} return request`,
+            confirmButtonColor: '#4CAF50'
+        });
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Handle status changes
     document.querySelector('.status-select').addEventListener('change', async function() {
@@ -176,6 +318,14 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelector('.status-select').addEventListener('focus', function() {
         this.setAttribute('data-previous-value', this.value);
     });
+
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl, {
+            html: true
+        })
+    })
 });
 </script>
 

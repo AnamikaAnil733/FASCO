@@ -34,6 +34,19 @@ const orderSchema = new Schema({
         variantIndex: {
             type: Number,
             required: true
+        },
+        isReturned: {
+            type: Boolean,
+            default: false
+        },
+        returnReason: {
+            type: String,
+            default: null
+        },
+        returnStatus: {
+            type: String,
+            enum: [null, 'Pending', 'Approved', 'Rejected'],
+            default: null
         }
     }],
     totalAmount: {
@@ -109,6 +122,10 @@ const orderSchema = new Schema({
         type: String,
         enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
         default: 'Pending'
+    },
+    deliveryDate: {
+        type: Date,
+        default: null
     },
     orderDate: {
         type: Date,

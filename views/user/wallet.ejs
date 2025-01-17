@@ -1,0 +1,254 @@
+<%- include('../partials/user/header.ejs') %>
+
+<style>
+    .account-section {
+        background-color: #f8f9fa;
+        padding: 5rem 0;
+        min-height: calc(100vh - 300px);
+        margin: 2rem 0;
+    }
+    
+    .main-container {
+        margin-top: 80px;
+        margin-bottom: 80px;
+    }
+    
+    .card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.05);
+        transition: transform 0.3s ease;
+        background: white;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .card-header {
+        background-color: white;
+        border-bottom: 2px solid #f0f0f0;
+        border-radius: 15px 15px 0 0 !important;
+        padding: 1.5rem;
+    }
+    
+    .card-header h5 {
+        margin: 0;
+        font-weight: 600;
+        color: #2c3e50;
+        font-size: 1.2rem;
+    }
+    
+    .card-body {
+        padding: 1.5rem;
+    }
+    
+    .card-body hr {
+        border-color: #e9ecef;
+        opacity: 0.5;
+    }
+    
+    .account-management-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .account-management-buttons .btn {
+        text-align: left;
+        padding: 0.75rem 1rem;
+        border-radius: 10px;
+        color: #2c3e50;
+        background: transparent;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        border: 2px solid transparent;
+    }
+    
+    .account-management-buttons .btn:hover {
+        background: #f8f9fa;
+        color: #4b6cb7;
+        border-color: #e9ecef;
+    }
+    
+    .account-management-buttons .btn.active {
+        background: #e7f1ff;
+        color: #4b6cb7;
+        font-weight: 600;
+        border-color: #4b6cb7;
+    }
+    
+    .btn-logout {
+        margin-top: 10px;
+        color: #dc3545 !important;
+    }
+    
+    .btn-logout:hover {
+        background: #ffebee !important;
+        color: #dc3545 !important;
+        border-color: #ffcdd2 !important;
+    }
+
+    /* Wallet specific styles */
+    .balance-card {
+        background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%) !important;
+        border: none !important;
+        padding: 1.5rem;
+    }
+
+    .balance-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .balance-card h5 {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .balance-card h2 {
+        color: white;
+        font-size: 2.5rem;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .table {
+        margin-top: 1rem;
+    }
+
+    .table th {
+        background-color: #f8f9fa;
+        color: #2c3e50;
+        font-weight: 600;
+        padding: 1rem;
+        border-bottom: 2px solid #e9ecef;
+    }
+
+    .table td {
+        padding: 1rem;
+        vertical-align: middle;
+        color: #2c3e50;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .badge {
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 0.85rem;
+    }
+
+    .text-success {
+        color: #28a745 !important;
+        font-weight: 600;
+    }
+
+    .text-danger {
+        color: #dc3545 !important;
+        font-weight: 600;
+    }
+
+    @media (max-width: 991px) {
+        .account-section {
+            padding: 3rem 0;
+            margin: 1rem 0;
+        }
+        .main-container {
+            margin-top: 40px;
+            margin-bottom: 40px;
+        }
+        .balance-card h2 {
+            font-size: 2rem;
+        }
+    }
+</style>
+
+<div class="main-container">
+    <section class="account-section">
+        <div class="container">
+            <div class="row">
+                <!-- Account Management -->
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Account Management</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="account-management-buttons">
+                                <a href="/userProfile" class="btn">Account Details</a>
+                                <a href="/address-book" class="btn">Manage Addresses</a>
+                                <a href="/orders" class="btn">Order History</a>
+                                <a href="/wallet" class="btn active">My Wallet</a>
+                                <a href="/logout" class="btn btn-logout">Logout</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Wallet Details -->
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">My Wallet</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-4">
+                                <div class="col-lg-6">
+                                    <div class="card balance-card">
+                                        <div class="card-body p-0">
+                                            <h5>Available Balance</h5>
+                                            <h2>₹<%= user.wallet ? user.wallet.balance.toFixed(2) : '0.00' %></h2>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-12">
+                                    <h5 class="mb-3">Transaction History</h5>
+                                    <div class="table-responsive">
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Date</th>
+                                                    <th>Description</th>
+                                                    <th>Type</th>
+                                                    <th>Amount</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <% if (user.wallet && user.wallet.transactions && user.wallet.transactions.length > 0) { %>
+                                                    <% user.wallet.transactions.reverse().forEach(transaction => { %>
+                                                        <tr>
+                                                            <td><%= new Date(transaction.date).toLocaleDateString() %></td>
+                                                            <td><%= transaction.description %></td>
+                                                            <td>
+                                                                <span class="badge <%= transaction.type === 'credit' ? 'bg-success' : 'bg-danger' %>">
+                                                                    <%= transaction.type.toUpperCase() %>
+                                                                </span>
+                                                            </td>
+                                                            <td class="<%= transaction.type === 'credit' ? 'text-success' : 'text-danger' %>">
+                                                                <%= transaction.type === 'credit' ? '+' : '-' %>₹<%= transaction.amount.toFixed(2) %>
+                                                            </td>
+                                                        </tr>
+                                                    <% }); %>
+                                                <% } else { %>
+                                                    <tr>
+                                                        <td colspan="4" class="text-center text-muted">No transactions found</td>
+                                                    </tr>
+                                                <% } %>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<%- include('../partials/user/footer.ejs') %>

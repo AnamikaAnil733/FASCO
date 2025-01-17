@@ -86,6 +86,11 @@
         color: #2d3436;
     }
     
+    .badge.return-rejected {
+        background-color: #e17055;
+        color: white;
+    }
+    
     .badge.returned {
         background-color: #636e72;
         color: white;
@@ -367,6 +372,34 @@
         background-color: #f8f9fa;
         border-radius: 12px;
     }
+    
+    .return-message {
+        margin-top: 0.5rem;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        background-color: #fff3f3;
+        color: #e17055;
+        border: 1px solid #ffd3cc;
+    }
+    
+    .return-message-pending {
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        background-color: #fff8e1;
+        color: #f39c12;
+        border: 1px solid #ffe0b2;
+    }
+    
+    .return-message-approved {
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        background-color: #e8f5e9;
+        color: #2ecc71;
+        border: 1px solid #c8e6c9;
+    }
 </style>
 
 <section class="order-details-section">
@@ -509,6 +542,33 @@
                                         <span class="text-muted mx-2">×</span>
                                         <span class="text-muted">Qty: <%= item.quantity %></span>
                                     </div>
+                                    <div class="item-status">
+                                        <% if (item.returnStatus === 'Rejected') { %>
+                                            <div class="return-message mb-2">
+                                                <i class="fas fa-exclamation-circle me-2"></i>
+                                                Return request was rejected
+                                            </div>
+                                        <% } else if (item.isReturned && !item.returnStatus) { %>
+                                            <div class="return-message-pending mb-2">
+                                                <i class="fas fa-clock me-2"></i>
+                                                Return request pending: <%= item.returnReason %>
+                                            </div>
+                                        <% } else if (item.returnStatus === 'Approved') { %>
+                                            <div class="return-message-approved mb-2">
+                                                <i class="fas fa-check-circle me-2"></i>
+                                                Return request approved
+                                            </div>
+                                        <% } %>
+                                        
+                                        <% if (order.status === 'Delivered' && !item.isReturned && !item.returnStatus) { %>
+                                            <button 
+                                                class="btn btn-warning btn-sm mt-2"
+                                                onclick="returnProduct('<%= order._id %>', '<%= item.productId._id %>')"
+                                            >
+                                                Return Product
+                                            </button>
+                                        <% } %>
+                                    </div>
                                 </div>
                                 <div class="item-total text-end">
                                     <strong>₹<%= (item.totalPrice * item.quantity).toFixed(2) %></strong>
@@ -649,6 +709,77 @@
     }
 }
 
+    async function returnProduct(orderId, productId) {
+        const { value: returnReason } = await Swal.fire({
+            title: 'Return Product',
+            html: `
+                <div class="mb-3">
+                   
+                    <label class="form-label">Please provide a reason for return</label>
+                    
+                    <textarea id="return-reason" class="form-control" rows="3" placeholder="Enter your reason here..."></textarea>
+                     <div class="alert alert-info text-start mt-3" style="font-size: 0.9em;">
+                        <strong>Return Policy:</strong>
+                        <ul class="mb-0 ps-3">
+                            <li>Returns are only accepted within 7 days of delivery</li>
+                            <li>Product must be in original condition</li>
+                            <li>Refund will be processed to your wallet</li>
+                        </ul>
+                    </div>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Submit Return Request',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#ffc107',
+            cancelButtonColor: '#6c757d',
+            preConfirm: () => {
+                const reason = document.getElementById('return-reason').value;
+                if (!reason || reason.trim().length === 0) {
+                    Swal.showValidationMessage('Please provide a reason for return');
+                }
+                return reason;
+            }
+        });
+
+        if (returnReason) {
+            try {
+                const response = await fetch(`/orders/${orderId}/return/${productId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ returnReason })
+                });
+
+                if (response.ok) {
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: 'Return request submitted successfully',
+                        confirmButtonColor: '#ffc107'
+                    });
+                    window.location.reload();
+                } else {
+                    const data = await response.json();
+                    await Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: data.message || 'Failed to return product',
+                        confirmButtonColor: '#ffc107'
+                    });
+                }
+            } catch (error) {
+                console.error('Error returning product:', error);
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'Failed to process return request',
+                    confirmButtonColor: '#ffc107'
+                });
+            }
+        }
+    }
 </script>
 
 <%- include("../partials/user/footer.ejs") %>

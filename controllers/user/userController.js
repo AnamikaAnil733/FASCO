@@ -754,7 +754,10 @@ const getOrderDetails = async (req, res) => {
     const formattedOrder = {
       _id: order._id,
       orderId: order._id,
-      items: order.items,
+      items: order.items.map(item => ({
+        ...item.toObject(),
+        returnStatus: item.returnStatus || null
+      })),
       totalAmount: order.totalAmount,
       status: order.status || 'Processing',
       paymentMethod: order.paymentMethod,
@@ -766,7 +769,6 @@ const getOrderDetails = async (req, res) => {
     };
 
     res.render('order-details', {
-     
       order: formattedOrder,
       user: req.session.user
     });
@@ -915,7 +917,8 @@ const getCart = async (req, res) => {
     const cart = await Cart.findOne({ userId })
       .populate({
         path: 'items.productId',
-        select: 'productName variants regularPrice salesPrice'
+        select: 'productName variants regularPrice salesPrice',
+        model: 'Product'
       })
       .lean();  // Convert to plain JavaScript object
 
@@ -1942,15 +1945,86 @@ const getAvailableCoupons = async (req, res) => {
 };
 
 
+// Handle product return request
+const returnProduct = async (req, res) => {
+    try {
+        const { orderId, productId } = req.params;
+        const { returnReason } = req.body;
+        const userId = req.session.user._id;
+
+        // Find the order
+        const order = await Order.findById(orderId);
+        
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        // Verify order belongs to user
+        if (order.userId.toString() !== userId.toString()) {
+            return res.status(403).json({ message: 'Unauthorized' });
+        }
+
+        // Check if order is delivered
+        if (order.status !== 'Delivered') {
+            return res.status(400).json({ message: 'Order must be delivered to request return' });
+        }
+
+        // Check if return is within 7 days of delivery
+        const deliveryDate = order.deliveryDate || order.updatedAt; // fallback to last update if delivery date not set
+        const daysSinceDelivery = Math.floor((new Date() - deliveryDate) / (1000 * 60 * 60 * 24));
+        
+        if (daysSinceDelivery > 7) {
+            return res.status(400).json({ message: 'Returns are only accepted within 7 days of delivery' });
+        }
+
+        // Find the specific product in the order
+        const orderItem = order.items.find(item => item.productId.toString() === productId);
+        
+        if (!orderItem) {
+            return res.status(404).json({ message: 'Product not found in order' });
+        }
+
+        // Check if product is already returned
+        if (orderItem.isReturned) {
+            return res.status(400).json({ message: 'Product return already requested' });
+        }
+
+        if (!returnReason || returnReason.trim().length === 0) {
+            return res.status(400).json({ message: 'Please provide a reason for return' });
+        }
+
+        // Mark the product as returned and save the reason
+        orderItem.isReturned = true;
+        orderItem.returnReason = returnReason.trim();
+        await order.save();
+
+        res.status(200).json({ message: 'Return request submitted successfully' });
+    } catch (error) {
+        console.error('Error processing return request:', error);
+        res.status(500).json({ message: 'Failed to process return request' });
+    }
+};
+
+
+const getWallet = async (req, res) => {
+  try {
+      const user = await User.findById(req.session.user._id);
+      res.render('wallet', {
+          user: user,
+          title: 'My Wallet'
+      });
+  } catch (error) {
+      console.error('Error fetching wallet:', error);
+      res.redirect('/error');
+  }
+};
+
 module.exports = {
     loadHomepage,
     loadShop,
     loadSignup,
-    generateOtp,
-    sendVerificationEmail,
     Signup,
     pageNotFound,
-    securePassword,
     verifyOtp,
     resendOtp,
     loadLogin,
@@ -1961,7 +2035,6 @@ module.exports = {
     forgotPassword,
     loadResetPassword,
     resetPassword,
-    sendPasswordResetEmail,
     loadAccount,
     updateProfile,
     changePassword,
@@ -1981,9 +2054,11 @@ module.exports = {
     createOrder,
     verifyPayment,
     cancelOrder,
+    returnProduct,
     loadWishlist,
     addToWishlist,
     removeFromWishlist,
     validateCoupon,
-    getAvailableCoupons
+    getAvailableCoupons,
+    getWallet
 };

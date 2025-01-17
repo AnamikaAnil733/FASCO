@@ -1,5 +1,6 @@
 const Order = require("../../models/orderSchema");
 const Product = require("../../models/productSchema");
+const User = require("../../models/userSchema");  // Add User model
 const moment = require('moment');  // Add moment.js
 
 const orderController = {
@@ -276,7 +277,146 @@ const orderController = {
             console.error('Error fetching order details:', error);
             res.redirect('/admin/pageerror');
         }
+    },
+
+    // Handle return request approval/rejection
+    handleReturn: async (req, res) => {
+        try {
+            const { orderId, productId, action } = req.params;
+            console.log('Return request received:', { orderId, productId, action });
+
+            // Validate action
+            if (!['approve', 'reject'].includes(action)) {
+                return res.status(400).json({ message: 'Invalid action' });
+            }
+
+            // Find the order
+            const order = await Order.findById(orderId);
+            console.log('Order found:', { 
+                paymentMethod: order.paymentMethod, 
+                paymentStatus: order.paymentStatus,
+                totalAmount: order.totalAmount
+            });
+            
+            if (!order) {
+                return res.status(404).json({ message: 'Order not found' });
+            }
+
+            // Find the specific product in the order
+            const orderItem = order.items.find(item => item.productId.toString() === productId);
+            console.log('Order item found:', { 
+                totalPrice: orderItem.totalPrice,
+                isReturned: orderItem.isReturned,
+                returnStatus: orderItem.returnStatus
+            });
+            
+            if (!orderItem) {
+                return res.status(404).json({ message: 'Product not found in order' });
+            }
+
+            if (!orderItem.isReturned) {
+                return res.status(400).json({ message: 'No return request found for this product' });
+            }
+
+            if (action === 'approve') {
+                // Only process refund if payment was made through Razorpay
+                if (order.paymentMethod === 'RAZORPAY' && order.paymentStatus === 'COMPLETED') {
+                    console.log('Processing refund for Razorpay payment');
+                    
+                    const user = await User.findById(order.userId);
+                    console.log('User found:', { 
+                        userId: user._id,
+                        currentWalletBalance: user.wallet?.balance 
+                    });
+
+                    if (!user) {
+                        return res.status(404).json({ message: 'User not found' });
+                    }
+
+                    // Calculate refund amount
+                    let refundAmount = orderItem.totalPrice;
+                    console.log('Initial refund amount:', refundAmount);
+
+                    // If coupon was applied, calculate proportional discount
+                    if (order.coupon && order.coupon.discountedAmount) {
+                        const itemPercentageOfOrder = orderItem.totalPrice / order.totalAmount;
+                        const itemCouponDiscount = order.coupon.discountedAmount * itemPercentageOfOrder;
+                        refundAmount -= itemCouponDiscount;
+                        console.log('Refund amount after coupon adjustment:', { 
+                            itemPercentageOfOrder,
+                            itemCouponDiscount,
+                            finalRefundAmount: refundAmount
+                        });
+                    }
+
+                    // Initialize wallet if needed
+                    if (!user.wallet) {
+                        console.log('Initializing wallet');
+                        user.wallet = {
+                            balance: 0,
+                            transactions: []
+                        };
+                    }
+
+                    // Update wallet balance
+                    const previousBalance = user.wallet.balance || 0;
+                    user.wallet.balance = previousBalance + refundAmount;
+                    console.log('Wallet balance update:', {
+                        previousBalance,
+                        refundAmount,
+                        newBalance: user.wallet.balance
+                    });
+
+                    // Add transaction to wallet history
+                    user.wallet.transactions.push({
+                        amount: refundAmount,
+                        type: 'credit',
+                        description: `Refund for returned product from order #${order.orderId}`,
+                        date: new Date(),
+                        orderId: order.orderId,
+                        status: 'success'
+                    });
+
+                    await user.save();
+                    console.log('User saved with updated wallet');
+                } else {
+                    console.log('Skipping refund - Not a completed Razorpay payment:', {
+                        paymentMethod: order.paymentMethod,
+                        paymentStatus: order.paymentStatus
+                    });
+                }
+
+                // Update order item status
+                orderItem.returnStatus = 'Approved';
+                orderItem.isReturned = false;
+            } else {
+                // Reject return request
+                orderItem.returnStatus = 'Rejected';
+                orderItem.isReturned = false;
+            }
+
+            await order.save();
+            console.log('Order saved with updated status');
+
+            res.status(200).json({ 
+                message: `Return request ${action === 'approve' ? 'approved' : 'rejected'} successfully`,
+                success: true
+            });
+        } catch (error) {
+            console.error('Error handling return request:', error);
+            res.status(500).json({ 
+                message: 'Failed to process return request',
+                success: false,
+                error: error.message
+            });
+        }
     }
 };
 
-module.exports = orderController;
+module.exports = {
+    getAllOrders: orderController.getAllOrders,
+    getOrderDetails: orderController.getOrderDetails,
+    updateOrderStatus: orderController.updateOrderStatus,
+    cancelOrder: orderController.cancelOrder,
+    handleReturn: orderController.handleReturn
+};

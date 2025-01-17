@@ -681,10 +681,10 @@ module.exports = {
     loadLogin,
     login,
     loadDashbord,
-    pageerror,
     logout,
+    pageerror,
     loadAddProduct,
     downloadSalesReport,
     downloadExcelReport,
     downloadPdfReport
-}
+};
