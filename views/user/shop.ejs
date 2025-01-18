@@ -148,7 +148,7 @@
                 <ul class="pagination">
                     <% for(let i=1; i<=totalpages; i++) { %>
                         <li class="page-item <%=(i===currentPage) ? 'active' : '' %>">
-                            <a class="page-link" href="?page=<%=i%>"><%=i%></a>
+                            <a class="page-link pagination-link" data-page="<%=i%>" href="#"><%=i%></a>
                         </li>
                     <% } %>
                 </ul>
@@ -778,6 +778,55 @@
             }
         });
     });
+
+    // Pagination without page reload
+    document.querySelectorAll('.pagination-link').forEach(link => {
+        link.addEventListener('click', async function(e) {
+            e.preventDefault();
+            const page = this.dataset.page;
+            
+            // Get current URL and parameters
+            const url = new URL(window.location.href);
+            const params = new URLSearchParams(url.search);
+            
+            // Update page parameter
+            params.set('page', page);
+            
+            // Construct the fetch URL
+            const fetchURL = `/shop?${params.toString()}`;
+            
+            try {
+                const response = await fetch(fetchURL);
+                const data = await response.text();
+                
+                // Create a temporary container to parse the HTML
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(data, 'text/html');
+                
+                // Update the product grid
+                const productGrid = document.querySelector('.row');
+                const newProductGrid = doc.querySelector('.row');
+                productGrid.innerHTML = newProductGrid.innerHTML;
+                
+                // Update pagination active state
+                document.querySelectorAll('.page-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                const activePageItem = document.querySelector(`[data-page="${page}"]`).parentElement;
+                activePageItem.classList.add('active');
+                
+                // Update URL without page reload
+                window.history.pushState({}, '', fetchURL);
+                
+                // Reinitialize event listeners for wishlist buttons
+                initializeWishlistButtons();
+            } catch (error) {
+                console.error('Error fetching products:', error);
+            }
+        });
+    });
+
+    
 </script>
 
 <%- include('../partials/user/footer.ejs') %>
