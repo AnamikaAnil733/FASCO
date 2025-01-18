@@ -1734,16 +1734,13 @@ const loadShop = async (req, res) => {
 
     console.log('Found Products:', products.length);
 
-    // If user is logged in, check wishlist status for each product
+    // Get wishlist products if user is logged in
+    let wishlistProducts = [];
     if (req.session.user) {
       const userId = req.session.user._id;
       const wishlist = await Wishlist.findOne({ userId });
-      
       if (wishlist) {
-        const wishlistProductIds = wishlist.products.map(item => item.productId.toString());
-        products.forEach(product => {
-          product.inWishlist = wishlistProductIds.includes(product._id.toString());
-        });
+        wishlistProducts = wishlist.products.map(item => item.productId.toString());
       }
     }
 
@@ -1761,6 +1758,7 @@ const loadShop = async (req, res) => {
       message: req.session.user,
       currentPage:page,
       totalpages:totalPages,
+      wishlistProducts
     });
   } catch (error) {
     console.error("Error loading shop page:", error);

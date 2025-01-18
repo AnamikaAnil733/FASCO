@@ -1031,41 +1031,52 @@ document.addEventListener('DOMContentLoaded', function() {
             const icon = this.querySelector('i');
             
             try {
-                const response = await fetch('/wishlist/add', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ productId })
-                });
+                const isInWishlist = icon.classList.contains('fas');
+                let response;
+                
+                if (isInWishlist) {
+                    // Remove from wishlist
+                    response = await fetch(`/wishlist/remove/${productId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                } else {
+                    // Add to wishlist
+                    response = await fetch('/wishlist/add', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ productId })
+                    });
+                }
 
-                const data = await response.json();
-
-                if (data.success) {
+                if (response.ok) {
                     // Toggle heart icon
                     icon.classList.toggle('far');
                     icon.classList.toggle('fas');
                     
                     // Show success message
+                    const message = isInWishlist ? 'Product removed from wishlist' : 'Product added to wishlist';
                     Swal.fire({
                         toast: true,
-                        position: 'top-end',
                         icon: 'success',
-                        title: data.message,
+                        title: message,
+                        position: 'top-end',
                         showConfirmButton: false,
-                        timer: 3000
+                        timer: 1500
                     });
                 } else {
-                    throw new Error(data.message);
+                    throw new Error('Failed to update wishlist');
                 }
             } catch (error) {
+                console.error('Error:', error);
                 Swal.fire({
-                    toast: true,
-                    position: 'top-end',
                     icon: 'error',
-                    title: error.message || 'Failed to update wishlist',
-                    showConfirmButton: false,
-                    timer: 3000
+                    title: 'Oops...',
+                    text: 'Something went wrong! Please try again.'
                 });
             }
         });

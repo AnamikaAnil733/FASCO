@@ -108,7 +108,7 @@
                                             <img src="/images/no-image.png" alt="No image available" class="product-image">
                                         <% } %>
                                         <button class="add-to-wishlist-icon" data-product-id="<%= product._id %>">
-                                            <i class="<%= product.inWishlist ? 'fas' : 'far' %> fa-heart"></i>
+                                            <i class="<%= wishlistProducts && wishlistProducts.includes(product._id.toString()) ? 'fas' : 'far' %> fa-heart"></i>
                                         </button>
                                         <a href="/product/<%= product._id %>" class="block2-btn flex-c-m stext-103 cl2 size-102 bg0 bor2 hov-btn1 p-lr-15 trans-04">
                                             View Details
@@ -723,64 +723,58 @@
 
     document.querySelectorAll('.add-to-wishlist-icon').forEach(button => {
         button.addEventListener('click', async function(e) {
-            e.preventDefault(); // Prevent any default button behavior
+            e.preventDefault();
             const productId = this.dataset.productId;
-            console.log('Adding product to wishlist:', productId);
+            const icon = this.querySelector('i');
             
             try {
-                // Check login status
-                const loginCheck = await fetch('/check-auth');
-                const loginStatus = await loginCheck.json();
+                const isInWishlist = icon.classList.contains('fas');
+                let response;
                 
-                if (!loginStatus.isLoggedIn) {
-                    if (confirm('Please login to add items to wishlist. Go to login page?')) {
-                        window.location.href = '/login';
-                    }
-                    return;
-                }
-
-                // Add to wishlist
-                const response = await fetch('/wishlist/add', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ productId })
-                });
-
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-
-                const data = await response.json();
-                console.log('Wishlist response:', data);
-
-                if (data.success) {
-                    Swal.fire({
-  icon: 'success',
-  title: 'Success!',
-  text: 'Product added to wishlist!',
-});
-
-                    const heartIcon = this.querySelector('i');
-                    heartIcon.classList.remove('far');
-                    heartIcon.classList.add('fas');
+                if (isInWishlist) {
+                    // Remove from wishlist
+                    response = await fetch(`/wishlist/remove/${productId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
                 } else {
-                    Swal.fire({
-  icon: data.message ? 'success' : 'error', // Use success icon if message exists, otherwise error
-  title: data.message ? 'Success!' : 'Oops...',
-  text: data.message || 'Failed to add to wishlist',
-});
+                    // Add to wishlist
+                    response = await fetch('/wishlist/add', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ productId })
+                    });
+                }
 
+                if (response.ok) {
+                    // Toggle heart icon
+                    icon.classList.toggle('far');
+                    icon.classList.toggle('fas');
+                    
+                    // Show success message
+                    const message = isInWishlist ? 'Product removed from wishlist' : 'Product added to wishlist';
+                    Swal.fire({
+                        toast: true,
+                        icon: 'success',
+                        title: message,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                } else {
+                    throw new Error('Failed to update wishlist');
                 }
             } catch (error) {
                 console.error('Error:', error);
                 Swal.fire({
-  icon: 'error',
-  title: 'Oops...',
-  text: 'Failed to add to wishlist: ' + error.message,
-});
-
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: 'Something went wrong! Please try again.'
+                });
             }
         });
     });
