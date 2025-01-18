@@ -174,12 +174,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         text: data.message,
                         icon: 'success',
                         confirmButtonText: 'OK'
+                    }).then(() => {
+                        window.location.reload();
                     });
-
                     // If status is Delivered or Cancelled, disable the select
                     if (newStatus === 'Delivered' || newStatus === 'Cancelled') {
                         this.disabled = true;
                     }
+                
                 } else {
                     throw new Error(data.message);
                 }

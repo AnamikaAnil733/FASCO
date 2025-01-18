@@ -1255,7 +1255,7 @@ const createOrder = async (req, res) => {
             if (coupon && total >= coupon.minimumPurchase) {
                 let discountAmount = 0;
                 if (coupon.discountType === 'percentage') {
-                    discountAmount = (total * coupon.discountAmount) / 100;
+                    discountAmount = Math.round((total * coupon.discountAmount) / 100);
                     if (coupon.maximumDiscount) {
                         discountAmount = Math.min(discountAmount, coupon.maximumDiscount);
                     }
@@ -1267,10 +1267,16 @@ const createOrder = async (req, res) => {
                 couponDetails = {
                     code: coupon.code,
                     discountType: coupon.discountType,
-                    discountAmount: coupon.discountAmount,
+                    discountAmount: discountAmount,  // Store the actual discount amount, not the percentage/fixed value
                     discountedAmount: discountAmount
                 };
-                console.log("ivide ethiiiii",finalAmount);
+                console.log("Calculated discount:", {
+                    originalTotal: total,
+                    discountAmount,
+                    finalAmount,
+                    couponDetails
+                });
+
                 // Increment coupon usage count
                 await Coupon.findByIdAndUpdate(coupon._id, {
                     $inc: { usedCount: 1 }
@@ -1312,7 +1318,8 @@ const createOrder = async (req, res) => {
                 phone: selectedAddress.phone,
                 altPhone: selectedAddress.altPhone
             },
-            totalAmount: total,
+            totalAmount: total,  // Original total before discount
+            finalAmount: finalAmount,
             coupon: couponDetails,
             paymentMethod,
             paymentStatus: 'PENDING',

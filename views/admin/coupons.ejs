@@ -112,45 +112,65 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="createCouponForm">
+                <form id="createCouponForm" class="needs-validation" novalidate>
                     <div class="mb-3">
                         <label class="form-label">Coupon Code</label>
-                        <input type="text" class="form-control" name="code" required>
+                        <input type="text" class="form-control" name="code" required pattern="[A-Za-z0-9]{3,15}" 
+                               oninput="this.value = this.value.toUpperCase()"
+                               title="Code must be 3-15 characters long and contain only letters and numbers">
+                        <div class="invalid-feedback">Code must be 3-15 characters long and contain only letters and numbers</div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>
-                        <textarea class="form-control" name="description" required></textarea>
+                        <textarea class="form-control" name="description" required minlength="10"
+                                  title="Description must be at least 10 characters long"></textarea>
+                        <div class="invalid-feedback">Description must be at least 10 characters long</div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Discount Type</label>
-                        <select class="form-control" name="discountType" required>
+                        <select class="form-control" name="discountType" required onchange="updateDiscountValidation()">
                             <option value="percentage">Percentage</option>
                             <option value="fixed">Fixed Amount</option>
                         </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Discount Amount</label>
-                        <input type="number" class="form-control" name="discountAmount" min="0" required>
+                        <input type="number" class="form-control" name="discountAmount" required
+                               title="Enter a valid discount amount">
+                        <div class="invalid-feedback" id="discountAmountFeedback">
+                            Enter a valid discount amount
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Minimum Purchase</label>
-                        <input type="number" class="form-control" name="minimumPurchase" min="0" required>
+                        <input type="number" class="form-control" name="minimumPurchase" required
+                               min="1" max="50000"
+                               title="Minimum purchase must be between ₹1 and ₹50,000">
+                        <div class="invalid-feedback">Minimum purchase must be between ₹1 and ₹50,000</div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Maximum Discount</label>
-                        <input type="number" class="form-control" name="maximumDiscount" min="0" required>
+                        <input type="number" class="form-control" name="maximumDiscount"
+                               min="1" max="10000"
+                               title="Maximum discount must be between ₹1 and ₹10,000">
+                        <div class="invalid-feedback">Maximum discount must be between ₹1 and ₹10,000</div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Start Date</label>
                         <input type="datetime-local" class="form-control" name="startDate" required>
+                        <div class="invalid-feedback">Please select a valid start date</div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">End Date</label>
                         <input type="datetime-local" class="form-control" name="endDate" required>
+                        <div class="invalid-feedback">End date must be after start date</div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Usage Limit</label>
-                        <input type="number" class="form-control" name="usageLimit" min="1" required>
+                        <input type="number" class="form-control" name="usageLimit"
+                               min="1" max="1000"
+                               title="Usage limit must be between 1 and 1,000">
+                        <div class="invalid-feedback">Usage limit must be between 1 and 1,000</div>
                     </div>
                 </form>
             </div>
@@ -254,58 +274,82 @@ function openCreateCouponModal() {
     modal.show();
 }
 
-// Handle form submission
-document.getElementById('createCouponForm').addEventListener('submit', async function(e) {
+function updateDiscountValidation() {
+    const discountType = document.querySelector('select[name="discountType"]').value;
+    const discountInput = document.querySelector('input[name="discountAmount"]');
+    const feedback = document.getElementById('discountAmountFeedback');
+
+    if (discountType === 'percentage') {
+        discountInput.min = 1;
+        discountInput.max = 90;
+        feedback.textContent = 'Percentage discount must be between 1 and 90';
+    } else {
+        discountInput.min = 1;
+        discountInput.max = 10000;
+        feedback.textContent = 'Fixed discount must be between ₹1 and ₹10,000';
+    }
+}
+
+document.getElementById('createCouponForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
-    try {
-        const formData = new FormData(this);
-        const data = {};
-        formData.forEach((value, key) => {
-            data[key] = value;
-        });
+    const form = this;
+    if (!form.checkValidity()) {
+        e.stopPropagation();
+        form.classList.add('was-validated');
+        return;
+    }
 
-        console.log('Sending coupon data:', data);  
+    // Additional date validation
+    const startDate = new Date(form.startDate.value);
+    const endDate = new Date(form.endDate.value);
+    if (endDate <= startDate) {
+        form.endDate.setCustomValidity('End date must be after start date');
+        form.classList.add('was-validated');
+        return;
+    }
 
-        const response = await fetch('/admin/coupons/create', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        });
-
-        const result = await response.json();
-        console.log('Server response:', result);  
-
+    // If all validation passes, submit the form
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    
+    fetch('/admin/coupons/create', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
         if (result.success) {
             Swal.fire({
                 icon: 'success',
                 title: 'Success!',
-                text: result.message || 'Coupon created successfully',
-                showConfirmButton: false,
+                text: result.message,
                 timer: 1500
             }).then(() => {
-                window.location.reload();
+                location.reload();
             });
         } else {
-            throw new Error(result.message || 'Failed to create coupon');
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: result.message
+            });
         }
-    } catch (error) {
-        console.error('Error creating coupon:', error);  
+    })
+    .catch(error => {
         Swal.fire({
             icon: 'error',
-            title: 'Error!',
-            text: error.message || 'An error occurred while creating the coupon',
-            confirmButtonText: 'OK'
+            title: 'Error',
+            text: 'Failed to create coupon'
         });
-    }
+    });
 });
 
-// Update end date minimum when start date changes
-document.querySelector('input[name="startDate"]').addEventListener('change', function() {
-    document.querySelector('input[name="endDate"]').min = this.value;
-});
+// Initialize validation on page load
+updateDiscountValidation();
 
 async function deleteCoupon(couponId) {
     try {
@@ -323,32 +367,20 @@ async function deleteCoupon(couponId) {
             const response = await fetch(`/admin/coupons/${couponId}`, {
                 method: 'DELETE',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                    'Content-Type': 'application/json'
                 }
             });
 
-            let data;
-            const contentType = response.headers.get('content-type');
-            if (contentType && contentType.includes('application/json')) {
-                data = await response.json();
-            } else {
-                throw new Error('Received non-JSON response from server');
-            }
+            const data = await response.json();
 
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to delete coupon');
-            }
-
-            if (data.success) {
+            if (response.ok && data.success) {
                 await Swal.fire({
                     icon: 'success',
                     title: 'Success!',
                     text: data.message || 'Coupon deleted successfully',
-                    showConfirmButton: false,
                     timer: 1500
                 });
-                window.location.reload();
+                location.reload();
             } else {
                 throw new Error(data.message || 'Failed to delete coupon');
             }
@@ -358,8 +390,7 @@ async function deleteCoupon(couponId) {
         Swal.fire({
             icon: 'error',
             title: 'Error!',
-            text: error.message || 'Failed to delete coupon',
-            confirmButtonText: 'OK'
+            text: error.message || 'Failed to delete coupon'
         });
     }
 }

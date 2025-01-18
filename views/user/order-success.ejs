@@ -201,7 +201,17 @@
             </div>
             <div class="info-item">
                 <div class="info-label">Total Amount</div>
-                <div class="info-value">₹<%= order.finalAmount.toFixed(2) %></div>
+                <div class="info-value">₹<%= order.totalAmount.toFixed(2) %></div>
+            </div>
+            <% if (order.coupon) { %>
+            <div class="info-item">
+                <div class="info-label">Coupon Discount (<%= order.coupon.code %>)</div>
+                <div class="info-value text-success">-₹<%= order.coupon.discountAmount.toFixed(2) %></div>
+            </div>
+            <% } %>
+            <div class="info-item">
+                <div class="info-label">Final Amount</div>
+                <div class="info-value fw-bold">₹<%= order.finalAmount.toFixed(2) %></div>
             </div>
             <div class="info-item">
                 <div class="info-label">Payment Method</div>

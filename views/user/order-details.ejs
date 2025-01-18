@@ -501,18 +501,18 @@
                     <h3 class="info-title">Order Summary</h3>
                     <div class="order-summary">
                         <div class="summary-item">
-                            <span>Subtotal:</span>
+                            <span>Total Amount:</span>
                             <span>₹<%= order.totalAmount.toFixed(2) %></span>
                         </div>
-                        <% if (order.coupon && order.coupon.discountedAmount !== undefined) { %>
-                            <div class="summary-item text-success">
-                                <span>Coupon Discount (<%= order.coupon.code %>):</span>
-                                <span>-₹<%= order.coupon.discountedAmount.toFixed(2) %></span>
-                            </div>
+                        <% if (order.coupon) { %>
+                        <div class="summary-item discount">
+                            <span>Coupon Discount (<%= order.coupon.code %>):</span>
+                            <span class="text-success">-₹<%= order.coupon.discountAmount.toFixed(2) %></span>
+                        </div>
                         <% } %>
                         <div class="summary-item total">
-                            <span>Total Amount:</span>
-                            <span>₹<%= order.finalAmount.toFixed(2) %></span>
+                            <span>Final Amount:</span>
+                            <span class="fw-bold">₹<%= order.finalAmount.toFixed(2) %></span>
                         </div>
                     </div>
                 </div>
