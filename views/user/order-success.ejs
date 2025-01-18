@@ -271,10 +271,10 @@
                 <span>Subtotal</span>
                 <span>₹<%= order.totalAmount.toFixed(2) %></span>
             </div>
-            <% if (order.coupon) { %>
+            <% if (order.coupon && order.coupon.discountAmount) { %>
                 <div class="summary-row text-success">
                     <span>Coupon Discount (<%= order.coupon.code %>)</span>
-                    <span>-₹<%= order.coupon.discountedAmount.toFixed(2) %></span>
+                    <span>-₹<%= order.coupon.discountAmount.toFixed(2) %></span>
                 </div>
             <% } %>
             <div class="summary-row total">

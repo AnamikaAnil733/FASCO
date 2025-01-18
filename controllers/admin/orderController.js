@@ -203,6 +203,7 @@ const orderController = {
                 }
             }
 
+
             // Update order status
             order.status = 'Cancelled';
             order.cancelledAt = new Date();
@@ -320,8 +321,8 @@ const orderController = {
 
             if (action === 'approve') {
                 // Only process refund if payment was made through Razorpay
-                if (order.paymentMethod === 'RAZORPAY' && order.paymentStatus === 'COMPLETED') {
-                    console.log('Processing refund for Razorpay payment');
+                if (order.status === 'Delivered') {
+                   
                     
                     const user = await User.findById(order.userId);
                     console.log('User found:', { 

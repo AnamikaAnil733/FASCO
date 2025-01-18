@@ -772,8 +772,11 @@ const getOrderDetails = async (req, res) => {
       paymentStatus: order.paymentStatus,
       createdAt: order.createdAt,
       shippingAddress: order.shippingAddress,
-      coupon: order.coupon,
-      finalAmount: order.coupon ? (order.totalAmount - order.coupon.discountedAmount) : order.totalAmount
+      coupon: order.coupon ? {
+        code: order.coupon.code,
+        discountedAmount: order.coupon.discountAmount || 0
+      } : null,
+      finalAmount: order.coupon ? (order.totalAmount - (order.coupon.discountAmount || 0)) : order.totalAmount
     };
 
     res.render('order-details', {
@@ -813,15 +816,15 @@ const getOrderSuccess = async (req, res) => {
 
     console.log('Found order:', order);
 
-    // Calculate final amount
-    const finalAmount = order.coupon ? (order.totalAmount - order.coupon.discountedAmount) : order.totalAmount;
+    // Format the order data
+    const formattedOrder = {
+      ...order.toObject(),
+      finalAmount: order.coupon ? (order.totalAmount - (order.coupon.discountAmount || 0)) : order.totalAmount
+    };
 
     res.render('order-success', {
       title: 'Order Success',
-      order: {
-        ...order.toObject(),
-        finalAmount
-      },
+      order: formattedOrder,
       user: req.session.user
     });
   } catch (error) {
@@ -1576,22 +1579,80 @@ const cancelOrder = async (req, res) => {
     order.cancelledAt = new Date();
     await order.save();
 
-    // If payment was made, initiate refund process here
-    if (order.paymentStatus === 'Paid') {
-      // Add refund logic here
-      order.paymentStatus = 'Refund Pending';
-      await order.save();
+    // Process refund for Razorpay payments
+    console.log('Checking payment details:', {
+        method: order.paymentMethod,
+        status: order.paymentStatus,
+        orderId: order.orderId
+    });
+
+    if (order.paymentMethod === 'RAZORPAY' && order.paymentStatus === 'COMPLETED') {
+        console.log('Processing refund for Razorpay payment');
+        
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Calculate refund amount
+        let refundAmount = order.totalAmount;
+        if (order.coupon?.discountedAmount) {
+            refundAmount -= order.coupon.discountedAmount;
+        }
+
+        console.log('Refund calculation:', {
+            totalAmount: order.totalAmount,
+            couponDiscount: order.coupon?.discountedAmount,
+            finalRefund: refundAmount
+        });
+
+        // Initialize wallet if needed
+        if (!user.wallet) {
+            user.wallet = { balance: 0, transactions: [] };
+        }
+
+        // Update wallet balance
+        const previousBalance = user.wallet.balance || 0;
+        user.wallet.balance = previousBalance + refundAmount;
+
+        // Add transaction record
+        user.wallet.transactions.push({
+            amount: refundAmount,
+            type: 'credit',
+            description: `Refund for cancelled order #${order.orderId}`,
+            date: new Date(),
+            orderId: order.orderId,
+            status: 'success'
+        });
+
+        console.log('Wallet update:', {
+            previousBalance,
+            refundAmount,
+            newBalance: user.wallet.balance
+        });
+
+        // Save user with updated wallet
+        await user.save();
+        console.log('Refund processed successfully');
+
+        return res.json({
+            success: true,
+            message: 'Order cancelled and refund processed to wallet'
+        });
     }
 
     res.json({ 
-      success: true, 
-      message: 'Order cancelled successfully' 
+        success: true, 
+        message: 'Order cancelled successfully' 
     });
   } catch (error) {
     console.error('Error cancelling order:', error);
     res.status(500).json({ 
-      success: false, 
-      message: 'Error cancelling order' 
+        success: false, 
+        message: 'Error cancelling order' 
     });
   }
 };

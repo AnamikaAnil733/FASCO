@@ -504,7 +504,7 @@
                             <span>Subtotal:</span>
                             <span>₹<%= order.totalAmount.toFixed(2) %></span>
                         </div>
-                        <% if (order.coupon) { %>
+                        <% if (order.coupon && order.coupon.discountedAmount !== undefined) { %>
                             <div class="summary-item text-success">
                                 <span>Coupon Discount (<%= order.coupon.code %>):</span>
                                 <span>-₹<%= order.coupon.discountedAmount.toFixed(2) %></span>
@@ -538,7 +538,7 @@
                                     <h4 class="item-name mb-1"><%= item.productId ? item.productId.productName : 'Product Not Available' %></h4>
                                     <p class="item-brand text-muted mb-1"><%= item.productId ? item.productId.brand : '' %></p>
                                     <div class="item-price-qty">
-                                        <span class="text-primary">₹<%= item.totalPrice.toFixed(2) %></span>
+                                        <span class="text-primary">₹<%= item.price.toFixed(2) %></span>
                                         <span class="text-muted mx-2">×</span>
                                         <span class="text-muted">Qty: <%= item.quantity %></span>
                                     </div>
@@ -571,12 +571,12 @@
                                     </div>
                                 </div>
                                 <div class="item-total text-end">
-                                    <strong>₹<%= (item.totalPrice * item.quantity).toFixed(2) %></strong>
+                                    <strong>₹<%=item.totalPrice.toFixed(2) %></strong>
                                 </div>
                             </div>
                         <% }); %>
                         <div class="order-total mt-3 text-end">
-                            <h4>Total Amount: <span class="text-primary">₹<%= order.totalAmount.toFixed(2) %></span></h4>
+                            <h4>Total Amount: <span class="text-primary">₹<%= order.finalAmount.toFixed(2) %></span></h4>
                         </div>
                     </div>
                 </div>
