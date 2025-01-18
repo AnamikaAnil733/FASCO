@@ -90,18 +90,8 @@ const orderController = {
     updateOrderStatus: async (req, res) => {
         try {
             const { orderId, status } = req.body;
-
-            // Validate status
-            const validStatuses = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
-            if (!validStatuses.includes(status)) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Invalid status value'
-                });
-            }
-
-            // Find and update order
             const order = await Order.findById(orderId);
+
             if (!order) {
                 return res.status(404).json({
                     success: false,
@@ -109,19 +99,107 @@ const orderController = {
                 });
             }
 
-            // If order is already cancelled or delivered, don't allow status change
-            if (order.status === 'Cancelled' || order.status === 'Delivered') {
-                return res.status(400).json({
-                    success: false,
-                    message: `Cannot change status of ${order.status.toLowerCase()} order`
-                });
+            // If status is being changed to Cancelled
+            if (status === 'Cancelled') {
+                console.log('Processing cancellation for order:', orderId);
+
+                // Restock the products
+                for (const item of order.items) {
+                    try {
+                        const product = await Product.findById(item.productId);
+                        if (product && product.variants) {
+                            // Use first variant if variantIndex is not specified
+                            const variantIndex = item.variantIndex || 0;
+                            
+                            // Ensure the variant exists
+                            if (!product.variants[variantIndex]) {
+                                product.variants[variantIndex] = {
+                                    color: 'default',
+                                    images: [],
+                                    quantity: 0
+                                };
+                            }
+
+                            // Update the quantity
+                            const currentQuantity = product.variants[variantIndex].quantity || 0;
+                            product.variants[variantIndex].quantity = currentQuantity + parseInt(item.quantity);
+                            await product.save();
+                            
+                            console.log(`Restocked product ${product._id}, variant ${variantIndex}, new quantity: ${product.variants[variantIndex].quantity}`);
+                        }
+                    } catch (err) {
+                        console.error('Error restocking product:', err);
+                    }
+                }
+
+                // Process refund if it's a Razorpay payment
+                if (order.paymentMethod === 'RAZORPAY' && order.paymentStatus === 'COMPLETED') {
+                    console.log('Processing refund for cancelled Razorpay order');
+                    
+                    const user = await User.findById(order.userId);
+                    if (!user) {
+                        return res.status(404).json({
+                            success: false,
+                            message: 'User not found'
+                        });
+                    }
+
+                    // Calculate refund amount
+                    let refundAmount = order.totalAmount;
+                    if (order.coupon?.discountedAmount) {
+                        refundAmount -= order.coupon.discountedAmount;
+                    }
+
+                    console.log('Refund calculation:', {
+                        totalAmount: order.totalAmount,
+                        couponDiscount: order.coupon?.discountedAmount,
+                        finalRefund: refundAmount
+                    });
+
+                    // Initialize wallet if needed
+                    if (!user.wallet) {
+                        user.wallet = { balance: 0, transactions: [] };
+                    }
+
+                    // Update wallet balance
+                    const previousBalance = user.wallet.balance || 0;
+                    user.wallet.balance = previousBalance + refundAmount;
+
+                    // Add transaction record
+                    user.wallet.transactions.push({
+                        amount: refundAmount,
+                        type: 'credit',
+                        description: `Refund for cancelled order #${order.orderId}`,
+                        date: new Date(),
+                        orderId: order.orderId,
+                        status: 'success'
+                    });
+
+                    console.log('Wallet update:', {
+                        previousBalance,
+                        refundAmount,
+                        newBalance: user.wallet.balance
+                    });
+
+                    await user.save();
+                    console.log('Refund processed successfully');
+                }
+
+                // Set cancellation timestamp
+                order.cancelledAt = new Date();
             }
- // Update the status
+
+            // Update order status
             order.status = status;
             await order.save();
+
             res.json({
                 success: true,
-                message: 'Order status updated successfully'
+                message: status === 'Cancelled' ? 
+                    (order.paymentMethod === 'RAZORPAY' ? 
+                        'Order cancelled, products restocked, and refund processed' : 
+                        'Order cancelled and products restocked') : 
+                    'Order status updated successfully'
             });
         } catch (error) {
             console.error('Error updating order status:', error);
@@ -129,7 +207,7 @@ const orderController = {
                 success: false,
                 message: 'Error updating order status'
             });
-        }  
+        }
     },
 
     // Cancel order

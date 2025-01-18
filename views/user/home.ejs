@@ -251,6 +251,51 @@ display: inline-block;
         box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
     }
 
+    .add-to-wishlist i.fas {
+        color: #dc3545;
+    }
+    
+    .add-to-wishlist i.far {
+        color: inherit;
+    }
+    
+    .position-relative {
+        position: relative;
+    }
+    
+    .add-to-wishlist-icon {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(255, 255, 255, 0.9);
+        border: none;
+        border-radius: 50%;
+        width: 35px;
+        height: 35px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        z-index: 1;
+    }
+    
+    .add-to-wishlist-icon:hover {
+        transform: scale(1.1);
+    }
+    
+    .add-to-wishlist-icon i {
+        font-size: 18px;
+    }
+    
+    .add-to-wishlist-icon i.fas {
+        color: #dc3545;
+    }
+    
+    .add-to-wishlist-icon i.far {
+        color: #666;
+    }
+
     /* Responsive Design */
     @media (max-width: 768px) {
         .hero-title {
@@ -869,6 +914,9 @@ display: inline-block;
 								<% } else { %>
 									<img src="/images/no-image.png" alt="No image available">
 								<% } %>
+								<button class="add-to-wishlist-icon" data-product-id="<%= product._id %>">
+									<i class="<%= wishlistProducts && wishlistProducts.includes(product._id.toString()) ? 'fas' : 'far' %> fa-heart"></i>
+								</button>
 								<a href="/product/<%= product._id %>" class="block2-btn flex-c-m stext-103 cl2 size-102 bg0 bor2 hov-btn1 p-lr-15 trans-04">
 									View Details
 								</a>
@@ -951,6 +999,75 @@ document.addEventListener('DOMContentLoaded', function() {
             this.classList.add('how-active1');
 
             iso.arrange({filter: filterValue});
+        });
+    });
+});
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle wishlist button clicks
+    document.querySelectorAll('.add-to-wishlist-icon').forEach(button => {
+        button.addEventListener('click', async function(e) {
+            e.preventDefault();
+            
+            // Check if user is logged in
+            if (!<%= !!message %>) {
+                Swal.fire({
+                    title: 'Please Login',
+                    text: 'You need to login to add items to your wishlist',
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonText: 'Login',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = '/login';
+                    }
+                });
+                return;
+            }
+
+            const productId = this.dataset.productId;
+            const icon = this.querySelector('i');
+            
+            try {
+                const response = await fetch('/wishlist/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ productId })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Toggle heart icon
+                    icon.classList.toggle('far');
+                    icon.classList.toggle('fas');
+                    
+                    // Show success message
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: data.message,
+                        showConfirmButton: false,
+                        timer: 3000
+                    });
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'error',
+                    title: error.message || 'Failed to update wishlist',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+            }
         });
     });
 });

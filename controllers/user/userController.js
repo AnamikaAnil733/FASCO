@@ -33,11 +33,21 @@ const loadHomepage = async (req, res) => {
     .select('productName salesPrice regularPrice variants category isBlocked')
     .sort({ createdAt: -1 })  // Sort by newest first
     .lean();
+
+    // Get user's wishlist if logged in
+    let wishlistProducts = [];
+    if (req.session.user) {
+      const wishlist = await Wishlist.findOne({ userId: req.session.user._id });
+      if (wishlist) {
+        wishlistProducts = wishlist.products.map(item => item.productId.toString());
+      }
+    }
     
     res.render("home", {
       message: req.session.user,
       products: products,
-      categories: categories
+      categories: categories,
+      wishlistProducts: wishlistProducts
     });
   } catch (error) {
     console.error("Error loading home page:", error);
