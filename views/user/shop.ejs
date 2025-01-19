@@ -130,6 +130,17 @@
                                                     </div>
                                                 <% } %>
                                             </div>
+                                            <% if (product.variants[0].quantity == 0) { %>
+                                                <p class="out-of-stock">Out of Stock</p>
+                                                <% } %>
+                                            <% if (product.variants && product.variants.length > 0) { %>
+                                                <div class="variant-colors mt-2">
+                                                    <% product.variants.forEach(variant => { %>
+                                                        <span class="color-dot" style="background-color: <%= variant.color %>" title="<%= variant.color %>"></span>
+                                                    <% }); %>
+                                                </div>
+                                            <% } %>
+                                          
                                         </div>
                                     </div>
                                 </div>
@@ -546,6 +557,18 @@
         font-weight: 500;
         margin-left: auto;
         animation: pulse 2s infinite;
+    }
+    .out-of-stock {
+        margin: 0;
+        color: #dc2626;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .out-of-stock::before {
+        content: "⚠️";
     }
 
     @keyframes pulse {
