@@ -398,7 +398,34 @@ const orderController = {
             }
 
             if (action === 'approve') {
-                // Only process refund if payment was made through Razorpay
+                // Restock the product
+                try {
+                    const product = await Product.findById(orderItem.productId);
+                    if (product && product.variants) {
+                        // Use first variant if variantIndex is not specified
+                        const variantIndex = orderItem.variantIndex || 0;
+                        
+                        // Ensure the variant exists
+                        if (!product.variants[variantIndex]) {
+                            product.variants[variantIndex] = {
+                                color: 'default',
+                                images: [],
+                                quantity: 0
+                            };
+                        }
+
+                        // Update the quantity
+                        const currentQuantity = product.variants[variantIndex].quantity || 0;
+                        product.variants[variantIndex].quantity = currentQuantity + parseInt(orderItem.quantity);
+                        await product.save();
+                        
+                        console.log(`Restocked product ${product._id}, variant ${variantIndex}, new quantity: ${product.variants[variantIndex].quantity}`);
+                    }
+                } catch (err) {
+                    console.error('Error restocking product:', err);
+                }
+
+                // Only process refund if order was delivered
                 if (order.status === 'Delivered') {
                    
                     
