@@ -29,7 +29,7 @@
                                     <td><%= order.orderId %></td>
                                     <td><%= order.userId ? order.userId.name : 'N/A' %></td>
                                     <td><%= moment(order.orderDate).format('MMM DD, YYYY') %></td>
-                                    <td>₹<%= (order.totalAmount || 0).toFixed(2) %></td>
+                                    <td>₹<%= (order.finalAmount || 0).toFixed(2) %></td>
                                     <td>
                                         <select class="form-select form-select-sm status-select" 
                                                 data-order-id="<%= order._id %>"
@@ -40,6 +40,9 @@
                                             <option value="Delivered" <%= order.status === 'Delivered' ? 'selected' : '' %>>Delivered</option>
                                             <option value="Cancelled" <%= order.status === 'Cancelled' ? 'selected' : '' %>>Cancelled</option>
                                         </select>
+                                        <% if (order.items && order.items.some(item => item.isReturned)) { %>
+                                            <span class="badge bg-warning mt-2 d-block">Return Requested</span>
+                                        <% } %>
                                     </td>
                                     <td class="text-end">
                                         <button class="btn btn-light btn-sm rounded font-sm" 
