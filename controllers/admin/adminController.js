@@ -148,13 +148,29 @@ const loadDashbord = async (req, res) => {
                 summary.statusBreakdown[order.status]++;
             }
 
-            // Only include non-cancelled orders in financial calculations
-            if (order.status !== 'Cancelled' && order.status !== 'Returned') {
-                summary.totalAmount += order.totalAmount || 0;
+            // Only exclude cancelled orders and processing orders
+            if (order.status == 'Delivered') {
+                // Calculate proportion of non-returned items
+                const totalItemsPrice = order.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
+                const nonReturnedItemsPrice = order.items.reduce((sum, item) => {
+                    // Include items that are not returned or have rejected returns
+                    if (item.returnStatus !== 'Approved') {
+                        return sum + (item.totalPrice || 0);
+                    }
+                    return sum;
+                }, 0);
+
+                // Calculate proportion of non-returned items to get their share of the final amount
+                const proportion = nonReturnedItemsPrice / totalItemsPrice;
+                const finalAmountForNonReturnedItems = (order.finalAmount || 0) * proportion;
+
+                summary.totalAmount += finalAmountForNonReturnedItems;
                 
                 if (order.coupon && order.coupon.discountedAmount) {
-                    summary.totalDiscount += order.coupon.discountedAmount;
-                    summary.discountBreakdown.couponDiscount += order.coupon.discountedAmount;
+                    // Apply coupon discount proportionally to non-returned items
+                    const adjustedDiscount = order.coupon.discountedAmount * proportion;
+                    summary.totalDiscount += adjustedDiscount;
+                    summary.discountBreakdown.couponDiscount += adjustedDiscount;
                     summary.discountBreakdown.count++;
                 }
             }
