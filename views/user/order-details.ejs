@@ -507,7 +507,7 @@
                         <% if (order.coupon) { %>
                         <div class="summary-item discount">
                             <span>Coupon Discount (<%= order.coupon.code %>):</span>
-                            <span class="text-success">-₹<%= order.coupon.discountAmount.toFixed(2) %></span>
+                            <span class="text-success">-₹<%= (order.coupon.discountedAmount || 0).toFixed(2) %></span>
                         </div>
                         <% } %>
                         <div class="summary-item total">
