@@ -220,11 +220,15 @@ const updateCategoryOffer = async (req, res) => {
             // Calculate the best offer (higher of product or category offer)
             const bestOffer = Math.max(productOffer, offer);
             
-            // Calculate new sales price with the offer
+            // Calculate new sales price with the best offer
             const salesPrice = Math.round(regularPrice - (regularPrice * bestOffer / 100));
             
             // Update the product
-            await Product.findByIdAndUpdate(product._id, { salesPrice });
+            await Product.findByIdAndUpdate(
+                product._id,
+                { salesPrice },
+                { new: true }
+            );
         }
 
         return res.json({ 
@@ -266,13 +270,17 @@ const removeCategoryOffer = async (req, res) => {
             const regularPrice = product.regularPrice;
             const productOffer = product.productOffer || 0;
             
-            // Use only product offer since category offer is removed
+            // Calculate sales price based on product offer if it exists
             const salesPrice = productOffer > 0 
                 ? Math.round(regularPrice - (regularPrice * productOffer / 100))
                 : regularPrice;
             
-            // Update the product
-            await Product.findByIdAndUpdate(product._id, { salesPrice });
+            // Update the product with new sales price
+            await Product.findByIdAndUpdate(
+                product._id,
+                { salesPrice },
+                { new: true }
+            );
         }
 
         return res.json({ 

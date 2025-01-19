@@ -451,16 +451,20 @@ const updateProductOffer = async (req, res) => {
             return res.status(400).json({ error: "End date must be after start date" });
         }
 
-        // Get product and update offer
-        const product = await Product.findById(productId);
+        // Get product and its category
+        const product = await Product.findById(productId).populate('category');
         if (!product) {
             return res.status(404).json({ error: "Product not found" });
         }
 
-        // Calculate new sales price with the offer
-        const salesPrice = Math.round(product.regularPrice - (product.regularPrice * offer / 100));
+        // Get category offer if exists
+        const categoryOffer = product.category ? (product.category.categoryOffer || 0) : 0;
 
-        // Update product
+        // Calculate sales price based on the best offer
+        const bestOffer = Math.max(offer, categoryOffer);
+        const salesPrice = Math.round(product.regularPrice - (product.regularPrice * bestOffer / 100));
+
+        // Update product with new offer details
         const updatedProduct = await Product.findByIdAndUpdate(
             productId,
             { 
@@ -470,7 +474,7 @@ const updateProductOffer = async (req, res) => {
                 salesPrice: salesPrice
             },
             { new: true }
-        );
+        ).populate('category');
 
         return res.json({ 
             success: true, 
@@ -488,23 +492,31 @@ const removeProductOffer = async (req, res) => {
     try {
         const { productId } = req.body;
 
-        // Get product
-        const product = await Product.findById(productId);
+        // Get product and its category
+        const product = await Product.findById(productId).populate('category');
         if (!product) {
             return res.status(404).json({ error: "Product not found" });
         }
 
-        // Update product to remove offer
+        // Get category offer if exists
+        const categoryOffer = product.category ? (product.category.categoryOffer || 0) : 0;
+
+        // Calculate sales price based on category offer only
+        const salesPrice = categoryOffer > 0 
+            ? Math.round(product.regularPrice - (product.regularPrice * categoryOffer / 100))
+            : product.regularPrice;
+
+        // Update product to remove offer and update sales price
         const updatedProduct = await Product.findByIdAndUpdate(
             productId,
             { 
                 productOffer: 0,
                 offerStartDate: null,
                 offerEndDate: null,
-                salesPrice: product.regularPrice
+                salesPrice: salesPrice
             },
             { new: true }
-        );
+        ).populate('category');
 
         return res.json({ 
             success: true, 
