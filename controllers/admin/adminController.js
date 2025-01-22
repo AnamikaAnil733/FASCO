@@ -48,118 +48,58 @@ const loadDashbord = async (req, res) => {
         const salesData = await getSalesData('monthly');
 
         // Calculate summary using aggregation (for delivered orders minus returns)
-        const summaryData = await Order.aggregate([
-            {
-                $match: {
-                    $or: [
-                        { status: 'Delivered' },
-                        { status: 'Returned' }
-                    ]
+        const orders = await Order.find({ status: { $ne: 'Cancelled' } });
+        
+        let totalOrders = 0;
+        let deliveredAmount = 0;
+        let returnedAmount = 0;
+        let totalDiscount = 0;
+
+        for (const order of orders) {
+            if (order.status === 'Delivered') {
+                totalOrders++;
+                // Ensure finalAmount is a number
+                const orderAmount = Number(order.finalAmount) || 0;
+                deliveredAmount += orderAmount;
+
+                // Add coupon discount to total discount if exists
+                if (order.coupon && order.coupon.discountedAmount) {
+                    totalDiscount += Number(order.coupon.discountedAmount) || 0;
                 }
-            },
-            {
-                $group: {
-                    _id: null,
-                    totalOrders: {
-                        $sum: {
-                            $cond: [
-                                { $eq: ['$status', 'Delivered'] },
-                                1,
-                                0
-                            ]
-                        }
-                    },
-                    deliveredAmount: {
-                        $sum: {
-                            $cond: [
-                                { $eq: ['$status', 'Delivered'] },
-                                { $subtract: ['$totalAmount', { $ifNull: ['$coupon.discountedAmount', 0] }] },
-                                0
-                            ]
-                        }
-                    },
-                    returnedAmount: {
-                        $sum: {
-                            $cond: [
-                                { $eq: ['$status', 'Returned'] },
-                                { $subtract: ['$totalAmount', { $ifNull: ['$coupon.discountedAmount', 0] }] },
-                                0
-                            ]
-                        }
-                    },
-                    totalDiscount: {
-                        $sum: {
-                            $cond: [
-                                {
-                                    $and: [
-                                        { $eq: ['$status', 'Delivered'] },
-                                        { $ifNull: ['$coupon.discountedAmount', false] }
-                                    ]
-                                },
-                                '$coupon.discountedAmount',
-                                0
-                            ]
-                        }
-                    },
-                    returnedDiscount: {
-                        $sum: {
-                            $cond: [
-                                {
-                                    $and: [
-                                        { $eq: ['$status', 'Returned'] },
-                                        { $ifNull: ['$coupon.discountedAmount', false] }
-                                    ]
-                                },
-                                '$coupon.discountedAmount',
-                                0
-                            ]
-                        }
-                    },
-                    couponCount: {
-                        $sum: {
-                            $cond: [
-                                {
-                                    $and: [
-                                        { $eq: ['$status', 'Delivered'] },
-                                        { $ifNull: ['$coupon', false] }
-                                    ]
-                                },
-                                1,
-                                0
-                            ]
-                        }
-                    },
-                    returnedOrders: {
-                        $sum: {
-                            $cond: [
-                                { $eq: ['$status', 'Returned'] },
-                                1,
-                                0
-                            ]
-                        }
+
+                // Calculate returned amount for approved returns
+                for (const item of order.items) {
+                    if (item.returnStatus === 'Approved') {
+                        // Ensure all values are numbers
+                        const itemPrice = Number(item.totalPrice) || 0;
+                        const orderTotal = Number(order.totalAmount) || 1; // Prevent division by zero
+                        
+                        // Calculate proportional discount for the returned item
+                        const itemPercentage = itemPrice / orderTotal;
+                        const itemCouponDiscount = order.coupon ? 
+                            (Number(order.coupon.discountedAmount) * itemPercentage) || 0 : 0;
+                        
+                        // Subtract the refund amount (item total - proportional discount)
+                        returnedAmount += (itemPrice - itemCouponDiscount);
                     }
                 }
-            },
-            {
-                $project: {
-                    totalOrders: 1,
-                    totalAmount: { $subtract: ['$deliveredAmount', '$returnedAmount'] },
-                    totalDiscount: { $subtract: ['$totalDiscount', '$returnedDiscount'] },
-                    couponCount: 1,
-                    returnedOrders: 1,
-                    returnedAmount: 1
-                }
             }
-        ]);
+        }
 
-        const summary = summaryData[0] || {
-            totalOrders: 0,
-            totalAmount: 0,
-            totalDiscount: 0,
-            couponCount: 0,
-            returnedOrders: 0,
-            returnedAmount: 0
+        // Ensure all values are numbers in final summary
+        const summary = {
+            totalOrders: Number(totalOrders),
+            totalAmount: Number(deliveredAmount - returnedAmount),
+            totalDiscount: Number(totalDiscount),
+            returnedAmount: Number(returnedAmount)
         };
+
+        console.log('Revenue Calculation:', {
+            deliveredAmount,
+            returnedAmount,
+            totalAmount: summary.totalAmount,
+            totalDiscount
+        });
 
         // Get top products (already filtered for delivered orders)
         const topProducts = await getTopProducts();
@@ -175,9 +115,9 @@ const loadDashbord = async (req, res) => {
                 totalDiscount: summary.totalDiscount,
                 discountBreakdown: {
                     couponDiscount: summary.totalDiscount,
-                    count: summary.couponCount
+                    count: 0
                 },
-                returnedOrders: summary.returnedOrders,
+                returnedOrders: 0,
                 returnedAmount: summary.returnedAmount
             },
             topProducts,
@@ -256,7 +196,7 @@ const getSalesData = async (period = 'monthly') => {
                     returnedAmount: {
                         $sum: {
                             $cond: [
-                                { $eq: ['$status', 'Returned'] },
+                                { $eq: ['$returnStatus', 'Approved'] },  
                                 { $subtract: ['$totalAmount', { $ifNull: ['$coupon.discountedAmount', 0] }] },
                                 0
                             ]
@@ -300,13 +240,54 @@ const getSalesData = async (period = 'monthly') => {
 
 const getTopProducts = async () => {
     return await Order.aggregate([
-        { $match: { status: 'Delivered' } },
+        {
+            $match: {
+                $or: [
+                    { status: 'Delivered' },
+                    { status: 'Returned' }
+                ]
+            }
+        },
         { $unwind: '$items' },
         {
             $group: {
                 _id: '$items.productId',
-                sales: { $sum: '$items.quantity' },
-                revenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } }
+                deliveredQuantity: {
+                    $sum: {
+                        $cond: [
+                            { $eq: ['$status', 'Delivered'] },
+                            '$items.quantity',
+                            0
+                        ]
+                    }
+                },
+                returnedQuantity: {
+                    $sum: {
+                        $cond: [
+                            { $eq: ['$returnStatus', 'Approved']},
+                            '$items.quantity',
+                            0
+                        ]
+                    }
+                },
+                deliveredRevenue: {
+                    $sum: {
+                        $cond: [
+                            { $eq: ['$status', 'Delivered'] },
+                            { $multiply: ['$items.price', '$items.quantity'] },
+                            0
+                        ]
+                    }
+                },
+                returnedRevenue: {
+                    $sum: {
+                        $cond: [
+                            {$eq: ['$returnStatus', 'Approved'] },
+                            { $multiply: ['$items.price', '$items.quantity'] },
+                            0
+                        ]
+                    }
+                }
             }
         },
         {
@@ -321,10 +302,11 @@ const getTopProducts = async () => {
         {
             $project: {
                 name: '$product.productName',
-                sales: 1,
-                revenue: 1
+                sales: { $subtract: ['$deliveredQuantity', '$returnedQuantity'] },
+                revenue: { $subtract: ['$deliveredRevenue', '$returnedRevenue'] }
             }
         },
+        { $match: { sales: { $gt: 0 } } }, // Only show products with positive sales
         { $sort: { sales: -1 } },
         { $limit: 10 }
     ]);
@@ -332,7 +314,14 @@ const getTopProducts = async () => {
 
 const getTopCategories = async () => {
     return await Order.aggregate([
-        { $match: { status: 'Delivered' } },
+        {
+            $match: {
+                $or: [
+                    { status: 'Delivered' },
+                    {returnStatus: 'Approved' }
+                ]
+            }
+        },
         { $unwind: '$items' },
         {
             $lookup: {
@@ -356,10 +345,52 @@ const getTopCategories = async () => {
             $group: {
                 _id: '$category._id',
                 name: { $first: '$category.name' },
-                sales: { $sum: '$items.quantity' },
-                revenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } }
+                deliveredQuantity: {
+                    $sum: {
+                        $cond: [
+                            { $eq: ['$status', 'Delivered'] },
+                            '$items.quantity',
+                            0
+                        ]
+                    }
+                },
+                returnedQuantity: {
+                    $sum: {
+                        $cond: [
+                            { $eq: ['$returnStatus', 'Approved']},
+                            '$items.quantity',
+                            0
+                        ]
+                    }
+                },
+                deliveredRevenue: {
+                    $sum: {
+                        $cond: [
+                            { $eq: ['$status', 'Delivered'] },
+                            { $multiply: ['$items.price', '$items.quantity'] },
+                            0
+                        ]
+                    }
+                },
+                returnedRevenue: {
+                    $sum: {
+                        $cond: [
+                            { $eq: ['$returnStatus', 'Approved']},
+                            { $multiply: ['$items.price', '$items.quantity'] },
+                            0
+                        ]
+                    }
+                }
             }
         },
+        {
+            $project: {
+                name: 1,
+                sales: { $subtract: ['$deliveredQuantity', '$returnedQuantity'] },
+                revenue: { $subtract: ['$deliveredRevenue', '$returnedRevenue'] }
+            }
+        },
+        { $match: { sales: { $gt: 0 } } }, // Only show categories with positive sales
         { $sort: { sales: -1 } },
         { $limit: 5 }
     ]);
@@ -377,7 +408,7 @@ const getDashboardSummary = async () => {
                             totalAmount: { 
                                 $sum: {
                                     $cond: [
-                                        { $eq: ['$status', 'Delivered'] },
+                                        { $eq: ['$returnStatus', 'Approved']},
                                         '$totalAmount',
                                         { $multiply: ['$totalAmount', -1] }  // Subtract returned order amounts
                                     ]
@@ -388,7 +419,7 @@ const getDashboardSummary = async () => {
                                     $cond: [
                                         {
                                             $and: [
-                                                { $eq: ['$status', 'Delivered'] },
+                                                { $eq: ['$returnStatus', 'Approved']},
                                                 { $ifNull: ['$coupon.discountedAmount', false] }
                                             ]
                                         },
@@ -500,7 +531,7 @@ const downloadSalesReport = async (req, res) => {
                     periodStartDate = new Date(now.setMonth(now.getMonth() - 1));
                     break;
                 default:
-                    periodStartDate = new Date(0);
+                    periodStartDate = new Date(now.getFullYear(), now.getMonth(), 1);
             }
 
             dateQuery = {
@@ -990,165 +1021,100 @@ const loadSalesReport = async (req, res) => {
         query = { ...query, ...dateQuery };
 
         // Calculate summary using aggregation
-        const summaryData = await Order.aggregate([
-            {
-                $match: query
-            },
-            {
-                $group: {
-                    _id: null,
-                    totalOrders: {
-                        $sum: {
-                            $cond: [
-                                { $eq: ['$status', 'Delivered'] },
-                                1,
-                                0
-                            ]
-                        }
-                    },
-                    deliveredAmount: {
-                        $sum: {
-                            $cond: [
-                                { $eq: ['$status', 'Delivered'] },
-                                { $subtract: ['$totalAmount', { $ifNull: ['$coupon.discountedAmount', 0] }] },
-                                0
-                            ]
-                        }
-                    },
-                    returnedAmount: {
-                        $sum: {
-                            $cond: [
-                                { $eq: ['$status', 'Returned'] },
-                                { $subtract: ['$totalAmount', { $ifNull: ['$coupon.discountedAmount', 0] }] },
-                                0
-                            ]
-                        }
-                    },
-                    totalDiscount: {
-                        $sum: {
-                            $cond: [
-                                {
-                                    $and: [
-                                        { $eq: ['$status', 'Delivered'] },
-                                        { $ifNull: ['$coupon.discountedAmount', false] }
-                                    ]
-                                },
-                                '$coupon.discountedAmount',
-                                0
-                            ]
-                        }
-                    },
-                    returnedDiscount: {
-                        $sum: {
-                            $cond: [
-                                {
-                                    $and: [
-                                        { $eq: ['$status', 'Returned'] },
-                                        { $ifNull: ['$coupon.discountedAmount', false] }
-                                    ]
-                                },
-                                '$coupon.discountedAmount',
-                                0
-                            ]
-                        }
-                    },
-                    couponCount: {
-                        $sum: {
-                            $cond: [
-                                {
-                                    $and: [
-                                        { $eq: ['$status', 'Delivered'] },
-                                        { $ifNull: ['$coupon', false] }
-                                    ]
-                                },
-                                1,
-                                0
-                            ]
-                        }
-                    },
-                    returnedOrders: {
-                        $sum: {
-                            $cond: [
-                                { $eq: ['$status', 'Returned'] },
-                                1,
-                                0
-                            ]
-                        }
+        const orders = await Order.find({ status: { $ne: 'Cancelled' } });
+        
+        let totalOrders = 0;
+        let deliveredAmount = 0;
+        let returnedAmount = 0;
+        let totalDiscount = 0;
+
+        for (const order of orders) {
+            if (order.status === 'Delivered') {
+                totalOrders++;
+                // Ensure finalAmount is a number
+                const orderAmount = Number(order.finalAmount) || 0;
+                deliveredAmount += orderAmount;
+
+                // Add coupon discount to total discount if exists
+                if (order.coupon && order.coupon.discountedAmount) {
+                    totalDiscount += Number(order.coupon.discountedAmount) || 0;
+                }
+
+                // Calculate returned amount for approved returns
+                for (const item of order.items) {
+                    if (item.returnStatus === 'Approved') {
+                        // Ensure all values are numbers
+                        const itemPrice = Number(item.totalPrice) || 0;
+                        const orderTotal = Number(order.totalAmount) || 1; // Prevent division by zero
+                        
+                        // Calculate proportional discount for the returned item
+                        const itemPercentage = itemPrice / orderTotal;
+                        const itemCouponDiscount = order.coupon ? 
+                            (Number(order.coupon.discountedAmount) * itemPercentage) || 0 : 0;
+                        
+                        // Subtract the refund amount (item total - proportional discount)
+                        returnedAmount += (itemPrice - itemCouponDiscount);
                     }
                 }
-            },
-            {
-                $project: {
-                    totalOrders: 1,
-                    totalAmount: { $subtract: ['$deliveredAmount', '$returnedAmount'] },
-                    totalDiscount: { $subtract: ['$totalDiscount', '$returnedDiscount'] },
-                    couponCount: 1,
-                    returnedOrders: 1,
-                    returnedAmount: 1
-                }
             }
-        ]);
+        }
 
-        const summary = summaryData[0] || {
-            totalOrders: 0,
-            totalAmount: 0,
-            totalDiscount: 0,
-            couponCount: 0,
-            returnedOrders: 0,
-            returnedAmount: 0
+        // Ensure all values are numbers in final summary
+        const summary = {
+            totalOrders: Number(totalOrders),
+            totalAmount: Number(deliveredAmount - returnedAmount),
+            totalDiscount: Number(totalDiscount),
+            returnedAmount: Number(returnedAmount)
         };
 
-        // Get paginated orders
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-        const skip = (page - 1) * limit;
-
-        const orders = await Order.find(query)
-            .populate({
-                path: 'items.productId',
-                select: 'productName brand regularPrice price',
-                match: { _id: { $ne: null } }
-            })
-            .sort({ orderDate: -1 })
-            .skip(skip)
-            .limit(limit);
-
-        // Calculate regular price for display purposes
-        orders.forEach(order => {
-            let regularPrice = 0;
-            order.items.forEach(item => {
-                if (item.productId) {
-                    regularPrice += (item.productId.regularPrice || item.productId.price || 0) * item.quantity;
-                }
-            });
-            order.regularPrice = regularPrice;
+        console.log('Revenue Calculation:', {
+            deliveredAmount,
+            returnedAmount,
+            totalAmount: summary.totalAmount,
+            totalDiscount
         });
 
-        const totalPages = Math.ceil((summary.totalOrders + summary.returnedOrders) / limit);
+        // Get paginated orders with query
+        const paginatedOrders = await Order.find(query)
+            .sort({ createdAt: -1 })
+            .populate({
+                path: 'items.productId',
+                select: 'name regularPrice'
+            });
+
+        // Calculate regular price total for each order
+        for (const order of paginatedOrders) {
+            let regularPrice = 0;
+            for (const item of order.items) {
+                regularPrice += item.productId.regularPrice * item.quantity;
+            }
+            order.regularPrice = regularPrice;
+        }
+
+        const totalPages = Math.ceil((summary.totalOrders) / 10);
 
         res.render('salesReport', {
-            orders,
+            orders: paginatedOrders,
             summary: {
                 totalOrders: summary.totalOrders,
                 totalAmount: summary.totalAmount,
                 totalDiscount: summary.totalDiscount,
                 discountBreakdown: {
                     couponDiscount: summary.totalDiscount,
-                    count: summary.couponCount
+                    count: 0
                 },
-                returnedOrders: summary.returnedOrders,
+                returnedOrders: 0,
                 returnedAmount: summary.returnedAmount
             },
             filters: {
                 startDate: startDate || '',
-                endDate: endDate || '',
-                period: period || ''
+                endDate: endDate || ''
             },
             pagination: {
-                page,
-                limit,
+                page: 1,
+                limit: 10,
                 totalPages,
-                totalOrders: summary.totalOrders + summary.returnedOrders
+                totalOrders: summary.totalOrders
             }
         });
 

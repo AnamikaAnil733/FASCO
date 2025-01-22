@@ -247,9 +247,32 @@
                     <div class="chart-container">
                         <canvas id="productsChart"></canvas>
                     </div>
-                </div>
-            </div>
+            
+        <div class="table-responsive mt-4">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Product</th>
+                        <th class="text-center">Sales</th>
+                        <th class="text-end">Revenue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% topProducts.forEach((product, index) => { %>
+                    <tr>
+                        <td><%= index + 1 %></td>
+                        <td><%= product.name %></td>
+                        <td class="text-center"><%= product.sales %></td>
+                        <td class="text-end">₹<%= product.revenue.toFixed(2) %></td>
+                    </tr>
+                    <% }); %>
+                </tbody>
+            </table>
         </div>
+    </div>
+</div>
+</div>
 
         <!-- Best Selling Categories -->
         <div class="col-md-6 mb-4">
@@ -258,6 +281,28 @@
                     <h5 class="card-title mb-4">Top Categories</h5>
                     <div class="chart-container">
                         <canvas id="categoriesChart"></canvas>
+                    </div>
+                    <div class="table-responsive mt-4">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Category</th>
+                                    <th class="text-center">Sales</th>
+                                    <th class="text-end">Revenue</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% topCategories.forEach((category, index) => { %>
+                                <tr>
+                                    <td><%= index + 1 %></td>
+                                    <td><%= category.name %></td>
+                                    <td class="text-center"><%= category.sales %></td>
+                                    <td class="text-end">₹<%= category.revenue.toFixed(2) %></td>
+                                </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
