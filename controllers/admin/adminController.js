@@ -1,10 +1,12 @@
-const User = require("../../models/userSchema")
-const mongoose = require("mongoose")
-const bcrypt = require("bcrypt")
-const Category = require("../../models/categorySchema")
-const Order = require("../../models/orderSchema") // Assuming Order model is defined in orderSchema.js
-const Excel = require('exceljs');
+const User = require("../../models/userSchema");
+const Category = require("../../models/categorySchema");
+const Product = require("../../models/productSchema");
+const Order = require("../../models/orderSchema");
+const bcrypt = require("bcrypt");
+const path = require('path');
+const ExcelJS = require('exceljs');
 const PDFDocument = require('pdfkit');
+const fs = require('fs');
 
 const loadLogin = (req,res)=>{
     if(req.session.admin){
@@ -39,169 +41,394 @@ const login = async(req,res)=>{
 const loadDashbord = async (req, res) => {
     try {
         if (!req.session.admin) {
-            return res.redirect("/admin/pageerror");
+            return res.redirect("/admin/login");
         }
 
-        // Get query parameters for filtering
-        const { startDate, endDate, period } = req.query;
-        let query = {}; 
-        let dateQuery = {};
+        // Get initial sales data for monthly period
+        const salesData = await getSalesData('monthly');
 
-        // Pagination parameters
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-        const skip = (page - 1) * limit;
-
-        // Handle date filtering
-        if (startDate && endDate) {
-            dateQuery = {
-                orderDate: {
-                    $gte: new Date(startDate),
-                    $lte: new Date(endDate)
+        // Calculate summary using aggregation (for delivered orders minus returns)
+        const summaryData = await Order.aggregate([
+            {
+                $match: {
+                    $or: [
+                        { status: 'Delivered' },
+                        { status: 'Returned' }
+                    ]
                 }
-            };
-        } else if (period) {
-            const now = new Date();
-            let periodStartDate;
-
-            switch (period) {
-                case 'day':
-                    periodStartDate = new Date(now.setDate(now.getDate() - 1));
-                    break;
-                case 'week':
-                    periodStartDate = new Date(now.setDate(now.getDate() - 7));
-                    break;
-                case 'month':
-                    periodStartDate = new Date(now.setMonth(now.getMonth() - 1));
-                    break;
-                default:
-                    periodStartDate = new Date(now.getFullYear(), now.getMonth(), 1);
-                    period = 'month';
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalOrders: {
+                        $sum: {
+                            $cond: [
+                                { $eq: ['$status', 'Delivered'] },
+                                1,
+                                0
+                            ]
+                        }
+                    },
+                    deliveredAmount: {
+                        $sum: {
+                            $cond: [
+                                { $eq: ['$status', 'Delivered'] },
+                                { $subtract: ['$totalAmount', { $ifNull: ['$coupon.discountedAmount', 0] }] },
+                                0
+                            ]
+                        }
+                    },
+                    returnedAmount: {
+                        $sum: {
+                            $cond: [
+                                { $eq: ['$status', 'Returned'] },
+                                { $subtract: ['$totalAmount', { $ifNull: ['$coupon.discountedAmount', 0] }] },
+                                0
+                            ]
+                        }
+                    },
+                    totalDiscount: {
+                        $sum: {
+                            $cond: [
+                                {
+                                    $and: [
+                                        { $eq: ['$status', 'Delivered'] },
+                                        { $ifNull: ['$coupon.discountedAmount', false] }
+                                    ]
+                                },
+                                '$coupon.discountedAmount',
+                                0
+                            ]
+                        }
+                    },
+                    returnedDiscount: {
+                        $sum: {
+                            $cond: [
+                                {
+                                    $and: [
+                                        { $eq: ['$status', 'Returned'] },
+                                        { $ifNull: ['$coupon.discountedAmount', false] }
+                                    ]
+                                },
+                                '$coupon.discountedAmount',
+                                0
+                            ]
+                        }
+                    },
+                    couponCount: {
+                        $sum: {
+                            $cond: [
+                                {
+                                    $and: [
+                                        { $eq: ['$status', 'Delivered'] },
+                                        { $ifNull: ['$coupon', false] }
+                                    ]
+                                },
+                                1,
+                                0
+                            ]
+                        }
+                    },
+                    returnedOrders: {
+                        $sum: {
+                            $cond: [
+                                { $eq: ['$status', 'Returned'] },
+                                1,
+                                0
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    totalOrders: 1,
+                    totalAmount: { $subtract: ['$deliveredAmount', '$returnedAmount'] },
+                    totalDiscount: { $subtract: ['$totalDiscount', '$returnedDiscount'] },
+                    couponCount: 1,
+                    returnedOrders: 1,
+                    returnedAmount: 1
+                }
             }
+        ]);
 
-            dateQuery = {
-                orderDate: {
-                    $gte: periodStartDate,
-                    $lte: new Date()
-                }
-            };
-        } else {
-            const now = new Date();
-            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-            dateQuery = {
-                orderDate: {
-                    $gte: startOfMonth,
-                    $lte: now
-                }
-            };
-        }
-
-        query = { ...query, ...dateQuery };
-
-        // Get total count for pagination
-        const totalOrders = await Order.countDocuments(query);
-        const totalPages = Math.ceil(totalOrders / limit);
-
-        // Get paginated orders
-        const orders = await Order.find(query)
-            .populate({
-                path: 'items.productId',
-                select: 'productName brand regularPrice price',
-                match: { _id: { $ne: null } }
-            })
-            .sort({ orderDate: -1 })
-            .skip(skip)
-            .limit(limit);
-
-        // Calculate summary with status breakdown
-        let summary = {
-            totalOrders: totalOrders,
+        const summary = summaryData[0] || {
+            totalOrders: 0,
             totalAmount: 0,
             totalDiscount: 0,
-            discountBreakdown: {
-                couponDiscount: 0,
-                count: 0
-            },
-            statusBreakdown: {
-                Delivered: 0,
-                Pending: 0,
-                Processing: 0,
-                Shipped: 0,
-                Cancelled: 0,
-                Returned: 0
-            }
+            couponCount: 0,
+            returnedOrders: 0,
+            returnedAmount: 0
         };
 
-        // Process orders and calculate regular prices
-        orders.forEach(order => {
-            // Calculate regular price for each order
-            let regularPrice = 0;
-            order.items.forEach(item => {
-                if (item.productId) {
-                    regularPrice += (item.productId.regularPrice || item.productId.price || 0) * item.quantity;
-                }
-            });
-            order.regularPrice = regularPrice;
+        // Get top products (already filtered for delivered orders)
+        const topProducts = await getTopProducts();
 
-            // Count by status
-            if (summary.statusBreakdown.hasOwnProperty(order.status)) {
-                summary.statusBreakdown[order.status]++;
-            }
+        // Get top categories (already filtered for delivered orders)
+        const topCategories = await getTopCategories();
 
-            // Only exclude cancelled orders and processing orders
-            if (order.status == 'Delivered') {
-                // Calculate proportion of non-returned items
-                const totalItemsPrice = order.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
-                const nonReturnedItemsPrice = order.items.reduce((sum, item) => {
-                    // Include items that are not returned or have rejected returns
-                    if (item.returnStatus !== 'Approved') {
-                        return sum + (item.totalPrice || 0);
-                    }
-                    return sum;
-                }, 0);
-
-                // Calculate proportion of non-returned items to get their share of the final amount
-                const proportion = nonReturnedItemsPrice / totalItemsPrice;
-                const finalAmountForNonReturnedItems = (order.finalAmount || 0) * proportion;
-
-                summary.totalAmount += finalAmountForNonReturnedItems;
-                
-                if (order.coupon && order.coupon.discountedAmount) {
-                    // Apply coupon discount proportionally to non-returned items
-                    const adjustedDiscount = order.coupon.discountedAmount * proportion;
-                    summary.totalDiscount += adjustedDiscount;
-                    summary.discountBreakdown.couponDiscount += adjustedDiscount;
-                    summary.discountBreakdown.count++;
-                }
-            }
-        });
-
-        const currentStartDate = new Date(query.orderDate.$gte).toISOString().split('T')[0];
-        const currentEndDate = new Date(query.orderDate.$lte).toISOString().split('T')[0];
-
-        res.render('dashboard', {
-            title: 'Dashboard',
-            orders,
-            summary,
-            filters: {
-                startDate: startDate || currentStartDate,
-                endDate: endDate || currentEndDate,
-                period: period || ''
+        res.render("dashboard", {
+            salesData,
+            summary: {
+                totalOrders: summary.totalOrders,
+                totalAmount: summary.totalAmount,
+                totalDiscount: summary.totalDiscount,
+                discountBreakdown: {
+                    couponDiscount: summary.totalDiscount,
+                    count: summary.couponCount
+                },
+                returnedOrders: summary.returnedOrders,
+                returnedAmount: summary.returnedAmount
             },
-            pagination: {
-                page,
-                limit,
-                totalPages,
-                totalOrders
-            }
+            topProducts,
+            topCategories
         });
 
     } catch (error) {
         console.error('Error loading dashboard:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error loading dashboard'
-        });
+        res.redirect("/admin/pageerror");
+    }
+};
+
+const getSalesData = async (period = 'monthly') => {
+    try {
+        const now = new Date();
+        let startDate, endDate;
+        let groupBy;
+        let format;
+
+        switch (period) {
+            case 'daily':
+                startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+                endDate = now;
+                groupBy = { $dateToString: { format: "%Y-%m-%d", date: "$orderDate" } };
+                format = "YYYY-MM-DD";
+                break;
+            case 'weekly':
+                startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 28);
+                endDate = now;
+                groupBy = {
+                    $week: { $dateFromString: { dateString: { $dateToString: { format: "%Y-%m-%d", date: "$orderDate" } } } }
+                };
+                format = "Week";
+                break;
+            case 'monthly':
+                startDate = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+                endDate = now;
+                groupBy = { $dateToString: { format: "%Y-%m", date: "$orderDate" } };
+                format = "YYYY-MM";
+                break;
+            case 'yearly':
+                startDate = new Date(now.getFullYear() - 4, 0, 1);
+                endDate = now;
+                groupBy = { $dateToString: { format: "%Y", date: "$orderDate" } };
+                format = "YYYY";
+                break;
+            default:
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                endDate = now;
+                groupBy = { $dateToString: { format: "%Y-%m-%d", date: "$orderDate" } };
+                format = "YYYY-MM-DD";
+        }
+
+        const salesData = await Order.aggregate([
+            {
+                $match: {
+                    orderDate: { $gte: startDate, $lte: endDate },
+                    $or: [
+                        { status: 'Delivered' },
+                        { status: 'Returned' }
+                    ]
+                }
+            },
+            {
+                $group: {
+                    _id: groupBy,
+                    deliveredAmount: {
+                        $sum: {
+                            $cond: [
+                                { $eq: ['$status', 'Delivered'] },
+                                { $subtract: ['$totalAmount', { $ifNull: ['$coupon.discountedAmount', 0] }] },
+                                0
+                            ]
+                        }
+                    },
+                    returnedAmount: {
+                        $sum: {
+                            $cond: [
+                                { $eq: ['$status', 'Returned'] },
+                                { $subtract: ['$totalAmount', { $ifNull: ['$coupon.discountedAmount', 0] }] },
+                                0
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    totalSales: { $subtract: ['$deliveredAmount', '$returnedAmount'] }
+                }
+            },
+            { $sort: { "_id": 1 } }
+        ]);
+
+        // Process the data for the chart
+        const labels = [];
+        const values = [];
+
+        if (period === 'weekly') {
+            // For weekly data, create week labels
+            salesData.forEach(data => {
+                labels.push(`Week ${data._id}`);
+                values.push(data.totalSales);
+            });
+        } else {
+            // For other periods, use the date format directly
+            salesData.forEach(data => {
+                labels.push(data._id);
+                values.push(data.totalSales);
+            });
+        }
+
+        return { labels, values };
+    } catch (error) {
+        console.error('Error getting sales data:', error);
+        return { labels: [], values: [] };
+    }
+};
+
+const getTopProducts = async () => {
+    return await Order.aggregate([
+        { $match: { status: 'Delivered' } },
+        { $unwind: '$items' },
+        {
+            $group: {
+                _id: '$items.productId',
+                sales: { $sum: '$items.quantity' },
+                revenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } }
+            }
+        },
+        {
+            $lookup: {
+                from: 'products',
+                localField: '_id',
+                foreignField: '_id',
+                as: 'product'
+            }
+        },
+        { $unwind: '$product' },
+        {
+            $project: {
+                name: '$product.productName',
+                sales: 1,
+                revenue: 1
+            }
+        },
+        { $sort: { sales: -1 } },
+        { $limit: 10 }
+    ]);
+};
+
+const getTopCategories = async () => {
+    return await Order.aggregate([
+        { $match: { status: 'Delivered' } },
+        { $unwind: '$items' },
+        {
+            $lookup: {
+                from: 'products',
+                localField: 'items.productId',
+                foreignField: '_id',
+                as: 'product'
+            }
+        },
+        { $unwind: '$product' },
+        {
+            $lookup: {
+                from: 'categories',
+                localField: 'product.category',
+                foreignField: '_id',
+                as: 'category'
+            }
+        },
+        { $unwind: '$category' },
+        {
+            $group: {
+                _id: '$category._id',
+                name: { $first: '$category.name' },
+                sales: { $sum: '$items.quantity' },
+                revenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } }
+            }
+        },
+        { $sort: { sales: -1 } },
+        { $limit: 5 }
+    ]);
+};
+
+const getDashboardSummary = async () => {
+    const [orderStats] = await Order.aggregate([
+        {
+            $facet: {
+                'totals': [
+                    {
+                        $group: {
+                            _id: null,
+                            totalOrders: { $sum: 1 },
+                            totalAmount: { 
+                                $sum: {
+                                    $cond: [
+                                        { $eq: ['$status', 'Delivered'] },
+                                        '$totalAmount',
+                                        { $multiply: ['$totalAmount', -1] }  // Subtract returned order amounts
+                                    ]
+                                }
+                            },
+                            totalDiscount: {
+                                $sum: {
+                                    $cond: [
+                                        {
+                                            $and: [
+                                                { $eq: ['$status', 'Delivered'] },
+                                                { $ifNull: ['$coupon.discountedAmount', false] }
+                                            ]
+                                        },
+                                        '$coupon.discountedAmount',
+                                        0
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $unwind: '$totals'
+        },
+        {
+            $project: {
+                totalOrders: '$totals.totalOrders',
+                totalAmount: '$totals.totalAmount',
+                totalDiscount: '$totals.totalDiscount'
+            }
+        }
+    ]);
+
+    return {
+        totalOrders: orderStats?.totalOrders || 0,
+        totalAmount: orderStats?.totalAmount || 0,
+        totalDiscount: orderStats?.totalDiscount || 0
+    };
+};
+
+const getSalesDataAPI = async (req, res) => {
+    try {
+        const { period } = req.query;
+        const data = await getSalesData(period);
+        res.json(data);
+    } catch (error) {
+        console.error('Error in sales data API:', error);
+        res.status(500).json({ error: 'Error fetching sales data' });
     }
 };
 
@@ -383,7 +610,7 @@ const downloadExcelReport = async (req, res) => {
             .lean();
 
         // Create a new workbook
-        const workbook = new Excel.Workbook();
+        const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Sales Report');
 
         // Add headers with improved widths
@@ -709,6 +936,228 @@ const downloadPdfReport = async (req, res) => {
     }
 };
 
+const loadSalesReport = async (req, res) => {
+    try {
+        if (!req.session.admin) {
+            return res.redirect("/admin/login");
+        }
+
+        // Get query parameters for filtering
+        const { startDate, endDate, period } = req.query;
+        let query = {
+            $or: [
+                { status: 'Delivered' },
+                { status: 'Returned' }
+            ]
+        };
+        let dateQuery = {};
+
+        // Handle date filtering
+        if (startDate && endDate) {
+            dateQuery = {
+                orderDate: {
+                    $gte: new Date(startDate),
+                    $lte: new Date(endDate)
+                }
+            };
+        } else if (period) {
+            const now = new Date();
+            let periodStartDate;
+
+            switch (period) {
+                case 'day':
+                    periodStartDate = new Date(now.setDate(now.getDate() - 1));
+                    break;
+                case 'week':
+                    periodStartDate = new Date(now.setDate(now.getDate() - 7));
+                    break;
+                case 'month':
+                    periodStartDate = new Date(now.setMonth(now.getMonth() - 1));
+                    break;
+                default:
+                    periodStartDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                    period = 'month';
+            }
+
+            dateQuery = {
+                orderDate: {
+                    $gte: periodStartDate,
+                    $lte: new Date()
+                }
+            };
+        }
+
+        query = { ...query, ...dateQuery };
+
+        // Calculate summary using aggregation
+        const summaryData = await Order.aggregate([
+            {
+                $match: query
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalOrders: {
+                        $sum: {
+                            $cond: [
+                                { $eq: ['$status', 'Delivered'] },
+                                1,
+                                0
+                            ]
+                        }
+                    },
+                    deliveredAmount: {
+                        $sum: {
+                            $cond: [
+                                { $eq: ['$status', 'Delivered'] },
+                                { $subtract: ['$totalAmount', { $ifNull: ['$coupon.discountedAmount', 0] }] },
+                                0
+                            ]
+                        }
+                    },
+                    returnedAmount: {
+                        $sum: {
+                            $cond: [
+                                { $eq: ['$status', 'Returned'] },
+                                { $subtract: ['$totalAmount', { $ifNull: ['$coupon.discountedAmount', 0] }] },
+                                0
+                            ]
+                        }
+                    },
+                    totalDiscount: {
+                        $sum: {
+                            $cond: [
+                                {
+                                    $and: [
+                                        { $eq: ['$status', 'Delivered'] },
+                                        { $ifNull: ['$coupon.discountedAmount', false] }
+                                    ]
+                                },
+                                '$coupon.discountedAmount',
+                                0
+                            ]
+                        }
+                    },
+                    returnedDiscount: {
+                        $sum: {
+                            $cond: [
+                                {
+                                    $and: [
+                                        { $eq: ['$status', 'Returned'] },
+                                        { $ifNull: ['$coupon.discountedAmount', false] }
+                                    ]
+                                },
+                                '$coupon.discountedAmount',
+                                0
+                            ]
+                        }
+                    },
+                    couponCount: {
+                        $sum: {
+                            $cond: [
+                                {
+                                    $and: [
+                                        { $eq: ['$status', 'Delivered'] },
+                                        { $ifNull: ['$coupon', false] }
+                                    ]
+                                },
+                                1,
+                                0
+                            ]
+                        }
+                    },
+                    returnedOrders: {
+                        $sum: {
+                            $cond: [
+                                { $eq: ['$status', 'Returned'] },
+                                1,
+                                0
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    totalOrders: 1,
+                    totalAmount: { $subtract: ['$deliveredAmount', '$returnedAmount'] },
+                    totalDiscount: { $subtract: ['$totalDiscount', '$returnedDiscount'] },
+                    couponCount: 1,
+                    returnedOrders: 1,
+                    returnedAmount: 1
+                }
+            }
+        ]);
+
+        const summary = summaryData[0] || {
+            totalOrders: 0,
+            totalAmount: 0,
+            totalDiscount: 0,
+            couponCount: 0,
+            returnedOrders: 0,
+            returnedAmount: 0
+        };
+
+        // Get paginated orders
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+
+        const orders = await Order.find(query)
+            .populate({
+                path: 'items.productId',
+                select: 'productName brand regularPrice price',
+                match: { _id: { $ne: null } }
+            })
+            .sort({ orderDate: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        // Calculate regular price for display purposes
+        orders.forEach(order => {
+            let regularPrice = 0;
+            order.items.forEach(item => {
+                if (item.productId) {
+                    regularPrice += (item.productId.regularPrice || item.productId.price || 0) * item.quantity;
+                }
+            });
+            order.regularPrice = regularPrice;
+        });
+
+        const totalPages = Math.ceil((summary.totalOrders + summary.returnedOrders) / limit);
+
+        res.render('salesReport', {
+            orders,
+            summary: {
+                totalOrders: summary.totalOrders,
+                totalAmount: summary.totalAmount,
+                totalDiscount: summary.totalDiscount,
+                discountBreakdown: {
+                    couponDiscount: summary.totalDiscount,
+                    count: summary.couponCount
+                },
+                returnedOrders: summary.returnedOrders,
+                returnedAmount: summary.returnedAmount
+            },
+            filters: {
+                startDate: startDate || '',
+                endDate: endDate || '',
+                period: period || ''
+            },
+            pagination: {
+                page,
+                limit,
+                totalPages,
+                totalOrders: summary.totalOrders + summary.returnedOrders
+            }
+        });
+
+    } catch (error) {
+        console.error('Error loading sales report:', error);
+        res.redirect("/admin/pageerror");
+    }
+};
+
 module.exports = {
     loadLogin,
     login,
@@ -716,7 +1165,13 @@ module.exports = {
     logout,
     pageerror,
     loadAddProduct,
-    downloadSalesReport,
     downloadExcelReport,
-    downloadPdfReport
+    downloadPdfReport,
+    getSalesDataAPI,
+    getSalesData,
+    loadSalesReport,
+    downloadSalesReport,
+    getTopProducts,
+    getTopCategories,
+    getDashboardSummary
 };

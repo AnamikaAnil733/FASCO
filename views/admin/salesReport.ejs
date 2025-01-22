@@ -1,0 +1,371 @@
+<%- include("../partials/admin/header") %>
+
+<section class="content-main">
+    <div class="content-header">
+        <div>
+            <h2 class="content-title card-title">Sales Report</h2>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body" style="padding-bottom: 5rem;">
+            <form id="filterForm" class="row g-3">
+                <!-- Quick Filters -->
+                <div class="col-md-3">
+                    <label class="form-label">Quick Filters</label>
+                    <select class="form-select" name="period" onchange="handlePeriodChange(this)">
+                        <option value="">Select Period</option>
+                        <option value="day" <%= filters.period === 'day' ? 'selected' : '' %>>Last 24 Hours</option>
+                        <option value="week" <%= filters.period === 'week' ? 'selected' : '' %>>Last Week</option>
+                        <option value="month" <%= filters.period === 'month' ? 'selected' : '' %>>Last Month</option>
+                    </select>
+                </div>
+
+                <!-- Custom Date Range -->
+                <div class="col-md-3">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" class="form-control" name="startDate" value="<%= filters.startDate %>">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">End Date</label>
+                    <input type="date" class="form-control" name="endDate" value="<%= filters.endDate %>">
+                </div>
+
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">Apply Filters</button>
+                    <div class="dropdown">
+                        <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="fas fa-download me-1"></i> Download
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <button type="button" class="dropdown-item" onclick="downloadReport('excel')">
+                                    <i class="fas fa-file-excel me-2"></i>Excel
+                                </button>
+                            </li>
+                            <li>
+                                <button type="button" class="dropdown-item" onclick="downloadReport('pdf')">
+                                    <i class="fas fa-file-pdf me-2"></i>PDF
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3">
+            <div class="card card-body mb-4">
+                <article class="icontext">
+                    <span class="icon icon-sm rounded-circle bg-primary-light">
+                        <i class="fas fa-shopping-cart text-primary"></i>
+                    </span>
+                    <div class="text">
+                        <h6 class="mb-1">Total Orders</h6>
+                        <span><%= summary.totalOrders %></span>
+                    </div>
+                </article>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <div class="card card-body mb-4">
+                <article class="icontext">
+                    <span class="icon icon-sm rounded-circle bg-success-light">
+                        <i class="fas fa-money-bill text-success"></i>
+                    </span>
+                    <div class="text">
+                        <h6 class="mb-1">Total Revenue</h6>
+                        <span>₹<%= summary.totalAmount.toFixed(2) %></span>
+                    </div>
+                </article>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <div class="card card-body mb-4">
+                <article class="icontext">
+                    <span class="icon icon-sm rounded-circle bg-warning-light">
+                        <i class="fas fa-tags text-warning"></i>
+                    </span>
+                    <div class="text">
+                        <h6 class="mb-1">Total Discounts</h6>
+                        <span>₹<%= summary.totalDiscount.toFixed(2) %></span>
+                    </div>
+                </article>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <div class="card card-body mb-4">
+                <article class="icontext">
+                    <span class="icon icon-sm rounded-circle bg-info-light">
+                        <i class="fas fa-ticket-alt text-info"></i>
+                    </span>
+                    <div class="text">
+                        <h6 class="mb-1">Coupon Usage</h6>
+                        <span><%= summary.discountBreakdown.count %></span>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </div>
+
+    <!-- Orders Table -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="text-center">Order ID</th>
+                            <th>Date</th>
+                            <th>Customer</th>
+                            <th style="min-width: 200px;">Items</th>
+                            <th class="text-end">Regular Price</th>
+                            <th class="text-end">Sales Price</th>
+                            <th class="text-end">Discount</th>
+                            <th class="text-end">Final Amount</th>
+                            <th class="text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% orders.forEach(order => { %>
+                            <tr>
+                                <td class="text-center">
+                                    <span class="fw-bold text-primary">#<%= order.orderId %></span>
+                                </td>
+                                <td>
+                                    <div class="text-muted small"><%= new Date(order.orderDate).toLocaleDateString() %></div>
+                                </td>
+                                <td>
+                                    <div class="fw-bold"><%= order.shippingAddress.name %></div>
+                                </td>
+                                <td>
+                                    <div class="order-items">
+                                        <% order.items.forEach((item, index) => { %>
+                                            <div class="item-row <%= index !== order.items.length - 1 ? 'mb-1' : '' %>">
+                                                <% if (item.productId) { %>
+                                                    <span class="product-name"><%= item.productId.productName || 'Deleted Product' %></span>
+                                                    <span class="quantity-badge"><%= item.quantity %></span>
+                                                <% } else { %>
+                                                    <span class="product-name text-muted">Deleted Product</span>
+                                                    <span class="quantity-badge"><%= item.quantity %></span>
+                                                <% } %>
+                                            </div>
+                                        <% }); %>
+                                    </div>
+                                </td>
+                                <td class="text-end">
+                                    <span class="text-muted">₹<%= order.regularPrice.toFixed(2) %></span>
+                                </td>
+                                <td class="text-end">
+                                    <span>₹<%= order.totalAmount.toFixed(2) %></span>
+                                </td>
+                                <td class="text-end">
+                                    <% if (order.coupon && order.coupon.discountedAmount) { %>
+                                        <div>
+                                            <span class="text-danger">-₹<%= order.coupon.discountedAmount.toFixed(2) %></span>
+                                            <% if (order.coupon.code) { %>
+                                                <div class="small text-muted"><%= order.coupon.code %></div>
+                                            <% } %>
+                                        </div>
+                                    <% } else { %>
+                                        <span>-</span>
+                                    <% } %>
+                                </td>
+                                <td class="text-end">
+                                    <span class="fw-bold">₹<%= ((order.coupon && order.coupon.discountedAmount) ? 
+                                        (order.totalAmount - order.coupon.discountedAmount) : 
+                                        order.totalAmount).toFixed(2) %></span>
+                                </td>
+                                <td class="text-center">
+                                    <% const statusColors = {
+                                        'Delivered': 'success',
+                                        'Pending': 'warning',
+                                        'Processing': 'info',
+                                        'Shipped': 'primary',
+                                        'Cancelled': 'danger',
+                                        'Returned': 'secondary'
+                                    } %>
+                                    <span class="badge bg-<%= statusColors[order.status] || 'secondary' %>">
+                                        <%= order.status %>
+                                    </span>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            <div class="pagination-area mt-4 d-flex align-items-center justify-content-between">
+                <div class="pagination-info">
+                    Showing <%= (pagination.page - 1) * pagination.limit + 1 %> to 
+                    <%= Math.min(pagination.page * pagination.limit, pagination.totalOrders) %> 
+                    of <%= pagination.totalOrders %> entries
+                </div>
+                <nav aria-label="Page navigation">
+                    <ul class="pagination">
+                        <li class="page-item <%= pagination.page <= 1 ? 'disabled' : '' %>">
+                            <a class="page-link" href="?page=<%= pagination.page - 1 %>&limit=<%= pagination.limit %><%= filters.period ? '&period=' + filters.period : '' %><%= filters.startDate ? '&startDate=' + filters.startDate : '' %><%= filters.endDate ? '&endDate=' + filters.endDate : '' %>">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                        
+                        <% for(let i = 1; i <= pagination.totalPages; i++) { %>
+                            <li class="page-item <%= pagination.page === i ? 'active' : '' %>">
+                                <a class="page-link" href="?page=<%= i %>&limit=<%= pagination.limit %><%= filters.period ? '&period=' + filters.period : '' %><%= filters.startDate ? '&startDate=' + filters.startDate : '' %><%= filters.endDate ? '&endDate=' + filters.endDate : '' %>">
+                                    <%= i %>
+                                </a>
+                            </li>
+                        <% } %>
+                        
+                        <li class="page-item <%= pagination.page >= pagination.totalPages ? 'disabled' : '' %>">
+                            <a class="page-link" href="?page=<%= pagination.page + 1 %>&limit=<%= pagination.limit %><%= filters.period ? '&period=' + filters.period : '' %><%= filters.startDate ? '&startDate=' + filters.startDate : '' %><%= filters.endDate ? '&endDate=' + filters.endDate : '' %>">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    .order-items {
+        max-width: 300px;
+    }
+    .item-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+    }
+    .product-name {
+        flex: 1;
+        font-size: 0.9rem;
+    }
+    .quantity-badge {
+        background-color: #e9ecef;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        color: #495057;
+    }
+    .table td {
+        vertical-align: middle;
+        padding: 1rem 0.75rem;
+    }
+    .table th {
+        font-weight: 600;
+        padding: 0.75rem;
+        white-space: nowrap;
+    }
+    .dropdown {
+        position: relative;
+    }
+    .dropdown-menu {
+        min-width: 150px;
+        padding: 0.5rem 0;
+        margin: 0;
+        background-color: #fff;
+        border: 1px solid rgba(0, 0, 0, 0.15);
+        border-radius: 0.25rem;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+    .dropdown-item {
+        cursor: pointer;
+        padding: 0.5rem 1rem;
+        border: none;
+        background: none;
+        width: 100%;
+        text-align: left;
+        display: flex;
+        align-items: center;
+    }
+    .dropdown-item:hover {
+        background-color: #f8f9fa;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dropdownElementList = [].slice.call(document.querySelectorAll('[data-bs-toggle="dropdown"]'));
+        dropdownElementList.forEach(function(dropdownToggleEl) {
+            new bootstrap.Dropdown(dropdownToggleEl);
+        });
+    });
+
+    function handlePeriodChange(select) {
+        if (select.value) {
+            document.querySelector('input[name="startDate"]').value = '';
+            document.querySelector('input[name="endDate"]').value = '';
+        }
+    }
+
+    function downloadReport(format) {
+        try {
+            const form = document.getElementById('filterForm');
+            const formData = new FormData(form);
+            
+            const params = new URLSearchParams();
+            formData.forEach((value, key) => {
+                if (value) params.append(key, value);
+            });
+            
+            const endpoint = format === 'excel' ? '/admin/download-excel-report' : '/admin/download-pdf-report';
+            const fileName = format === 'excel' ? 'sales-report.xlsx' : 'sales-report.pdf';
+            
+            const downloadBtn = document.querySelector('.dropdown-toggle');
+            const originalText = downloadBtn.innerHTML;
+            downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading...';
+            downloadBtn.disabled = true;
+            
+            fetch(endpoint + '?' + params.toString())
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return response.blob();
+                })
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = fileName;
+                    
+                    document.body.appendChild(a);
+                    a.click();
+                    
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    
+                    downloadBtn.innerHTML = originalText;
+                    downloadBtn.disabled = false;
+                })
+                .catch(error => {
+                    console.error('Download error:', error);
+                    alert('Error downloading report. Please try again.');
+                    
+                    downloadBtn.innerHTML = originalText;
+                    downloadBtn.disabled = false;
+                });
+        } catch (error) {
+            console.error('Error preparing download:', error);
+            alert('Error preparing download. Please try again.');
+        }
+        return false;
+    }
+
+    document.querySelectorAll('input[type="date"]').forEach(input => {
+        input.addEventListener('change', () => {
+            if (input.value) {
+                document.querySelector('select[name="period"]').value = '';
+            }
+        });
+    });
+</script>
+
+<%- include("../partials/admin/footer") %>

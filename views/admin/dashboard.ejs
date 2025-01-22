@@ -1,421 +1,410 @@
 <%- include("../../views/partials/admin/header") %>
 
-<section class="content-main">
+<style>
+    :root {
+        --primary-color: #0C977F;
+        --primary-light: #e6f4f1;
+        --secondary-color: #2c3e50;
+        --success-color: #2ecc71;
+        --warning-color: #f1c40f;
+        --info-color: #3498db;
+        --danger-color: #e74c3c;
+        --background-color: #f8f9fa;
+        --card-shadow: 0 2px 20px rgba(0,0,0,0.08);
+        --hover-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
+
+    .container-fluid {
+        background-color: var(--background-color);
+        min-height: calc(100vh - 60px);
+    }
+
+    .dashboard-card {
+        height: 100%;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        border: none;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 400px;  
+        width: 100%;
+        margin: 0 auto;
+    }
+
+    #salesChart {
+        height: 300px !important;  
+    }
+
+    .card-body {
+        padding: 1.5rem;
+    }
+
+    .stat-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+        font-size: 1.5rem;
+    }
+
+    .bg-primary-light { background-color: #e6f4f1; }
+    .bg-success-light { background-color: #e8f8f0; }
+    .bg-warning-light { background-color: #fef7e6; }
+    .bg-info-light { background-color: #e7f3fb; }
+
+    .text-primary { color: var(--primary-color) !important; }
+    .text-success { color: var(--success-color) !important; }
+    .text-warning { color: var(--warning-color) !important; }
+    .text-info { color: var(--info-color) !important; }
+
+    .card-title {
+        color: #64748b;
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    h3 {
+        color: var(--secondary-color);
+        font-weight: 600;
+        font-size: 1.75rem;
+    }
+
+    .content-header {
+        background: transparent;
+        padding: 1.5rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    .content-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--secondary-color);
+        margin: 0;
+    }
+
+    .btn-primary {
+        background-color: var(--primary-color);
+        border: none;
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        background-color: #0a7d6a;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(12, 151, 127, 0.2);
+    }
+
+    .filter-container {
+        background: white;
+        padding: 1rem;
+        border-radius: 12px;
+        box-shadow: var(--card-shadow);
+        margin-bottom: 1.5rem;
+    }
+
+    .form-select {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+    }
+
+    .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(12, 151, 127, 0.1);
+    }
+
+    .list-group-item {
+        border: none;
+        padding: 1rem;
+        margin-bottom: 0.5rem;
+        border-radius: 8px;
+        background: #f8fafc;
+        transition: all 0.2s ease;
+    }
+
+    .list-group-item:hover {
+        background: #f1f5f9;
+        transform: translateX(5px);
+    }
+
+    #salesChart, #topProductsChart, #topCategoriesChart, #topBrandsChart {
+        border-radius: 12px;
+    }
+
+    @media (max-width: 768px) {
+        .container-fluid {
+            padding: 1rem;
+        }
+        
+        .dashboard-card {
+            margin-bottom: 1rem;
+        }
+        
+        .content-header {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+    }
+</style>
+
+<div class="container-fluid p-4">
     <div class="content-header">
+        <h2 class="content-title">Dashboard</h2>
         <div>
-            <h2 class="content-title card-title">Dashboard</h2>
+            <a href="/admin/sales-report" class="btn btn-primary">View Sales Report</a>
         </div>
     </div>
 
-    <!-- Filters -->
-    <div class="card mb-4">
-        <div class="card-body " style="padding-bottom: 5rem;" >
-            <form id="filterForm" class="row g-3">
-                <!-- Quick Filters -->
-                <div class="col-md-3">
-                    <label class="form-label">Quick Filters</label>
-                    <select class="form-select" name="period" onchange="handlePeriodChange(this)">
-                        <option value="">Select Period</option>
-                        <option value="day" <%= filters.period === 'day' ? 'selected' : '' %>>Last 24 Hours</option>
-                        <option value="week" <%= filters.period === 'week' ? 'selected' : '' %>>Last Week</option>
-                        <option value="month" <%= filters.period === 'month' ? 'selected' : '' %>>Last Month</option>
-                    </select>
-                </div>
-
-                <!-- Custom Date Range -->
-                <div class="col-md-3">
-                    <label class="form-label">Start Date</label>
-                    <input type="date" class="form-control" name="startDate" value="<%= filters.startDate %>">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">End Date</label>
-                    <input type="date" class="form-control" name="endDate" value="<%= filters.endDate %>">
-                </div>
-
-                <div class="col-md-3 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary me-2">Apply Filters</button>
-                    <div class="dropdown">
-                        <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">
-                            <i class="fas fa-download me-1"></i> Download
-                        </button>
-                        <ul class="dropdown-menu" style="position: absolute; transform: translate3d(0px, 40px, 0px); top: 0; left: 0; will-change: transform; z-index: 100000;">
-                            <li>
-                                <button type="button" class="dropdown-item" onclick="downloadReport('excel')">
-                                    <i class="fas fa-file-excel me-2"></i>Excel
-                                </button>
-                            </li>
-                            <li>
-                                <button type="button" class="dropdown-item" onclick="downloadReport('pdf')">
-                                    <i class="fas fa-file-pdf me-2"></i>PDF
-                                </button>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Summary Cards -->
+    <!-- Statistics Cards -->
     <div class="row mb-4">
-        <div class="col-lg-3">
-            <div class="card card-body mb-4">
-                <article class="icontext">
-                    <span class="icon icon-sm rounded-circle bg-primary-light">
-                        <i class="fas fa-shopping-cart text-primary"></i>
-                    </span>
-                    <div class="text">
-                        <h6 class="mb-1">Total Orders</h6>
-                        <span><%= summary.totalOrders %></span>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-body">
+                    <div class="stat-icon bg-primary-light">
+                        <i class="fas fa-money-bill text-primary"></i>
                     </div>
-                </article>
-            </div>
-        </div>
-        <div class="col-lg-3">
-            <div class="card card-body mb-4">
-                <article class="icontext">
-                    <span class="icon icon-sm rounded-circle bg-success-light">
-                        <i class="fas fa-money-bill text-success"></i>
-                    </span>
-                    <div class="text">
-                        <h6 class="mb-1">Total Revenue</h6>
-                        <span>₹<%= summary.totalAmount.toFixed(2) %></span>
-                    </div>
-                </article>
-            </div>
-        </div>
-        <div class="col-lg-3">
-            <div class="card card-body mb-4">
-                <article class="icontext">
-                    <span class="icon icon-sm rounded-circle bg-warning-light">
-                        <i class="fas fa-tags text-warning"></i>
-                    </span>
-                    <div class="text">
-                        <h6 class="mb-1">Total Discounts</h6>
-                        <span>₹<%= summary.totalDiscount.toFixed(2) %></span>
-                    </div>
-                </article>
-            </div>
-        </div>
-        <div class="col-lg-3">
-            <div class="card card-body mb-4">
-                <article class="icontext">
-                    <span class="icon icon-sm rounded-circle bg-info-light">
-                        <i class="fas fa-ticket-alt text-info"></i>
-                    </span>
-                    <div class="text">
-                        <h6 class="mb-1">Coupon Usage</h6>
-                        <span><%= summary.discountBreakdown.count %></span>
-                    </div>
-                </article>
-            </div>
-        </div>
-    </div>
-
-    <!-- Orders Table -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="bg-light">
-                        <tr>
-                            <th class="text-center">Order ID</th>
-                            <th>Date</th>
-                            <th>Customer</th>
-                            <th style="min-width: 200px;">Items</th>
-                            <th class="text-end">Regular Price</th>
-                            <th class="text-end">Sales Price</th>
-                            <th class="text-end">Discount</th>
-                            <th class="text-end">Final Amount</th>
-                            <th class="text-center">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <% orders.forEach(order => { %>
-                            <tr>
-                                <td class="text-center">
-                                    <span class="fw-bold text-primary">#<%= order.orderId %></span>
-                                </td>
-                                <td>
-                                    <div class="text-muted small"><%= new Date(order.orderDate).toLocaleDateString() %></div>
-                                </td>
-                                <td>
-                                    <div class="fw-bold"><%= order.shippingAddress.name %></div>
-                                </td>
-                                <td>
-                                    <div class="order-items">
-                                        <% order.items.forEach((item, index) => { %>
-                                            <div class="item-row <%= index !== order.items.length - 1 ? 'mb-1' : '' %>">
-                                                <% if (item.productId) { %>
-                                                    <span class="product-name"><%= item.productId.productName || 'Deleted Product' %></span>
-                                                    <span class="quantity-badge"><%= item.quantity %></span>
-                                                <% } else { %>
-                                                    <span class="product-name text-muted">Deleted Product</span>
-                                                    <span class="quantity-badge"><%= item.quantity %></span>
-                                                <% } %>
-                                            </div>
-                                        <% }); %>
-                                    </div>
-                                </td>
-                                <td class="text-end">
-                                    <span class="text-muted">₹<%= order.regularPrice.toFixed(2) %></span>
-                                </td>
-                                <td class="text-end">
-                                    <span>₹<%= order.totalAmount.toFixed(2) %></span>
-                                </td>
-                                <td class="text-end">
-                                    <% if (order.coupon && order.coupon.discountedAmount) { %>
-                                        <div>
-                                            <span class="text-danger">-₹<%= order.coupon.discountedAmount.toFixed(2) %></span>
-                                            <% if (order.coupon.code) { %>
-                                                <div class="small text-muted"><%= order.coupon.code %></div>
-                                            <% } %>
-                                        </div>
-                                    <% } else { %>
-                                        <span>-</span>
-                                    <% } %>
-                                </td>
-                                <td class="text-end">
-                                    <span class="fw-bold">₹<%= ((order.coupon && order.coupon.discountedAmount) ? 
-                                        (order.totalAmount - order.coupon.discountedAmount) : 
-                                        order.totalAmount).toFixed(2) %></span>
-                                </td>
-                                <td class="text-center">
-                                    <% const statusColors = {
-                                        'Delivered': 'success',
-                                        'Pending': 'warning',
-                                        'Processing': 'info',
-                                        'Shipped': 'primary',
-                                        'Cancelled': 'danger',
-                                        'Returned': 'secondary'
-                                    } %>
-                                    <span class="badge bg-<%= statusColors[order.status] || 'secondary' %>">
-                                        <%= order.status %>
-                                    </span>
-                                </td>
-                            </tr>
-                        <% }); %>
-                    </tbody>
-                </table>
-            </div>
-            
-            <!-- Pagination -->
-            <div class="pagination-area mt-4 d-flex align-items-center justify-content-between">
-                <div class="pagination-info">
-                    Showing <%= (pagination.page - 1) * pagination.limit + 1 %> to 
-                    <%= Math.min(pagination.page * pagination.limit, pagination.totalOrders) %> 
-                    of <%= pagination.totalOrders %> entries
+                    <h6 class="card-title mb-2">Total Revenue</h6>
+                    <h3 class="mb-0">₹<%= summary.totalAmount.toFixed(2) %></h3>
                 </div>
-                <nav aria-label="Page navigation">
-                    <ul class="pagination">
-                        <!-- Previous button -->
-                        <li class="page-item <%= pagination.page <= 1 ? 'disabled' : '' %>">
-                            <a class="page-link" href="?page=<%= pagination.page - 1 %>&limit=<%= pagination.limit %><%= filters.period ? '&period=' + filters.period : '' %><%= filters.startDate ? '&startDate=' + filters.startDate : '' %><%= filters.endDate ? '&endDate=' + filters.endDate : '' %>">
-                            <
-                            </a>
-                        </li>
-                        
-                        <!-- Page numbers -->
-                        <% for(let i = 1; i <= pagination.totalPages; i++) { %>
-                            <li class="page-item <%= pagination.page === i ? 'active' : '' %>">
-                                <a class="page-link" href="?page=<%= i %>&limit=<%= pagination.limit %><%= filters.period ? '&period=' + filters.period : '' %><%= filters.startDate ? '&startDate=' + filters.startDate : '' %><%= filters.endDate ? '&endDate=' + filters.endDate : '' %>">
-                                    <%= i %>
-                                </a>
-                            </li>
-                        <% } %>
-                        
-                        <!-- Next button -->
-                        <li class="page-item <%= pagination.page >= pagination.totalPages ? 'disabled' : '' %>">
-                            <a class="page-link" href="?page=<%= pagination.page + 1 %>&limit=<%= pagination.limit %><%= filters.period ? '&period=' + filters.period : '' %><%= filters.startDate ? '&startDate=' + filters.startDate : '' %><%= filters.endDate ? '&endDate=' + filters.endDate : '' %>">
-                            >
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-body">
+                    <div class="stat-icon bg-success-light">
+                        <i class="fas fa-shopping-cart text-success"></i>
+                    </div>
+                    <h6 class="card-title mb-2">Total Orders</h6>
+                    <h3 class="mb-0"><%= summary.totalOrders %></h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-body">
+                    <div class="stat-icon bg-warning-light">
+                        <i class="fas fa-tags text-warning"></i>
+                    </div>
+                    <h6 class="card-title mb-2">Total Discounts</h6>
+                    <h3 class="mb-0">₹<%= summary.totalDiscount.toFixed(2) %></h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-body">
+                    <div class="stat-icon bg-info-light">
+                        <i class="fas fa-box text-info"></i>
+                    </div>
+                    <h6 class="card-title mb-2">Average Order Value</h6>
+                    <h3 class="mb-0">₹<%= (summary.totalAmount / summary.totalOrders).toFixed(2) %></h3>
+                </div>
             </div>
         </div>
     </div>
 
-    <style>
-        .order-items {
-            max-width: 300px;
-        }
-        .item-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 8px;
-        }
-        .product-name {
-            flex: 1;
-            font-size: 0.9rem;
-        }
-        .quantity-badge {
-            background-color: #e9ecef;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            color: #495057;
-        }
-        .table td {
-            vertical-align: middle;
-            padding: 1rem 0.75rem;
-        }
-        .table th {
-            font-weight: 600;
-            padding: 0.75rem;
-            white-space: nowrap;
-        }
-        .text-end {
-            text-align: right !important;
-        }
-        .text-center {
-            text-align: center !important;
-        }
-        .text-primary {
-            color: #0d6efd !important;
-        }
-        .text-danger {
-            color: #dc3545 !important;
-        }
-        .text-muted {
-            color: #6c757d !important;
-        }
-        .fw-bold {
-            font-weight: 600 !important;
-        }
-        .small {
-            font-size: 0.875rem;
-        }
-        .badge {
-            font-weight: 500;
-            padding: 0.5em 0.75em;
-        }
-        .dropdown {
-            position: relative;
-        }
-        .dropdown-menu {
-            position: absolute;
-            min-width: 150px;
-            padding: 0.5rem 0;
-            margin: 0;
-            background-color: #fff;
-            border: 1px solid rgba(0, 0, 0, 0.15);
-            border-radius: 0.25rem;
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-        }
-        .dropdown-item {
-            cursor: pointer;
-            padding: 0.5rem 1rem;
-            border: none;
-            background: none;
-            width: 100%;
-            text-align: left;
-            display: flex;
-            align-items: center;
-        }
-        .dropdown-item:hover {
-            background-color: #f8f9fa;
-        }
-        .dropdown-toggle::after {
-            margin-left: 0.5em;
-        }
-        .card-body {
-            position: relative;
-            overflow: visible !important;
-        }
-    </style>
+    <!-- Charts Section -->
+    <div class="row">
+        <!-- Sales Chart -->
+        <div class="col-12 mb-4">
+            <div class="card dashboard-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="card-title">Sales Overview</h5>
+                        <select class="form-select" style="width: auto;" id="salesChartFilter">
+                            <option value="yearly">Yearly</option>
+                            <option value="monthly" selected>Monthly</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="daily">Daily</option>
+                        </select>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="salesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    <script>
-        // Initialize dropdowns when the document is ready
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize all dropdowns
-            const dropdownElementList = [].slice.call(document.querySelectorAll('[data-bs-toggle="dropdown"]'));
-            dropdownElementList.forEach(function(dropdownToggleEl) {
-                new bootstrap.Dropdown(dropdownToggleEl);
-            });
-        });
+        <!-- Best Selling Products -->
+        <div class="col-md-6 mb-4">
+            <div class="card dashboard-card">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Top 10 Products</h5>
+                    <div class="chart-container">
+                        <canvas id="productsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-        function handlePeriodChange(select) {
-            if (select.value) {
-                document.querySelector('input[name="startDate"]').value = '';
-                document.querySelector('input[name="endDate"]').value = '';
-            }
-        }
+        <!-- Best Selling Categories -->
+        <div class="col-md-6 mb-4">
+            <div class="card dashboard-card">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Top Categories</h5>
+                    <div class="chart-container">
+                        <canvas id="categoriesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-        function downloadReport(format) {
-            try {
-                const form = document.getElementById('filterForm');
-                const formData = new FormData(form);
-                
-                // Build query string
-                const params = new URLSearchParams();
-                formData.forEach((value, key) => {
-                    if (value) params.append(key, value);
-                });
-                
-                // Set endpoint
-                const endpoint = format === 'excel' ? '/admin/download-excel-report' : '/admin/download-pdf-report';
-                const fileName = format === 'excel' ? 'sales-report.xlsx' : 'sales-report.pdf';
-                
-                // Show loading state
-                const downloadBtn = document.querySelector('.dropdown-toggle');
-                const originalText = downloadBtn.innerHTML;
-                downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading...';
-                downloadBtn.disabled = true;
-                
-                fetch(endpoint + '?' + params.toString())
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // Initialize charts when document is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        // Sales Chart
+        const salesCtx = document.getElementById('salesChart').getContext('2d');
+        const gradientFill = salesCtx.createLinearGradient(0, 0, 0, 400);
+        gradientFill.addColorStop(0, 'rgba(12, 151, 127, 0.2)');
+        gradientFill.addColorStop(1, 'rgba(12, 151, 127, 0)');
+
+        const salesChart = new Chart(salesCtx, {
+            type: 'line',
+            data: {
+                labels: <%- JSON.stringify(salesData.labels) %>,
+                datasets: [{
+                    label: 'Sales',
+                    data: <%- JSON.stringify(salesData.values) %>,
+                    borderColor: '#0C977F',
+                    backgroundColor: gradientFill,
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return '₹' + context.raw.toLocaleString('en-IN');
+                            }
                         }
-                        return response.blob();
-                    })
-                    .then(blob => {
-                        // Create download link
-                        const url = window.URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.style.display = 'none';
-                        a.href = url;
-                        a.download = fileName;
-                        
-                        // Trigger download
-                        document.body.appendChild(a);
-                        a.click();
-                        
-                        // Cleanup
-                        window.URL.revokeObjectURL(url);
-                        document.body.removeChild(a);
-                        
-                        // Reset button state
-                        downloadBtn.innerHTML = originalText;
-                        downloadBtn.disabled = false;
-                    })
-                    .catch(error => {
-                        console.error('Download error:', error);
-                        alert('Error downloading report. Please try again.');
-                        
-                        // Reset button state
-                        downloadBtn.innerHTML = originalText;
-                        downloadBtn.disabled = false;
-                    });
-            } catch (error) {
-                console.error('Error preparing download:', error);
-                alert('Error preparing download. Please try again.');
-            }
-            
-            // Prevent form submission
-            return false;
-        }
-
-        // Prevent selecting both period and custom date range
-        document.querySelectorAll('input[type="date"]').forEach(input => {
-            input.addEventListener('change', () => {
-                if (input.value) {
-                    document.querySelector('select[name="period"]').value = '';
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0,0,0,0.05)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '₹' + value.toLocaleString('en-IN');
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(0,0,0,0.05)'
+                        }
+                    }
                 }
-            });
+            }
         });
-    </script>
 
-    <%- include("../../views/partials/admin/footer") %>
+        // Products Chart
+        const productsChart = new Chart(document.getElementById('productsChart').getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: <%- JSON.stringify(topProducts.map(p => p.name)) %>,
+                datasets: [{
+                    data: <%- JSON.stringify(topProducts.map(p => p.sales)) %>,
+                    backgroundColor: [
+                        '#0C977F', '#2ecc71', '#3498db', '#f1c40f', '#e74c3c',
+                        '#9b59b6', '#1abc9c', '#34495e', '#16a085', '#27ae60'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            padding: 20,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Categories Chart
+        const categoriesChart = new Chart(document.getElementById('categoriesChart').getContext('2d'), {
+            type: 'pie',
+            data: {
+                labels: <%- JSON.stringify(topCategories.map(c => c.name)) %>,
+                datasets: [{
+                    data: <%- JSON.stringify(topCategories.map(c => c.sales)) %>,
+                    backgroundColor: [
+                        '#0C977F', '#2ecc71', '#3498db', '#f1c40f', '#e74c3c'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            padding: 20,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Handle filter changes
+        document.getElementById('salesChartFilter').addEventListener('change', async function(e) {
+            const period = e.target.value;
+            try {
+                const response = await fetch(`/admin/sales-data?period=${period}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                salesChart.data.labels = data.labels;
+                salesChart.data.datasets[0].data = data.values;
+                salesChart.update();
+            } catch (error) {
+                console.error('Error fetching sales data:', error);
+                alert('Error updating sales chart. Please try again.');
+            }
+        });
+    });
+</script>
+
+<%- include("../../views/partials/admin/footer") %>

@@ -513,6 +513,7 @@
                         <label class="form-check-label" for="cod">
                             Cash on Delivery (COD)
                         </label>
+                        <small class="text-danger d-none" id="codRestrictionMsg">COD not available for orders above ₹1000</small>
                     </div>
                 </div>
             </div>
@@ -1112,6 +1113,41 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // COD restriction for orders above 1000
+    function updateCODAvailability() {
+        const finalTotal = parseFloat(document.getElementById('finalTotal').textContent);
+        const codInput = document.getElementById('cod');
+        const codRestrictionMsg = document.getElementById('codRestrictionMsg');
+        
+        if (finalTotal > 1000) {
+            codInput.disabled = true;
+            codInput.checked = false;
+            document.getElementById('razorpay').checked = true;
+            codRestrictionMsg.classList.remove('d-none');
+        } else {
+            codInput.disabled = false;
+            codRestrictionMsg.classList.add('d-none');
+        }
+    }
+
+    // Call on page load
+    updateCODAvailability();
+
+    // Update when coupon is applied or removed
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'characterData' || mutation.type === 'childList') {
+                updateCODAvailability();
+            }
+        });
+    });
+
+    observer.observe(document.getElementById('finalTotal'), {
+        characterData: true,
+        childList: true,
+        subtree: true
+    });
 
     // Handle Add New Address
     document.getElementById('saveNewAddress').addEventListener('click', async function() {

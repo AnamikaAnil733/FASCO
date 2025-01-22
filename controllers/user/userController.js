@@ -24,15 +24,45 @@ const loadHomepage = async (req, res) => {
     // Get active categories
     const categories = await Category.find({ isListed: true });
     
-    // Get unblocked products from active categories with variants
-    const products = await Product.find({
+    // Get unblocked products from active categories
+    const baseQuery = {
       isBlocked: false,
       category: { $in: categories.map(category => category._id) }
+    };
+
+    // Get new arrivals (latest 8 products)
+    const newArrivals = await Product.find(baseQuery)
+      .populate('category')
+      .select('productName salesPrice regularPrice variants category isBlocked')
+      .sort({ createdAt: -1 })
+      .limit(8)
+      .lean();
+
+    // Get top selling products based on order count (8 products)
+    const topSelling = await Order.aggregate([
+      { $unwind: "$items" },
+      { $group: { 
+        _id: "$items.productId",
+        totalQuantity: { $sum: "$items.quantity" }
+      }},
+      { $sort: { totalQuantity: -1 } },
+      { $limit: 8 }
+    ]);
+
+    // Get full product details for top selling products
+    const topSellingProductIds = topSelling.map(item => item._id);
+    const topSellingProducts = await Product.find({
+      _id: { $in: topSellingProductIds },
+      ...baseQuery
     })
     .populate('category')
     .select('productName salesPrice regularPrice variants category isBlocked')
-    .sort({ createdAt: -1 })  // Sort by newest first
     .lean();
+
+    // Sort topSellingProducts to match the order from aggregation
+    const topSellingProductsOrdered = topSellingProductIds.map(id => 
+      topSellingProducts.find(product => product._id.toString() === id.toString())
+    ).filter(Boolean);
 
     // Get user's wishlist if logged in
     let wishlistProducts = [];
@@ -45,16 +75,16 @@ const loadHomepage = async (req, res) => {
     
     res.render("home", {
       message: req.session.user,
-      products: products,
-      categories: categories,
-      wishlistProducts: wishlistProducts
+      newArrivals,
+      topSellingProducts: topSellingProductsOrdered,
+      categories,
+      wishlistProducts
     });
   } catch (error) {
-    console.error("Error loading home page:", error);
-    res.status(500).send("Server error");
+    console.error('Error in loadHomepage:', error);
+    res.status(500).render('500');
   }
 };
-
 // Load signup page
 const loadSignup = async (req, res) => {
   try {

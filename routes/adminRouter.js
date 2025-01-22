@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const adminController = require("../controllers/admin/adminController")
-const customerController =require("../controllers/admin/customerController")
-const categoryController =require("../controllers/admin/categoryController")
-const productController =require("../controllers/admin/productController")
+const adminController = require("../controllers/admin/adminController");
+const customerController = require("../controllers/admin/customerController")
+const categoryController = require("../controllers/admin/categoryController")
+const productController = require("../controllers/admin/productController")
 const orderController = require("../controllers/admin/orderController")
 const couponController = require('../controllers/admin/couponController');
 const {userAuth,adminAuth} = require("../middleware/auth");
@@ -40,20 +40,23 @@ const updateProductUpload = multer(uploadConfig).fields([
     { name: 'variantImages', maxCount: 15 }
 ]);
 
-router.get("/login",adminController.loadLogin);
-router.post("/login",adminController.login);
-router.get("/",adminAuth,adminController.loadDashbord);
-router.get("/pageerror",adminController.pageerror)
-router.get("/logout",adminController.logout)
+// Admin authentication routes
+router.get("/", adminAuth, adminController.loadDashbord);
+router.get("/login", adminController.loadLogin);
+router.post("/login", adminController.login);
+router.get("/logout", adminController.logout);
+
+// Dashboard routes
+router.get("/dashboard", adminAuth, adminController.loadDashbord);
+router.get("/sales-data", adminAuth, adminController.getSalesDataAPI);
+
+// Customer routes
 router.get("/users",adminAuth,customerController.customerInfo)
 router.get("/blockCustomer",adminAuth,customerController.customerBlocked)
 router.get("/unblockCustomer",adminAuth,customerController.customerunBlocked)
+
+// Category routes
 router.get("/category",adminAuth,categoryController.categoryInfo)
-
-// Add download routes
-router.get("/download-excel-report", adminAuth, adminController.downloadExcelReport);
-router.get("/download-pdf-report", adminAuth, adminController.downloadPdfReport);
-
 router.get("/listCategory",adminAuth,categoryController.getListCategory);
 router.get("/unlistCategory",adminAuth,categoryController.getUnListCategory)
 router.get("/editCategory",adminAuth,categoryController.getEditCategory)
@@ -63,8 +66,6 @@ router.post("/removeCategoryOffer", adminAuth, categoryController.removeCategory
 
 // Product routes
 router.get("/addproducts",adminAuth,productController.getProductAddPage)
-
-// Product routes
 router.get("/products", adminAuth, productController.getAllProducts);
 router.get("/blockProduct", adminAuth, productController.blockProduct);
 router.get("/unblockProduct", adminAuth, productController.unblockProduct);
@@ -88,6 +89,12 @@ router.get('/coupons', adminAuth, couponController.getAllCoupons);
 router.post('/coupons/create', adminAuth, couponController.createCoupon);
 router.delete('/coupons/:id', adminAuth, couponController.deleteCoupon);
 
+// Sales Report routes
+router.get("/sales-report", adminAuth, adminController.loadSalesReport);
+router.get("/download-excel-report", adminAuth, adminController.downloadExcelReport);
+router.get("/download-pdf-report", adminAuth, adminController.downloadPdfReport);
+
+// Add download routes
 router.get('/download-sales-report', adminAuth, adminController.downloadSalesReport);
 
 module.exports = router;
