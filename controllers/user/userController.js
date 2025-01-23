@@ -11,6 +11,7 @@ const bcrypt = require("bcrypt");
 const Address = require('../../models/addressSchema');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
+const PDFDocument = require('pdfkit');
 
 // Initialize Razorpay
 const razorpay = new Razorpay({
@@ -774,59 +775,63 @@ const getOrders = async (req, res) => {
 
 // Get specific order details
 const getOrderDetails = async (req, res) => {
-  try {
-    const orderId = req.params.orderId;
-    console.log('Getting order details for:', orderId);
+    try {
+        const orderId = req.params.orderId;
+        console.log('Getting order details for:', orderId);
 
-    const order = await Order.findById(orderId)
-      .populate({
-        path: 'items.productId',
-        select: 'productName brand variants images',
-        model: 'Product'
-      });
+        const order = await Order.findById(orderId)
+            .populate({
+                path: 'items.productId',
+                select: 'productName brand variants images',
+                model: 'Product'
+            })
+            .select('items totalAmount status paymentMethod paymentStatus createdAt shippingAddress coupon finalAmount invoiceNumber invoiceDate deliveryDate orderId userId')
+            .lean();  // Convert to plain JavaScript object
 
-    if (!order) {
-      console.log('Order not found:', orderId);
-      return res.redirect('/orders');
+        if (!order) {
+            console.log('Order not found:', orderId);
+            return res.redirect('/orders');
+        }
+
+        // Verify that the order belongs to the current user
+        if (order.userId.toString() !== req.session.user._id.toString()) {
+            console.log('Order does not belong to current user');
+            return res.redirect('/orders');
+        }
+
+        console.log('Found order:', order);
+        console.log('Order status:', order.status);
+        console.log('Invoice number:', order.invoiceNumber);
+
+        // Format the order data
+        const formattedOrder = {
+            _id: order._id,
+            orderId: order._id,
+            items: order.items,
+            totalAmount: order.totalAmount,
+            status: order.status || 'Processing',
+            paymentMethod: order.paymentMethod,
+            paymentStatus: order.paymentStatus,
+            createdAt: order.createdAt,
+            shippingAddress: order.shippingAddress,
+            coupon: order.coupon ? {
+                code: order.coupon.code,
+                discountedAmount: order.coupon.discountAmount || 0
+            } : null,
+            finalAmount: order.coupon ? (order.totalAmount - (order.coupon.discountAmount || 0)) : order.totalAmount,
+            invoiceNumber: order.invoiceNumber,
+            invoiceDate: order.invoiceDate,
+            deliveryDate: order.deliveryDate
+        };
+
+        res.render('order-details', {
+            order: formattedOrder,
+            user: req.session.user
+        });
+    } catch (error) {
+        console.error('Error fetching order details:', error);
+        return res.redirect('/orders');
     }
-
-    // Verify that the order belongs to the current user
-    if (order.userId.toString() !== req.session.user._id.toString()) {
-      console.log('Order does not belong to current user');
-      return res.redirect('/orders');
-    }
-
-    console.log('Found order:', order);
-
-    // Format the order data
-    const formattedOrder = {
-      _id: order._id,
-      orderId: order._id,
-      items: order.items.map(item => ({
-        ...item.toObject(),
-        returnStatus: item.returnStatus || null
-      })),
-      totalAmount: order.totalAmount,
-      status: order.status || 'Processing',
-      paymentMethod: order.paymentMethod,
-      paymentStatus: order.paymentStatus,
-      createdAt: order.createdAt,
-      shippingAddress: order.shippingAddress,
-      coupon: order.coupon ? {
-        code: order.coupon.code,
-        discountedAmount: order.coupon.discountAmount || 0
-      } : null,
-      finalAmount: order.coupon ? (order.totalAmount - (order.coupon.discountAmount || 0)) : order.totalAmount
-    };
-
-    res.render('order-details', {
-      order: formattedOrder,
-      user: req.session.user
-    });
-  } catch (error) {
-    console.error('Error fetching order details:', error);
-    return res.redirect('/orders');
-  }
 };
 
 // Get order success
@@ -2133,6 +2138,150 @@ const getWallet = async (req, res) => {
   }
 };
 
+// Download invoice
+const downloadInvoice = async (req, res) => {
+    try {
+        const orderId = req.params.orderId;
+        console.log('Generating invoice for order:', orderId);
+
+        const order = await Order.findById(orderId)
+            .populate('items.productId')
+            .lean();
+
+        if (!order) {
+            console.log('Order not found:', orderId);
+            return res.status(404).send('Order not found');
+        }
+
+        if (order.userId.toString() !== req.session.user._id) {
+            console.log('Unauthorized access attempt');
+            return res.status(403).send('Unauthorized');
+        }
+
+        if (order.status !== 'Delivered' || !order.invoiceNumber) {
+            console.log('Invoice not available. Status:', order.status, 'Invoice number:', order.invoiceNumber);
+            return res.status(400).send('Invoice not available');
+        }
+
+        const finalAmount = order.coupon ? 
+            (order.totalAmount - (order.coupon.discountAmount || 0)) : 
+            order.totalAmount;
+
+        // Create PDF document
+        const doc = new PDFDocument({
+            size: 'A4',
+            margin: 50
+        });
+
+        // Set response headers
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="invoice-${order.invoiceNumber}.pdf"`);
+        doc.pipe(res);
+
+        // Header
+        doc.fontSize(24)
+           .text('INVOICE', { align: 'center' })
+           .moveDown(2);
+
+        // Invoice Details (Right-aligned)
+        doc.fontSize(10)
+           .text(`Invoice Number: ${order.invoiceNumber}`, { align: 'right' })
+           .text(`Date: ${new Date(order.invoiceDate).toLocaleDateString('en-IN')}`, { align: 'right' })
+           .moveDown(2);
+
+        // Order Details
+        doc.fontSize(12)
+           .text('Order Details', { underline: true })
+           .moveDown();
+
+        doc.fontSize(10)
+           .text(`Order ID: ${order.orderId}`)
+           .text(`Order Date: ${new Date(order.createdAt).toLocaleDateString('en-IN')}`)
+           .text(`Payment Method: ${order.paymentMethod}`)
+           .moveDown(2);
+
+        // Customer Details
+        doc.fontSize(12)
+           .text('Customer Details', { underline: true })
+           .moveDown();
+
+        doc.fontSize(10)
+           .text(`Name: ${order.shippingAddress.name}`)
+           .text(`Address: ${order.shippingAddress.landMark}`)
+           .text(`${order.shippingAddress.city}, ${order.shippingAddress.state} - ${order.shippingAddress.pincode}`)
+           .text(`Phone: ${order.shippingAddress.phone}`)
+           .moveDown(2);
+
+        // Items Table
+        const tableTop = doc.y;
+        const productX = 50;
+        const quantityX = 350;
+        const priceX = 400;
+        const totalX = 500;
+
+        // Table Headers
+        doc.fontSize(10)
+           .text('Product', productX, tableTop)
+           .text('Qty', quantityX, tableTop)
+           .text('Price', priceX, tableTop)
+           .text('Total', totalX, tableTop);
+
+        // Underline
+        doc.moveTo(50, tableTop + 15)
+           .lineTo(550, tableTop + 15)
+           .stroke();
+
+        let yPos = tableTop + 30;
+
+        // Table Rows
+        order.items.forEach(item => {
+            doc.text(item.productId.productName, productX, yPos, { width: 280 })
+               .text(item.quantity.toString(), quantityX, yPos)
+               .text(`₹${item.price.toFixed(2)}`, priceX, yPos)
+               .text(`₹${item.totalPrice.toFixed(2)}`, totalX, yPos);
+            yPos += 20;
+        });
+
+        yPos += 20;
+
+        // Underline after items
+        doc.moveTo(50, yPos)
+           .lineTo(550, yPos)
+           .stroke();
+
+        yPos += 20;
+
+        // Totals section (Right-aligned)
+        doc.text('Subtotal:', 400, yPos)
+           .text(`₹${order.totalAmount.toFixed(2)}`, 500, yPos);
+
+        if (order.coupon) {
+            yPos += 20;
+            doc.text(`Discount (${order.coupon.code}):`, 400, yPos)
+               .text(`-₹${order.coupon.discountAmount.toFixed(2)}`, 500, yPos);
+        }
+
+        yPos += 30;
+        doc.fontSize(12)
+           .text('Total Amount:', 400, yPos)
+           .text(`₹${finalAmount.toFixed(2)}`, 500, yPos);
+
+        // Footer
+        doc.fontSize(10)
+           .text('Thank you for shopping with us!', 50, doc.page.height - 100, {
+               align: 'center',
+               width: doc.page.width - 100
+           });
+
+        doc.end();
+        console.log('Successfully generated PDF invoice');
+
+    } catch (error) {
+        console.error('Error generating invoice:', error);
+        res.status(500).send('Error generating invoice. Please try again later.');
+    }
+};
+
 module.exports = {
     loadHomepage,
     loadShop,
@@ -2174,5 +2323,6 @@ module.exports = {
     removeFromWishlist,
     validateCoupon,
     getAvailableCoupons,
-    getWallet
+    getWallet,
+    downloadInvoice
 };

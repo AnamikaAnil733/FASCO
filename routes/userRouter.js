@@ -25,6 +25,7 @@ router.post("/update-profile",userAuth, userController.updateProfile);
 router.get('/orders', userAuth, userController.getOrders);
 router.get('/order/success/:orderId', userAuth, userController.getOrderSuccess);
 router.get('/order/:orderId', userAuth, userController.getOrderDetails);
+router.get('/orders/:orderId/invoice', userAuth, userController.downloadInvoice);
 router.post('/cancel-order/:orderId', userAuth, userController.cancelOrder);
 router.post('/orders/:orderId/return/:productId', userAuth, userController.returnProduct);
 router.post('/order/create', userAuth, userController.createOrder);

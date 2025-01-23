@@ -1,7 +1,7 @@
 const Order = require("../../models/orderSchema");
 const Product = require("../../models/productSchema");
-const User = require("../../models/userSchema");  // Add User model
-const moment = require('moment');  // Add moment.js
+const User = require("../../models/userSchema");
+const moment = require('moment');
 
 const orderController = {
     // Get all orders with pagination
@@ -99,6 +99,43 @@ const orderController = {
                 });
             }
 
+            // If status is being changed to Delivered
+            if (status === 'Delivered') {
+                console.log('Generating invoice for delivered order:', orderId);
+                
+                // Set delivery date
+                order.deliveryDate = new Date();
+                
+                // Generate invoice number (Format: INV-YYYYMMDD-XXXX)
+                const date = new Date();
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                
+                // Get the count of invoices for today to generate sequential number
+                const todayStart = new Date(year, date.getMonth(), date.getDate());
+                const todayEnd = new Date(year, date.getMonth(), date.getDate() + 1);
+                
+                console.log('Checking for invoices between:', todayStart, 'and', todayEnd);
+                
+                const todayInvoiceCount = await Order.countDocuments({
+                    invoiceNumber: { $exists: true },
+                    invoiceDate: { $gte: todayStart, $lt: todayEnd }
+                });
+
+                console.log('Today\'s invoice count:', todayInvoiceCount);
+
+                const sequentialNumber = String(todayInvoiceCount + 1).padStart(4, '0');
+                order.invoiceNumber = `INV-${year}${month}${day}-${sequentialNumber}`;
+                order.invoiceDate = date;
+
+                console.log('Generated invoice details:', {
+                    invoiceNumber: order.invoiceNumber,
+                    invoiceDate: order.invoiceDate,
+                    deliveryDate: order.deliveryDate
+                });
+            }
+
             // If status is being changed to Cancelled
             if (status === 'Cancelled') {
                 console.log('Processing cancellation for order:', orderId);
@@ -108,10 +145,8 @@ const orderController = {
                     try {
                         const product = await Product.findById(item.productId);
                         if (product && product.variants) {
-                            // Use first variant if variantIndex is not specified
                             const variantIndex = item.variantIndex || 0;
                             
-                            // Ensure the variant exists
                             if (!product.variants[variantIndex]) {
                                 product.variants[variantIndex] = {
                                     color: 'default',
@@ -120,7 +155,6 @@ const orderController = {
                                 };
                             }
 
-                            // Update the quantity
                             const currentQuantity = product.variants[variantIndex].quantity || 0;
                             product.variants[variantIndex].quantity = currentQuantity + parseInt(item.quantity);
                             await product.save();
@@ -144,28 +178,18 @@ const orderController = {
                         });
                     }
 
-                    // Calculate refund amount
                     let refundAmount = order.totalAmount;
                     if (order.coupon?.discountedAmount) {
                         refundAmount -= order.coupon.discountedAmount;
                     }
 
-                    console.log('Refund calculation:', {
-                        totalAmount: order.totalAmount,
-                        couponDiscount: order.coupon?.discountedAmount,
-                        finalRefund: refundAmount
-                    });
-
-                    // Initialize wallet if needed
                     if (!user.wallet) {
                         user.wallet = { balance: 0, transactions: [] };
                     }
 
-                    // Update wallet balance
                     const previousBalance = user.wallet.balance || 0;
                     user.wallet.balance = previousBalance + refundAmount;
 
-                    // Add transaction record
                     user.wallet.transactions.push({
                         amount: refundAmount,
                         type: 'credit',
@@ -175,17 +199,9 @@ const orderController = {
                         status: 'success'
                     });
 
-                    console.log('Wallet update:', {
-                        previousBalance,
-                        refundAmount,
-                        newBalance: user.wallet.balance
-                    });
-
                     await user.save();
-                    console.log('Refund processed successfully');
                 }
 
-                // Set cancellation timestamp
                 order.cancelledAt = new Date();
             }
 
@@ -201,6 +217,7 @@ const orderController = {
                         'Order cancelled and products restocked') : 
                     'Order status updated successfully'
             });
+
         } catch (error) {
             console.error('Error updating order status:', error);
             res.status(500).json({

@@ -108,13 +108,13 @@ const orderSchema = new Schema({
     },
     paymentMethod: {
         type: String,
-        required: true,
-        enum: ['COD', 'RAZORPAY']
+        enum: ['COD', 'RAZORPAY', 'WALLET'],
+        required: true
     },
     paymentStatus: {
         type: String,
-        required: true,
-        enum: ['PENDING', 'COMPLETED', 'FAILED']
+        enum: ['PENDING', 'COMPLETED', 'FAILED'],
+        default: 'PENDING'
     },
     razorpayOrderId: {
         type: String
@@ -127,9 +127,16 @@ const orderSchema = new Schema({
         enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
         default: 'Pending'
     },
+    invoiceNumber: {
+        type: String,
+        unique: true,
+        sparse: true
+    },
+    invoiceDate: {
+        type: Date
+    },
     deliveryDate: {
-        type: Date,
-        default: null
+        type: Date
     },
     orderDate: {
         type: Date,
@@ -142,6 +149,9 @@ const orderSchema = new Schema({
     updatedAt: {
         type: Date,
         default: Date.now
+    },
+    cancelledAt: {
+        type: Date
     }
 });
 

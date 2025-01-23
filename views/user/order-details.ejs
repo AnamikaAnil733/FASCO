@@ -282,11 +282,11 @@
     .timeline-point {
         position: absolute;
         left: 7px;
-        width: 18px;
-        height: 18px;
+        width: 16px;
+        height: 16px;
         border-radius: 50%;
-        background: #e9ecef;
-        border: 2px solid #fff;
+        background-color: #e9ecef;
+        margin-right: 1rem;
     }
     
     .timeline-item.active .timeline-point {
@@ -400,6 +400,35 @@
         color: #2ecc71;
         border: 1px solid #c8e6c9;
     }
+    
+    .invoice-section {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+        margin-top: 10px;
+    }
+
+    .invoice-section .btn {
+        background-color: #6c5ce7;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+        margin-top: 10px;
+    }
+
+    .invoice-section .btn:hover {
+        background-color: #5849c2;
+        transform: translateY(-2px);
+    }
+
+    .invoice-section strong {
+        color: #2d3436;
+        font-weight: 600;
+    }
 </style>
 
 <section class="order-details-section">
@@ -482,17 +511,26 @@
                                     minute: '2-digit'
                                 }) %>
                             </div><br>
-                                <% if (order.invoiceDate) { %>
-                                    Invoice Date: <%= new Date(order.invoiceDate).toLocaleDateString('en-IN', { 
-                                        year: 'numeric', 
-                                        month: 'long', 
-                                        day: 'numeric' 
-                                    }) %><br>
-                                <% } %>
-                                <% if (order.couponApplied) { %>
-                                    <span class="badge bg-success">Coupon Applied</span>
-                                <% } %>
-                            </div>
+                            <% if (order.status === 'Delivered' && order.invoiceNumber) { %>
+                                <div class="invoice-section">
+                                    <div class="mb-2">
+                                        <strong>Invoice Number:</strong> <%= order.invoiceNumber %><br>
+                                        <strong>Invoice Date:</strong> <%= new Date(order.invoiceDate).toLocaleDateString('en-IN', { 
+                                            year: 'numeric', 
+                                            month: 'long', 
+                                            day: 'numeric' 
+                                        }) %>
+                                    </div>
+                                    <a href="/orders/<%= order._id %>/invoice" 
+                                       class="btn btn-sm btn-primary" 
+                                       target="_blank">
+                                        <i class="fas fa-file-invoice me-2"></i>Download Invoice
+                                    </a>
+                                </div>
+                            <% } %>
+                            <% if (order.couponApplied) { %>
+                                <span class="badge bg-success">Coupon Applied</span>
+                            <% } %>
                         </div>
                     </div>
                 </div>
@@ -580,6 +618,23 @@
                         </div>
                     </div>
                 </div>
+
+                <% if (order.status === 'Delivered' && order.invoiceNumber) { %>
+                    <div class="info-section mt-4">
+                        <h3 class="info-title">Invoice Details</h3>
+                        <div class="invoice-section">
+                            <p><strong>Invoice Number:</strong> <%= order.invoiceNumber %></p>
+                            <p><strong>Invoice Date:</strong> <%= new Date(order.invoiceDate).toLocaleDateString('en-IN', { 
+                                year: 'numeric', 
+                                month: 'long', 
+                                day: 'numeric' 
+                            }) %></p>
+                            <a href="/orders/<%= order._id %>/invoice" class="btn" target="_blank">
+                                <i class="fas fa-download me-2"></i>Download Invoice
+                            </a>
+                        </div>
+                    </div>
+                <% } %>
 
                 <div class="info-section">
                     <h3 class="info-title">Order Timeline</h3>
