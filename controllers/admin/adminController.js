@@ -531,6 +531,7 @@ const downloadSalesReport = async (req, res) => {
             };
         } else if (period) {
             const now = new Date();
+            now.setHours(23, 59, 59, 999);
             let periodStartDate;
 
             switch (period) {
@@ -547,6 +548,7 @@ const downloadSalesReport = async (req, res) => {
                     periodStartDate = new Date(now.getFullYear(), now.getMonth(), 1);
             }
 
+            periodStartDate.setHours(0, 0, 0, 0);
             dateQuery = {
                 orderDate: {
                     $gte: periodStartDate,
@@ -618,6 +620,7 @@ const downloadExcelReport = async (req, res) => {
             };
         } else if (period) {
             const now = new Date();
+            now.setHours(23, 59, 59, 999);
             let periodStartDate;
 
             switch (period) {
@@ -634,6 +637,7 @@ const downloadExcelReport = async (req, res) => {
                     periodStartDate = new Date(now.getFullYear(), now.getMonth(), 1);
             }
 
+            periodStartDate.setHours(0, 0, 0, 0);
             dateQuery = {
                 orderDate: {
                     $gte: periodStartDate,
@@ -760,29 +764,46 @@ const downloadPdfReport = async (req, res) => {
                 }
             };
         } else if (period) {
-            const now = new Date();
-            let periodStartDate;
+            const endDate = new Date();  // Current date/time
+            endDate.setHours(23, 59, 59, 999);
+            let startDate;
 
             switch (period) {
-                case 'day':
-                    periodStartDate = new Date(now.setDate(now.getDate() - 1));
+                case 'day': {
+                    startDate = new Date(endDate);
+                    startDate.setDate(endDate.getDate() - 1);
                     break;
-                case 'week':
-                    periodStartDate = new Date(now.setDate(now.getDate() - 7));
+                }
+                case 'week': {
+                    startDate = new Date(endDate);
+                    startDate.setDate(endDate.getDate() - 7);
                     break;
-                case 'month':
-                    periodStartDate = new Date(now.setMonth(now.getMonth() - 1));
+                }
+                case 'month': {
+                    startDate = new Date(endDate);
+                    startDate.setMonth(endDate.getMonth() - 1);
                     break;
-                default:
-                    periodStartDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                }
+                default: {
+                    startDate = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+                    break;
+                }
             }
 
+            startDate.setHours(0, 0, 0, 0);
             dateQuery = {
                 orderDate: {
-                    $gte: periodStartDate,
-                    $lte: new Date()
+                    $gte: startDate,
+                    $lte: endDate
                 }
             };
+
+            console.log('Period Query:', {
+                period,
+                startDate,
+                endDate,
+                query: query.orderDate
+            });
         }
 
         query = { ...query, ...dateQuery };
@@ -994,109 +1015,116 @@ const loadSalesReport = async (req, res) => {
 
         // Handle date filtering with proper timezone handling
         if (startDate && endDate) {
-            const start = new Date(startDate);
-            start.setHours(0, 0, 0, 0);
-            const end = new Date(endDate);
-            end.setHours(23, 59, 59, 999);
+            // Create new date objects and handle timezone
+            const start = new Date(new Date(startDate).setHours(0, 0, 0, 0));
+            const end = new Date(new Date(endDate).setHours(23, 59, 59, 999));
 
             query.orderDate = {
                 $gte: start,
                 $lte: end
             };
         } else if (period) {
-            const now = new Date();
-            now.setHours(23, 59, 59, 999);
-            let periodStartDate = new Date(now);
+            const endDate = new Date();  // Current date/time
+            endDate.setHours(23, 59, 59, 999);
+            let startDate;
 
             switch (period) {
-                case 'day':
-                    periodStartDate.setDate(now.getDate() - 1);
+                case 'day': {
+                    startDate = new Date(endDate);
+                    startDate.setDate(endDate.getDate() - 1);
                     break;
-                case 'week':
-                    periodStartDate.setDate(now.getDate() - 7);
+                }
+                case 'week': {
+                    startDate = new Date(endDate);
+                    startDate.setDate(endDate.getDate() - 7);
                     break;
-                case 'month':
-                    periodStartDate.setMonth(now.getMonth() - 1);
+                }
+                case 'month': {
+                    startDate = new Date(endDate);
+                    startDate.setMonth(endDate.getMonth() - 1);
                     break;
-                default:
-                    periodStartDate = new Date(now.getFullYear(), now.getMonth(), 1);
-                    period = 'month';
+                }
+                default: {
+                    startDate = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+                    break;
+                }
             }
 
-            periodStartDate.setHours(0, 0, 0, 0);
+            startDate.setHours(0, 0, 0, 0);
             query.orderDate = {
-                $gte: periodStartDate,
-                $lte: now
+                $gte: startDate,
+                $lte: endDate
             };
+
+            console.log('Period Query:', {
+                period,
+                startDate,
+                endDate,
+                query: query.orderDate
+            });
         }
 
-        // Calculate summary using aggregation
-        const orders = await Order.find({ status: { $ne: 'Cancelled' } });
+        console.log('Date Query:', {
+            period,
+            query: query.orderDate,
+            currentTime: new Date()
+        });
+
+        // Get filtered orders for summary calculation
+        const filteredOrders = await Order.find(query);
         
         let totalOrders = 0;
         let deliveredAmount = 0;
         let returnedAmount = 0;
         let totalDiscount = 0;
-        let couponCount = 0;  // Track number of orders using coupons
-        let totalProductsSold = 0;  // Add this line only
+        let couponCount = 0;
+        let totalProductsSold = 0;
 
-        for (const order of orders) {
+        for (const order of filteredOrders) {
             if (order.status === 'Delivered') {
+                // Count all delivered orders
                 totalOrders++;
-                // Ensure finalAmount is a number
-                const orderAmount = Number(order.finalAmount) || 0;
-                deliveredAmount += orderAmount;
+                
+                // Add the final amount of the order (after discounts)
+                deliveredAmount += Number(order.finalAmount) || 0;
 
-                // Track coupon usage and discounts
-                if (order.coupon && order.coupon.discountedAmount) {
-                    totalDiscount += Number(order.coupon.discountedAmount) || 0;
-                    couponCount++; // Increment coupon usage count
-                }
-
-                // Add this block only
-                for (const item of order.items) {
-                    if (item.returnStatus !== 'Approved') {
-                        totalProductsSold += Number(item.quantity) || 0;
-                    }
-                }
-
-                // Calculate returned amount for approved returns
+                // Calculate returned items amount
                 for (const item of order.items) {
                     if (item.returnStatus === 'Approved') {
-                        // Ensure all values are numbers
+                        // For returned items, calculate the actual refund amount
                         const itemPrice = Number(item.totalPrice) || 0;
                         const orderTotal = Number(order.totalAmount) || 1; // Prevent division by zero
                         
                         // Calculate proportional discount for the returned item
                         const itemPercentage = itemPrice / orderTotal;
-                        const itemCouponDiscount = order.coupon ? 
+                        const itemDiscount = order.coupon ? 
                             (Number(order.coupon.discountedAmount) * itemPercentage) || 0 : 0;
                         
-                        // Subtract the refund amount (item total - proportional discount)
-                        returnedAmount += (itemPrice - itemCouponDiscount);
+                        // Add to returned amount (price minus proportional discount)
+                        returnedAmount += (itemPrice - itemDiscount);
+                    } else {
+                        // Count non-returned products
+                        totalProductsSold += Number(item.quantity) || 0;
                     }
+                }
+
+                // Track coupon usage
+                if (order.coupon && order.coupon.discountedAmount) {
+                    totalDiscount += Number(order.coupon.discountedAmount) || 0;
+                    couponCount++;
                 }
             }
         }
 
-        // Ensure all values are numbers in final summary
-        const summary = {
-            totalOrders: Number(totalOrders),
-            totalAmount: Number(deliveredAmount - returnedAmount),
-            totalDiscount: Number(totalDiscount),
-            returnedAmount: Number(returnedAmount),
-            totalProductsSold  // Add this line only
-        };
-
         console.log('Revenue Calculation:', {
             deliveredAmount,
             returnedAmount,
-            totalAmount: summary.totalAmount,
+            finalAmount: deliveredAmount - returnedAmount,
             totalDiscount,
-            couponCount
+            totalOrders
         });
 
-        // Get paginated orders with query
+        // Get paginated orders
         const page = parseInt(req.query.page) || 1;
         const limit = 10;
         const skip = (page - 1) * limit;
@@ -1107,46 +1135,45 @@ const loadSalesReport = async (req, res) => {
             .limit(limit)
             .populate({
                 path: 'items.productId',
-                select: 'productName brand regularPrice price',  // Include all needed fields
-                model: 'Product'  // Explicitly specify the model
+                select: 'productName brand regularPrice price',
+                model: 'Product'
             });
 
         // Calculate regular price total for each order
         for (const order of paginatedOrders) {
             let regularPrice = 0;
             for (const item of order.items) {
-                if (item.productId) {
+                if (item.productId && item.returnStatus !== 'Approved') {
                     regularPrice += (item.productId.regularPrice || item.productId.price || 0) * item.quantity;
                 }
             }
             order.regularPrice = regularPrice;
         }
 
-        // Get total count for pagination
         const totalOrderCount = await Order.countDocuments(query);
         const totalPages = Math.ceil(totalOrderCount / limit);
 
         res.render('salesReport', {
             orders: paginatedOrders,
             summary: {
-                totalOrders: summary.totalOrders,
-                totalAmount: summary.totalAmount,
-                totalDiscount: summary.totalDiscount,
+                totalOrders,
+                totalAmount: deliveredAmount - returnedAmount, // Subtract returned amount from total
+                totalDiscount,
                 discountBreakdown: {
-                    couponDiscount: summary.totalDiscount,
-                    count: couponCount  // Pass actual coupon usage count
+                    couponDiscount: totalDiscount,
+                    count: couponCount
                 },
-                returnedOrders: 0,
-                returnedAmount: summary.returnedAmount,
-                totalProductsSold: summary.totalProductsSold  // Add this line only
+                returnedAmount,
+                totalProductsSold
             },
             filters: {
                 startDate: startDate || '',
-                endDate: endDate || ''
+                endDate: endDate || '',
+                period: period || ''
             },
             pagination: {
-                page: page,
-                limit: limit,
+                page,
+                limit,
                 totalPages,
                 totalOrders: totalOrderCount
             }
