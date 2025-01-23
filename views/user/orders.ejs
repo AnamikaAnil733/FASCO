@@ -260,7 +260,7 @@
                                     </div>
                                     <div class="order-actions">
                                         <a href="/order/<%= order._id %>" class="btn btn-view">View Details</a>
-                                        <% if (order.status === 'Pending' || order.status === 'Processing') { %>
+                                        <% if (order.status === 'Processing') { %>
                                             <button onclick="cancelOrder('<%= order._id %>')" class="btn btn-cancel">Cancel Order</button>
                                         <% } %>
                                     </div>

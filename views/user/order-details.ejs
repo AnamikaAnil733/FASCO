@@ -1,4 +1,5 @@
 <%- include("../partials/user/header.ejs") %>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 <style>
     .order-details-section {
@@ -218,18 +219,17 @@
     }
     
     .btn-cancel {
-        display: inline-block;
-        background-color: #ff4757;
+        background-color: #dc3545;
         color: white;
         border: none;
-        padding: 0.5rem 1rem;
-        border-radius: 50px;
+        padding: 8px 16px;
+        border-radius: 6px;
         font-weight: 500;
         transition: all 0.3s ease;
     }
     
     .btn-cancel:hover {
-        background-color: #ff6b81;
+        background-color: #c82333;
         transform: translateY(-2px);
     }
     
@@ -429,6 +429,34 @@
         color: #2d3436;
         font-weight: 600;
     }
+    
+    .btn-retry {
+        background-color: #6c5ce7;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        margin-right: 10px;
+    }
+
+    .btn-retry:hover {
+        background-color: #5849e4;
+        transform: translateY(-2px);
+    }
+
+    .btn-retry:disabled {
+        background-color: #a8a5e6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .order-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+    }
 </style>
 
 <section class="order-details-section">
@@ -457,10 +485,20 @@
                     </div>
                     <div class="col-md-6 text-md-end">
                         <div class="d-flex align-items-center justify-content-end">
-                            <div class="order-status badge <%= order.status ? order.status.toLowerCase() : 'processing' %>">
-                                <%= order.status || 'Processing' %>
+                          
+                            <div class="d-flex flex-column">
+                                <div class="order-status badge <%= order.status ? order.status.toLowerCase() : 'processing' %>">
+                                    <%= order.status || 'Processing' %>
+                                </div>
+                                <% if (order.paymentStatus === 'PENDING' && order.paymentMethod === 'RAZORPAY') { %>
+                                    <button 
+                                        onclick="retryPayment('<%= order._id %>', <%= order.totalAmount %>)"
+                                        class="btn btn-retry mt-2">
+                                        <i class="fas fa-redo me-2"></i>Retry Payment
+                                    </button>
+                                <% } %>
                             </div>
-                            <% if (!order.status || order.status === 'Pending' || order.status === 'Processing') { %>
+                            <% if (!order.status || order.status === 'Processing') { %>
                                 <button onclick="cancelOrder('<%= order._id %>')" class="btn btn-cancel ms-3">
                                     Cancel Order
                                 </button>
@@ -812,6 +850,95 @@
                     confirmButtonColor: '#ffc107'
                 });
             }
+        }
+    }
+    async function retryPayment(orderId, amount) {
+        try {
+            console.log('Initiating payment retry for order:', orderId, 'amount:', amount);
+            
+            // Disable the retry button to prevent double clicks
+            const retryButton = event.target;
+            retryButton.disabled = true;
+            retryButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+
+            const response = await fetch(`/orders/${orderId}/retry-payment`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const data = await response.json();
+            console.log('Retry payment response:', data);
+            
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || 'Failed to initiate payment');
+            }
+
+            var options = {
+                key: data.key_id,
+                amount: amount * 100,
+                currency: "INR",
+                name: "Fasco",
+                description: "Order Payment",
+                order_id: data.order_id,
+                handler: async function (response) {
+                    console.log('Payment successful, verifying...');
+                    try {
+                        const verifyResponse = await fetch('/order/verify-payment', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                                orderId: orderId
+                            })
+                        });
+                        
+                        const verifyData = await verifyResponse.json();
+                        console.log('Verification response:', verifyData);
+                        
+                        if (verifyResponse.ok && verifyData.success) {
+                            window.location.reload();
+                        } else {
+                            throw new Error(verifyData.message || 'Payment verification failed');
+                        }
+                    } catch (error) {
+                        console.error('Verification error:', error);
+                        alert('Payment verification failed. Please contact support if amount was deducted.');
+                        window.location.reload();
+                    }
+                },
+                modal: {
+                    ondismiss: function() {
+                        console.log('Payment modal dismissed');
+                        retryButton.disabled = false;
+                        retryButton.innerHTML = '<i class="fas fa-redo me-2"></i>Retry Payment';
+                    }
+                },
+                theme: {
+                    color: "#6c5ce7"
+                }
+            };
+
+            console.log('Opening Razorpay with options:', { 
+                key: options.key,
+                amount: options.amount,
+                order_id: options.order_id 
+            });
+
+            var rzp = new Razorpay(options);
+            rzp.open();
+            
+        } catch (error) {
+            console.error('Error in retry payment:', error);
+            alert(error.message || 'Failed to initiate payment. Please try again.');
+            // Re-enable the retry button on error
+            retryButton.disabled = false;
+            retryButton.innerHTML = '<i class="fas fa-redo me-2"></i>Retry Payment';
         }
     }
 </script>

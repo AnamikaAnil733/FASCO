@@ -1437,13 +1437,19 @@ const createOrder = async (req, res) => {
             razorpayOrderId: razorpayOrder.id
         });
 
-    } catch (error) {
-        console.error('Error creating order:', error);
-        console.error('Error stack:', error.stack);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to create order: ' + (error.message || 'Unknown error') 
-        });
+      } catch (error) {
+        console.error('Error in create order:', error);
+        const errorResponse = {
+            success: false,
+            message: error.message || 'An error occurred during order creation'
+        };
+        
+        // If we have created an order, include its ID in the response
+        if (typeof order !== 'undefined' && order._id) {
+            errorResponse.orderId = order._id;
+        }
+        
+        res.status(400).json(errorResponse);
     }
 };
 
@@ -1574,6 +1580,98 @@ const verifyPayment = async (req, res) => {
     }
 };
 
+// Retry payment for failed orders
+const retryPayment = async (req, res) => {
+    try {
+        const orderId = req.params.orderId;
+        console.log('Retry payment request for order:', orderId);
+
+        const order = await Order.findById(orderId);
+        console.log('Found order:', {
+            id: order?._id,
+            status: order?.status,
+            paymentStatus: order?.paymentStatus,
+            paymentMethod: order?.paymentMethod,
+            finalAmount: order?.finalAmount
+        });
+
+        if (!order) {
+            console.log('Order not found:', orderId);
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found'
+            });
+        }
+
+        if (order.userId.toString() !== req.session.user._id.toString()) {
+            console.log('Unauthorized access:', {
+                orderId,
+                orderUserId: order.userId,
+                sessionUserId: req.session.user._id
+            });
+            return res.status(403).json({
+                success: false,
+                message: 'Unauthorized'
+            });
+        }
+
+        // Check if payment can be retried
+        if (order.paymentStatus !== 'PENDING' || order.paymentMethod !== 'RAZORPAY') {
+            console.log('Invalid payment retry attempt:', {
+                orderId,
+                paymentStatus: order.paymentStatus,
+                paymentMethod: order.paymentMethod
+            });
+            return res.status(400).json({
+                success: false,
+                message: 'Payment cannot be retried for this order'
+            });
+        }
+
+        // Create new Razorpay order
+        console.log('Creating Razorpay order:', {
+            amount: order.finalAmount,
+            receipt: order._id.toString()
+        });
+
+        const razorpayOrder = await razorpay.orders.create({
+            amount: Math.round(order.finalAmount * 100), // amount in paise
+            currency: 'INR',
+            receipt: order._id.toString(),
+            notes: {
+                orderId: order._id.toString()
+            }
+        });
+
+        console.log('Created Razorpay order:', razorpayOrder);
+
+        // Update order with new Razorpay order ID
+        order.razorpayOrderId = razorpayOrder.id;
+        await order.save();
+
+        console.log('Updated order with new Razorpay order ID:', {
+            orderId: order._id,
+            razorpayOrderId: razorpayOrder.id
+        });
+
+        res.json({
+            success: true,
+            key_id: process.env.RAZORPAY_KEY_ID,
+            order_id: razorpayOrder.id
+        });
+
+    } catch (error) {
+        console.error('Error in retry payment:', {
+            error: error.message,
+            stack: error.stack
+        });
+        res.status(500).json({
+            success: false,
+            message: 'Failed to initiate payment: ' + error.message
+        });
+    }
+};
+
 // Cancel order
 const cancelOrder = async (req, res) => {
   try {
@@ -1589,8 +1687,8 @@ const cancelOrder = async (req, res) => {
       });
     }
 
-    // Only allow cancellation of pending or processing orders
-    if (order.status !== 'Pending' && order.status !== 'Processing') {
+    // Only allow cancellation of processing orders
+    if (order.status !== 'Processing') {
       return res.status(400).json({
         success: false,
         message: 'Order cannot be cancelled in its current status'
@@ -2316,6 +2414,7 @@ module.exports = {
     loadCheckout,
     createOrder,
     verifyPayment,
+    retryPayment,
     cancelOrder,
     returnProduct,
     loadWishlist,

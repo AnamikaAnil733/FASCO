@@ -1035,8 +1035,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     throw new Error(result.message);
                 }
 
+                // Store orderId in a variable accessible to the modal dismiss handler
+                const createdOrderId = result.orderId;
+
                 if (selectedPayment.value === 'COD') {
-                    window.location.href = `/order/success/${result.orderId}`;
+                    window.location.href = `/orders`;
                     return;
                 }
 
@@ -1077,7 +1080,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             console.log('Payment verification response:', verifyResult);
                             
                             if (verifyResult.success) {
-                                window.location.href = `/order/success/${result.orderId}`;
+                                window.location.href = `/orders`;
                             } else {
                                 throw new Error(verifyResult.message || 'Payment verification failed');
                             }
@@ -1090,6 +1093,26 @@ document.addEventListener('DOMContentLoaded', function() {
                             });
                         }
                     },
+                    modal: {
+                        ondismiss: function() {
+                            console.log('Razorpay modal closed');
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Payment Failed',
+                                text: 'Payment was cancelled or failed. Would you like to view your order details?',
+                                showCancelButton: true,
+                                confirmButtonText: 'View Order Details',
+                                cancelButtonText: 'Close',
+                                confirmButtonColor: '#6c5ce7',
+                                cancelButtonColor: '#64748b'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    window.location.href = `/orders`;
+                                }
+                            });
+                        }
+                    },
+
                     prefill: {
                         name: '<%= user.name %>',
                         email: '<%= user.email %>',
@@ -1107,8 +1130,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Order creation error:', error);
                 Swal.fire({
                     icon: 'error',
-                    title: 'Order Failed',
-                    text: error.message
+                    title: 'Payment Failed',
+                    text: error.message || 'An error occurred during payment',
+                    showCancelButton: true,
+                    confirmButtonText: 'View Order Details',
+                    cancelButtonText: 'Close',
+                    confirmButtonColor: '#6c5ce7',
+                    cancelButtonColor: '#64748b'
+                }).then((swalResult) => {
+                    if (swalResult.isConfirmed && createdOrderId) {
+                        window.location.href = `/orders`;
+                    }
                 });
             }
         });
@@ -1167,9 +1199,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await response.json();
 
             if (result.success) {
-                $('#addAddressModal').modal('hide');
-                form.reset();
-                location.reload();
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: 'Address added successfully'
+                    });
+                    window.location.reload();
+                
+            } else {
+                    await Swal.fire({
+                    icon: 'error',
+                     title: 'Error!',
+                    text: result.message || 'Failed to add address'
+                });
             }
         } catch (error) {
             console.error('Error:', error);

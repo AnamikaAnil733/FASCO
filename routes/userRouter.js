@@ -30,6 +30,7 @@ router.post('/cancel-order/:orderId', userAuth, userController.cancelOrder);
 router.post('/orders/:orderId/return/:productId', userAuth, userController.returnProduct);
 router.post('/order/create', userAuth, userController.createOrder);
 router.post('/order/verify-payment', userAuth, userController.verifyPayment);
+router.post('/orders/:orderId/retry-payment', userAuth, userController.retryPayment);
 
 // Forgot Password Routes
 router.get("/forgot-password", userController.loadForgotPassword);
