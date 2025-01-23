@@ -196,22 +196,22 @@
         <div class="col-lg-3 col-md-6 mb-4">
             <div class="card dashboard-card h-100">
                 <div class="card-body">
-                    <div class="stat-icon bg-warning-light">
-                        <i class="fas fa-tags text-warning"></i>
+                    <div class="stat-icon bg-info-light">
+                        <i class="fas fa-box text-info"></i>
                     </div>
-                    <h6 class="card-title mb-2">Total Discounts</h6>
-                    <h3 class="mb-0">₹<%= summary.totalDiscount.toFixed(2) %></h3>
+                    <h6 class="card-title mb-2">Products Sold</h6>
+                    <h3 class="mb-0"><%= summary.totalProductsSold %></h3>
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6 mb-4">
             <div class="card dashboard-card h-100">
                 <div class="card-body">
-                    <div class="stat-icon bg-info-light">
-                        <i class="fas fa-box text-info"></i>
+                    <div class="stat-icon bg-warning-light">
+                        <i class="fas fa-tags text-warning"></i>
                     </div>
-                    <h6 class="card-title mb-2">Average Order Value</h6>
-                    <h3 class="mb-0">₹<%= (summary.totalAmount / summary.totalOrders).toFixed(2) %></h3>
+                    <h6 class="card-title mb-2">Total Discounts</h6>
+                    <h3 class="mb-0">₹<%= summary.totalDiscount.toFixed(2) %></h3>
                 </div>
             </div>
         </div>
@@ -327,32 +327,55 @@
             data: {
                 labels: <%- JSON.stringify(salesData.labels) %>,
                 datasets: [{
-                    label: 'Sales',
+                    label: 'Revenue',
                     data: <%- JSON.stringify(salesData.values) %>,
                     borderColor: '#0C977F',
                     backgroundColor: gradientFill,
                     borderWidth: 3,
                     tension: 0.4,
-                    fill: true
+                    fill: true,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Products Sold',
+                    data: <%- JSON.stringify(salesData.productCounts) %>,
+                    borderColor: '#3498db',
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    yAxisID: 'y1'
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
                 plugins: {
                     legend: {
-                        display: false
+                        display: true,
+                        position: 'top'
                     },
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                return '₹' + context.raw.toLocaleString('en-IN');
+                                if (context.dataset.label === 'Revenue') {
+                                    return 'Revenue: ₹' + context.raw.toLocaleString('en-IN');
+                                } else {
+                                    return 'Products: ' + context.raw;
+                                }
                             }
                         }
                     }
                 },
                 scales: {
                     y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
                         beginAtZero: true,
                         grid: {
                             color: 'rgba(0,0,0,0.05)'
@@ -360,6 +383,20 @@
                         ticks: {
                             callback: function(value) {
                                 return '₹' + value.toLocaleString('en-IN');
+                            }
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        beginAtZero: true,
+                        grid: {
+                            drawOnChartArea: false
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value + ' units';
                             }
                         }
                     },
@@ -443,6 +480,7 @@
                 
                 salesChart.data.labels = data.labels;
                 salesChart.data.datasets[0].data = data.values;
+                salesChart.data.datasets[1].data = data.productCounts;
                 salesChart.update();
             } catch (error) {
                 console.error('Error fetching sales data:', error);

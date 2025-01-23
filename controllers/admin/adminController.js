@@ -33,7 +33,7 @@ const login = async(req,res)=>{
         
     } catch (error) {
         console.log("login error",error)
-        return res.redirect("/pageerror")
+        return res.redirect("/admin/pageerror")
         
     }
 }
@@ -54,6 +54,8 @@ const loadDashbord = async (req, res) => {
         let deliveredAmount = 0;
         let returnedAmount = 0;
         let totalDiscount = 0;
+        let couponCount = 0;  // Track number of orders using coupons
+        let totalProductsSold = 0;  // Add this line only
 
         for (const order of orders) {
             if (order.status === 'Delivered') {
@@ -62,9 +64,17 @@ const loadDashbord = async (req, res) => {
                 const orderAmount = Number(order.finalAmount) || 0;
                 deliveredAmount += orderAmount;
 
-                // Add coupon discount to total discount if exists
+                // Track coupon usage and discounts
                 if (order.coupon && order.coupon.discountedAmount) {
                     totalDiscount += Number(order.coupon.discountedAmount) || 0;
+                    couponCount++; // Increment coupon usage count
+                }
+
+                // Add this block only
+                for (const item of order.items) {
+                    if (item.returnStatus !== 'Approved') {
+                        totalProductsSold += Number(item.quantity) || 0;
+                    }
                 }
 
                 // Calculate returned amount for approved returns
@@ -91,14 +101,16 @@ const loadDashbord = async (req, res) => {
             totalOrders: Number(totalOrders),
             totalAmount: Number(deliveredAmount - returnedAmount),
             totalDiscount: Number(totalDiscount),
-            returnedAmount: Number(returnedAmount)
+            returnedAmount: Number(returnedAmount),
+            totalProductsSold  // Add this line only
         };
 
         console.log('Revenue Calculation:', {
             deliveredAmount,
             returnedAmount,
             totalAmount: summary.totalAmount,
-            totalDiscount
+            totalDiscount,
+            couponCount
         });
 
         // Get top products (already filtered for delivered orders)
@@ -115,10 +127,11 @@ const loadDashbord = async (req, res) => {
                 totalDiscount: summary.totalDiscount,
                 discountBreakdown: {
                     couponDiscount: summary.totalDiscount,
-                    count: 0
+                    count: couponCount  // Pass actual coupon usage count
                 },
                 returnedOrders: 0,
-                returnedAmount: summary.returnedAmount
+                returnedAmount: summary.returnedAmount,
+                totalProductsSold: summary.totalProductsSold  // Add this line only
             },
             topProducts,
             topCategories
@@ -130,111 +143,111 @@ const loadDashbord = async (req, res) => {
     }
 };
 
-const getSalesData = async (period = 'monthly') => {
+const getSalesData = async (period) => {
     try {
-        const now = new Date();
-        let startDate, endDate;
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+        let startDate = new Date();
+        let dateFormat;
         let groupBy;
-        let format;
 
-        switch (period) {
-            case 'daily':
-                startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
-                endDate = now;
-                groupBy = { $dateToString: { format: "%Y-%m-%d", date: "$orderDate" } };
-                format = "YYYY-MM-DD";
-                break;
+        // Set up date range and format based on period
+        switch(period) {
             case 'weekly':
-                startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 28);
-                endDate = now;
-                groupBy = {
-                    $week: { $dateFromString: { dateString: { $dateToString: { format: "%Y-%m-%d", date: "$orderDate" } } } }
-                };
-                format = "Week";
+                startDate = new Date(today);
+                startDate.setDate(today.getDate() - 7);
+                startDate.setHours(0, 0, 0, 0);
+                dateFormat = '%Y-%m-%d';
+                groupBy = { $dateToString: { format: dateFormat, date: '$orderDate' } };
                 break;
             case 'monthly':
-                startDate = new Date(now.getFullYear(), now.getMonth() - 11, 1);
-                endDate = now;
-                groupBy = { $dateToString: { format: "%Y-%m", date: "$orderDate" } };
-                format = "YYYY-MM";
+                startDate = new Date(today);
+                startDate.setDate(today.getDate() - 30);
+                startDate.setHours(0, 0, 0, 0);
+                dateFormat = '%Y-%m-%d';
+                groupBy = { $dateToString: { format: dateFormat, date: '$orderDate' } };
                 break;
             case 'yearly':
-                startDate = new Date(now.getFullYear() - 4, 0, 1);
-                endDate = now;
-                groupBy = { $dateToString: { format: "%Y", date: "$orderDate" } };
-                format = "YYYY";
+                startDate = new Date(today);
+                startDate.setFullYear(today.getFullYear() - 1);
+                startDate.setHours(0, 0, 0, 0);
+                dateFormat = '%Y-%m';
+                groupBy = { $dateToString: { format: dateFormat, date: '$orderDate' } };
                 break;
             default:
-                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-                endDate = now;
-                groupBy = { $dateToString: { format: "%Y-%m-%d", date: "$orderDate" } };
-                format = "YYYY-MM-DD";
+                startDate = new Date(today);
+                startDate.setDate(today.getDate() - 30);
+                startDate.setHours(0, 0, 0, 0);
+                dateFormat = '%Y-%m-%d';
+                groupBy = { $dateToString: { format: dateFormat, date: '$orderDate' } };
         }
 
+        // Aggregate sales data with proper handling of returns
         const salesData = await Order.aggregate([
             {
                 $match: {
-                    orderDate: { $gte: startDate, $lte: endDate },
-                    $or: [
-                        { status: 'Delivered' },
-                        { status: 'Returned' }
-                    ]
+                    orderDate: { $gte: startDate, $lte: today },
+                    status: 'Delivered'  // Only include delivered orders
+                }
+            },
+            {
+                $unwind: '$items'
+            },
+            {
+                $match: {
+                    'items.returnStatus': { $ne: 'Approved' }  // Exclude returned items
                 }
             },
             {
                 $group: {
                     _id: groupBy,
-                    deliveredAmount: {
-                        $sum: {
-                            $cond: [
-                                { $eq: ['$status', 'Delivered'] },
-                                { $subtract: ['$totalAmount', { $ifNull: ['$coupon.discountedAmount', 0] }] },
-                                0
-                            ]
-                        }
-                    },
-                    returnedAmount: {
-                        $sum: {
-                            $cond: [
-                                { $eq: ['$returnStatus', 'Approved'] },  
-                                { $subtract: ['$totalAmount', { $ifNull: ['$coupon.discountedAmount', 0] }] },
-                                0
-                            ]
-                        }
-                    }
+                    totalSales: { $sum: '$items.totalPrice' },
+                    productCount: { $sum: '$items.quantity' }
                 }
             },
             {
-                $project: {
-                    _id: 1,
-                    totalSales: { $subtract: ['$deliveredAmount', '$returnedAmount'] }
-                }
-            },
-            { $sort: { "_id": 1 } }
+                $sort: { _id: 1 }
+            }
         ]);
 
-        // Process the data for the chart
+        // Process data for chart
         const labels = [];
         const values = [];
+        const productCounts = [];
 
-        if (period === 'weekly') {
-            // For weekly data, create week labels
-            salesData.forEach(data => {
-                labels.push(`Week ${data._id}`);
-                values.push(data.totalSales);
-            });
-        } else {
-            // For other periods, use the date format directly
-            salesData.forEach(data => {
-                labels.push(data._id);
-                values.push(data.totalSales);
-            });
+        // Fill in missing dates with zero values
+        let currentDate = new Date(startDate);
+        while (currentDate <= today) {
+            let dateStr;
+            if (period === 'yearly') {
+                dateStr = currentDate.toISOString().slice(0, 7); // YYYY-MM
+            } else {
+                dateStr = currentDate.toISOString().slice(0, 10); // YYYY-MM-DD
+            }
+
+            const existingData = salesData.find(d => d._id === dateStr);
+            
+            labels.push(dateStr);
+            values.push(existingData ? existingData.totalSales : 0);
+            productCounts.push(existingData ? existingData.productCount : 0);
+
+            // Increment date based on period
+            if (period === 'yearly') {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+            } else {
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
         }
 
-        return { labels, values };
+        return {
+            labels,
+            values,
+            productCounts
+        };
+
     } catch (error) {
         console.error('Error getting sales data:', error);
-        return { labels: [], values: [] };
+        throw error;
     }
 };
 
@@ -974,51 +987,48 @@ const loadSalesReport = async (req, res) => {
         }
 
         // Get query parameters for filtering
-        const { startDate, endDate, period } = req.query;
+        let { startDate, endDate, period } = req.query;
         let query = {
-            $or: [
-                { status: 'Delivered' },
-                { status: 'Returned' }
-            ]
+            status: { $in: ['Delivered', 'Returned'] }
         };
-        let dateQuery = {};
 
-        // Handle date filtering
+        // Handle date filtering with proper timezone handling
         if (startDate && endDate) {
-            dateQuery = {
-                orderDate: {
-                    $gte: new Date(startDate),
-                    $lte: new Date(endDate)
-                }
+            const start = new Date(startDate);
+            start.setHours(0, 0, 0, 0);
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+
+            query.orderDate = {
+                $gte: start,
+                $lte: end
             };
         } else if (period) {
             const now = new Date();
-            let periodStartDate;
+            now.setHours(23, 59, 59, 999);
+            let periodStartDate = new Date(now);
 
             switch (period) {
                 case 'day':
-                    periodStartDate = new Date(now.setDate(now.getDate() - 1));
+                    periodStartDate.setDate(now.getDate() - 1);
                     break;
                 case 'week':
-                    periodStartDate = new Date(now.setDate(now.getDate() - 7));
+                    periodStartDate.setDate(now.getDate() - 7);
                     break;
                 case 'month':
-                    periodStartDate = new Date(now.setMonth(now.getMonth() - 1));
+                    periodStartDate.setMonth(now.getMonth() - 1);
                     break;
                 default:
                     periodStartDate = new Date(now.getFullYear(), now.getMonth(), 1);
                     period = 'month';
             }
 
-            dateQuery = {
-                orderDate: {
-                    $gte: periodStartDate,
-                    $lte: new Date()
-                }
+            periodStartDate.setHours(0, 0, 0, 0);
+            query.orderDate = {
+                $gte: periodStartDate,
+                $lte: now
             };
         }
-
-        query = { ...query, ...dateQuery };
 
         // Calculate summary using aggregation
         const orders = await Order.find({ status: { $ne: 'Cancelled' } });
@@ -1027,6 +1037,8 @@ const loadSalesReport = async (req, res) => {
         let deliveredAmount = 0;
         let returnedAmount = 0;
         let totalDiscount = 0;
+        let couponCount = 0;  // Track number of orders using coupons
+        let totalProductsSold = 0;  // Add this line only
 
         for (const order of orders) {
             if (order.status === 'Delivered') {
@@ -1035,9 +1047,17 @@ const loadSalesReport = async (req, res) => {
                 const orderAmount = Number(order.finalAmount) || 0;
                 deliveredAmount += orderAmount;
 
-                // Add coupon discount to total discount if exists
+                // Track coupon usage and discounts
                 if (order.coupon && order.coupon.discountedAmount) {
                     totalDiscount += Number(order.coupon.discountedAmount) || 0;
+                    couponCount++; // Increment coupon usage count
+                }
+
+                // Add this block only
+                for (const item of order.items) {
+                    if (item.returnStatus !== 'Approved') {
+                        totalProductsSold += Number(item.quantity) || 0;
+                    }
                 }
 
                 // Calculate returned amount for approved returns
@@ -1064,34 +1084,47 @@ const loadSalesReport = async (req, res) => {
             totalOrders: Number(totalOrders),
             totalAmount: Number(deliveredAmount - returnedAmount),
             totalDiscount: Number(totalDiscount),
-            returnedAmount: Number(returnedAmount)
+            returnedAmount: Number(returnedAmount),
+            totalProductsSold  // Add this line only
         };
 
         console.log('Revenue Calculation:', {
             deliveredAmount,
             returnedAmount,
             totalAmount: summary.totalAmount,
-            totalDiscount
+            totalDiscount,
+            couponCount
         });
 
         // Get paginated orders with query
+        const page = parseInt(req.query.page) || 1;
+        const limit = 10;
+        const skip = (page - 1) * limit;
+
         const paginatedOrders = await Order.find(query)
             .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
             .populate({
                 path: 'items.productId',
-                select: 'name regularPrice'
+                select: 'productName brand regularPrice price',  // Include all needed fields
+                model: 'Product'  // Explicitly specify the model
             });
 
         // Calculate regular price total for each order
         for (const order of paginatedOrders) {
             let regularPrice = 0;
             for (const item of order.items) {
-                regularPrice += item.productId.regularPrice * item.quantity;
+                if (item.productId) {
+                    regularPrice += (item.productId.regularPrice || item.productId.price || 0) * item.quantity;
+                }
             }
             order.regularPrice = regularPrice;
         }
 
-        const totalPages = Math.ceil((summary.totalOrders) / 10);
+        // Get total count for pagination
+        const totalOrderCount = await Order.countDocuments(query);
+        const totalPages = Math.ceil(totalOrderCount / limit);
 
         res.render('salesReport', {
             orders: paginatedOrders,
@@ -1101,20 +1134,21 @@ const loadSalesReport = async (req, res) => {
                 totalDiscount: summary.totalDiscount,
                 discountBreakdown: {
                     couponDiscount: summary.totalDiscount,
-                    count: 0
+                    count: couponCount  // Pass actual coupon usage count
                 },
                 returnedOrders: 0,
-                returnedAmount: summary.returnedAmount
+                returnedAmount: summary.returnedAmount,
+                totalProductsSold: summary.totalProductsSold  // Add this line only
             },
             filters: {
                 startDate: startDate || '',
                 endDate: endDate || ''
             },
             pagination: {
-                page: 1,
-                limit: 10,
+                page: page,
+                limit: limit,
                 totalPages,
-                totalOrders: summary.totalOrders
+                totalOrders: totalOrderCount
             }
         });
 
