@@ -259,10 +259,7 @@ display: inline-block;
         color: inherit;
     }
     
-    /* .position-relative {
-        position: relative;
-    } */
-    
+   
     .add-to-wishlist-icon {
         position: absolute;
         top: 10px;
@@ -501,7 +498,7 @@ display: inline-block;
 							<i class="zmdi zmdi-shopping-cart"></i>
 						</a>
 
-						<a href="/wishlist" class="dis-block icon-header-item cl2 hov-cl1 trans-04 p-lr-10 " >
+						<a href="/wishlist" class="dis-block icon-header-item cl2 hov-cl1 trans-04 p-lr-10 icon-header-noti" data-notify="0" id="wishlist-icon" >
 							<i class="zmdi zmdi-favorite-outline"></i>
 						</a>
 
@@ -1033,6 +1030,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     icon.classList.toggle('far');
                     icon.classList.toggle('fas');
                     
+                    // Update wishlist count
+                    updateWishlistCount();
+                    
                     // Show success message
                     const message = isInWishlist ? 'Product removed from wishlist' : 'Product added to wishlist';
                     Swal.fire({
@@ -1076,6 +1076,29 @@ document.addEventListener('DOMContentLoaded', function() {
             pause: 'hover'  // Pause on hover
         });
     });
+	
+		// Update wishlist count
+		async function updateWishlistCount() {
+			try {
+				const response = await fetch('/wishlist/count');
+				const data = await response.json();
+				
+				if (data.success) {
+					const count = data.count;
+					document.getElementById('wishlist-icon').setAttribute('data-notify', count);
+					document.getElementById('wishlist-icon-mobile').setAttribute('data-notify', count);
+				}
+			} catch (error) {
+				console.error('Error updating wishlist count:', error);
+			}
+		}
+
+		// Update counts when page loads
+		document.addEventListener('DOMContentLoaded', function() {
+			updateWishlistCount();
+		});
+	
+	
 </script>
 
 <%-include("../../views/partials/user/footer")%>

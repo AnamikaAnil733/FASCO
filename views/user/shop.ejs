@@ -778,6 +778,9 @@
                     icon.classList.toggle('far');
                     icon.classList.toggle('fas');
                     
+                    // Update wishlist count
+                    updateWishlistCount();
+                    
                     // Show success message
                     const message = isInWishlist ? 'Product removed from wishlist' : 'Product added to wishlist';
                     Swal.fire({

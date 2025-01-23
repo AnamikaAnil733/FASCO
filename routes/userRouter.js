@@ -70,6 +70,7 @@ router.get('/checkout', userAuth, userController.loadCheckout);
 router.get('/wishlist', userAuth, userController.loadWishlist);
 router.post('/wishlist/add', userAuth, userController.addToWishlist);
 router.delete('/wishlist/remove/:productId', userAuth, userController.removeFromWishlist);
+router.get('/wishlist/count', userAuth, userController.getWishlistCount);
 
 
 router.get('/wallet', userAuth, userController.getWallet);

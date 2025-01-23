@@ -2380,6 +2380,26 @@ const downloadInvoice = async (req, res) => {
     }
 };
 
+// Get wishlist count
+const getWishlistCount = async (req, res) => {
+    try {
+        const userId = req.session.user._id;
+        const wishlist = await Wishlist.findOne({ userId });
+        const count = wishlist ? wishlist.products.length : 0;
+        
+        res.json({
+            success: true,
+            count: count
+        });
+    } catch (error) {
+        console.error('Error getting wishlist count:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get wishlist count'
+        });
+    }
+};
+
 module.exports = {
     loadHomepage,
     loadShop,
@@ -2423,5 +2443,6 @@ module.exports = {
     validateCoupon,
     getAvailableCoupons,
     getWallet,
-    downloadInvoice
+    downloadInvoice,
+    getWishlistCount
 };
