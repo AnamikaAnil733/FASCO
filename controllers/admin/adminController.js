@@ -578,7 +578,7 @@ const downloadSalesReport = async (req, res) => {
             const row = [
                 order.orderId,
                 new Date(order.orderDate).toLocaleDateString(),
-                order.shippingAddress.name,
+                order.shippingAddress ? order.shippingAddress.name : 'N/A',
                 items,
                 order.totalAmount,
                 order.coupon ? order.coupon.discountedAmount : 0,
@@ -606,165 +606,175 @@ const downloadSalesReport = async (req, res) => {
 
 const downloadExcelReport = async (req, res) => {
     try {
-        const { startDate, endDate, period } = req.query;
-        let query = {};
-        let dateQuery = {};
+        // Get query parameters for filtering
+        let { startDate, endDate, period } = req.query;
+        let query = {
+            status: { $in: ['Delivered', 'Returned'] }
+        };
 
-        // Reuse the same date filtering logic from loadDashbord
+        // Handle date filtering with proper timezone handling
         if (startDate && endDate) {
-            dateQuery = {
-                orderDate: {
-                    $gte: new Date(startDate),
-                    $lte: new Date(endDate)
-                }
-            };
+            const start = new Date(new Date(startDate).setHours(0, 0, 0, 0));
+            const end = new Date(new Date(endDate).setHours(23, 59, 59, 999));
+            query.orderDate = { $gte: start, $lte: end };
         } else if (period) {
-            const now = new Date();
-            now.setHours(23, 59, 59, 999);
-            let periodStartDate;
+            const endDate = new Date();
+            endDate.setHours(23, 59, 59, 999);
+            let startDate;
 
             switch (period) {
                 case 'day':
-                    periodStartDate = new Date(now.setDate(now.getDate() - 1));
+                    startDate = new Date(endDate);
+                    startDate.setDate(endDate.getDate() - 1);
                     break;
                 case 'week':
-                    periodStartDate = new Date(now.setDate(now.getDate() - 7));
+                    startDate = new Date(endDate);
+                    startDate.setDate(endDate.getDate() - 7);
                     break;
                 case 'month':
-                    periodStartDate = new Date(now.setMonth(now.getMonth() - 1));
+                    startDate = new Date(endDate);
+                    startDate.setMonth(endDate.getMonth() - 1);
                     break;
                 default:
-                    periodStartDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                    startDate = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+                    break;
             }
 
-            periodStartDate.setHours(0, 0, 0, 0);
-            dateQuery = {
-                orderDate: {
-                    $gte: periodStartDate,
-                    $lte: new Date()
-                }
-            };
+            startDate.setHours(0, 0, 0, 0);
+            query.orderDate = { $gte: startDate, $lte: endDate };
         }
 
-        query = { ...query, ...dateQuery };
-
-        const orders = await Order.find(query)
+        // Get filtered orders
+        const filteredOrders = await Order.find(query)
             .populate({
                 path: 'items.productId',
-                select: 'productName brand regularPrice price',
-                match: { _id: { $ne: null } }
-            })
-            .sort({ orderDate: -1 })
-            .lean();
+                select: 'productName brand regularPrice price'
+            });
 
-        // Create a new workbook
+        // Calculate summary
+        let totalOrders = 0;
+        let deliveredAmount = 0;
+        let returnedAmount = 0;
+        let totalDiscount = 0;
+        let totalProductsSold = 0;
+
+        for (const order of filteredOrders) {
+            if (order.status === 'Delivered') {
+                totalOrders++;
+                deliveredAmount += Number(order.finalAmount) || 0;
+
+                for (const item of order.items) {
+                    if (item.productId) {  // Check if product exists
+                        if (item.returnStatus === 'Approved') {
+                            const itemPrice = Number(item.totalPrice) || 0;
+                            const orderTotal = Number(order.totalAmount) || 1;
+                            const itemPercentage = itemPrice / orderTotal;
+                            const itemDiscount = order.coupon ? 
+                                (Number(order.coupon.discountedAmount) * itemPercentage) || 0 : 0;
+                            returnedAmount += (itemPrice - itemDiscount);
+                        } else {
+                            totalProductsSold += Number(item.quantity) || 0;
+                        }
+                    }
+                }
+
+                if (order.coupon && order.coupon.discountedAmount) {
+                    totalDiscount += Number(order.coupon.discountedAmount) || 0;
+                }
+            }
+        }
+
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Sales Report');
 
-        // Add headers with improved widths
-        worksheet.columns = [
-            { header: 'Order ID', key: 'orderId', width: 20 },
-            { header: 'Date', key: 'date', width: 15 },
-            { header: 'Customer', key: 'customer', width: 25 },
-            { header: 'Items', key: 'items', width: 50 },
-            { header: 'Regular Price', key: 'regularPrice', width: 15 },
-            { header: 'Sales Price', key: 'salesPrice', width: 15 },
-            { header: 'Discount', key: 'discount', width: 15 },
-            { header: 'Final Amount', key: 'finalAmount', width: 15 },
-            { header: 'Status', key: 'status', width: 15 }
-        ];
+        // Add title
+        worksheet.mergeCells('A1:G1');
+        worksheet.getCell('A1').value = 'Sales Report';
+        worksheet.getCell('A1').alignment = { horizontal: 'center' };
+        worksheet.getCell('A1').font = { bold: true, size: 16 };
 
-        // Style headers
-        worksheet.getRow(1).font = { bold: true, size: 12 };
-        worksheet.getRow(1).fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'FFE9ECEF' }
-        };
-        worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+        // Add summary section
+        worksheet.addRow(['']);
+        worksheet.addRow(['Summary']);
+        worksheet.addRow(['Total Orders:', totalOrders]);
+        worksheet.addRow(['Total Revenue:', `₹${(deliveredAmount - returnedAmount).toFixed(2)}`]);
+        worksheet.addRow(['Total Discount:', `₹${totalDiscount.toFixed(2)}`]);
+        worksheet.addRow(['Returned Amount:', `₹${returnedAmount.toFixed(2)}`]);
+        worksheet.addRow(['Total Products Sold:', totalProductsSold]);
+        worksheet.addRow(['']);
 
-        // Add data with improved formatting
-        orders.forEach(order => {
-            let regularPrice = 0;
-            order.items.forEach(item => {
-                if (item.productId) {
-                    regularPrice += (item.productId.regularPrice || item.productId.price || 0) * item.quantity;
+        // Add headers
+        const headers = ['Order ID', 'Date', 'Customer', 'Products', 'Amount', 'Status'];
+        worksheet.addRow(headers);
+
+        // Add order data
+        for (const order of filteredOrders) {
+            const products = order.items
+                .filter(item => item.productId) // Filter out items with deleted products
+                .map(item => `${item.productId.productName} (${item.quantity})`)
+                .join(', ');
+
+            worksheet.addRow([
+                order._id.toString(),
+                new Date(order.orderDate).toLocaleDateString(),
+                order.shippingAddress ? order.shippingAddress.name : 'N/A',
+                products,
+                order.finalAmount ? `₹${Number(order.finalAmount).toFixed(2)}` : '₹0.00',
+                order.status
+            ]);
+        }
+
+        // Set column widths
+        worksheet.columns.forEach((column, i) => {
+            let maxLength = 0;
+            column.eachCell({ includeEmpty: true }, cell => {
+                const length = cell.value ? cell.value.toString().length : 10;
+                if (length > maxLength) {
+                    maxLength = length;
                 }
             });
-
-            const row = worksheet.addRow({
-                orderId: order.orderId,
-                date: new Date(order.orderDate).toLocaleDateString(),
-                customer: order.shippingAddress.name,
-                items: order.items.map(item => 
-                    `${item.productId ? item.productId.productName : 'Deleted Product'} (${item.quantity})`
-                ).join('\n'),
-                regularPrice: regularPrice.toFixed(2),
-                salesPrice: order.totalAmount.toFixed(2),
-                discount: order.coupon ? order.coupon.discountedAmount.toFixed(2) : '0.00',
-                finalAmount: ((order.coupon && order.coupon.discountedAmount) ? 
-                    (order.totalAmount - order.coupon.discountedAmount) : 
-                    order.totalAmount).toFixed(2),
-                status: order.status
-            });
-
-            // Set row height and alignment
-            row.height = 25;
-            row.alignment = { vertical: 'middle', wrapText: true };
-            
-            // Center numeric columns
-            ['regularPrice', 'salesPrice', 'discount', 'finalAmount'].forEach(key => {
-                const cell = row.getCell(key);
-                cell.alignment = { horizontal: 'right' };
-                cell.numFmt = '₹#,##0.00';
-            });
+            column.width = Math.min(maxLength + 2, 50); // Cap width at 50 characters
         });
 
-        // Add borders to all cells
-        worksheet.eachRow((row, rowNumber) => {
-            row.eachCell((cell) => {
-                cell.border = {
-                    top: { style: 'thin' },
-                    left: { style: 'thin' },
-                    bottom: { style: 'thin' },
-                    right: { style: 'thin' }
-                };
-            });
-        });
+        // Set response headers
+        res.setHeader(
+            'Content-Type',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        );
+        res.setHeader(
+            'Content-Disposition',
+            'attachment; filename=sales-report.xlsx'
+        );
 
-        // Set content headers
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', 'attachment; filename=sales-report.xlsx');
-        
-        // Write to response
+        // Send the workbook
         await workbook.xlsx.write(res);
-        return res.end();
+        res.end();
 
     } catch (error) {
         console.error('Error generating Excel report:', error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
-            message: 'Error generating Excel report'
+            message: 'Error generating Excel report',
+            error: error.message
         });
     }
 };
 
 const downloadPdfReport = async (req, res) => {
     try {
-        const { startDate, endDate, period } = req.query;
-        let query = {};
-        let dateQuery = {};
+        // Get query parameters for filtering
+        let { startDate, endDate, period } = req.query;
+        let query = {
+            status: { $in: ['Delivered', 'Returned'] }
+        };
 
-        // Reuse the same date filtering logic
+        // Handle date filtering with proper timezone handling
         if (startDate && endDate) {
-            dateQuery = {
-                orderDate: {
-                    $gte: new Date(startDate),
-                    $lte: new Date(endDate)
-                }
-            };
+            const start = new Date(new Date(startDate).setHours(0, 0, 0, 0));
+            const end = new Date(new Date(endDate).setHours(23, 59, 59, 999));
+            query.orderDate = { $gte: start, $lte: end };
         } else if (period) {
-            const endDate = new Date();  // Current date/time
+            const endDate = new Date();
             endDate.setHours(23, 59, 59, 999);
             let startDate;
 
@@ -791,212 +801,296 @@ const downloadPdfReport = async (req, res) => {
             }
 
             startDate.setHours(0, 0, 0, 0);
-            dateQuery = {
-                orderDate: {
-                    $gte: startDate,
-                    $lte: endDate
-                }
-            };
-
-            console.log('Period Query:', {
-                period,
-                startDate,
-                endDate,
-                query: query.orderDate
-            });
+            query.orderDate = { $gte: startDate, $lte: endDate };
         }
 
-        query = { ...query, ...dateQuery };
-
-        const orders = await Order.find(query)
+        // Get filtered orders with proper population
+        const filteredOrders = await Order.find(query)
             .populate({
                 path: 'items.productId',
-                select: 'productName brand regularPrice price',
-                match: { _id: { $ne: null } }
+                select: 'productName brand regularPrice price'
             })
-            .sort({ orderDate: -1 })
-            .lean();
+            .lean(); // Use lean() for better performance
 
-        // Set content headers before creating the PDF
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', 'attachment; filename=sales-report.pdf');
+        // Calculate summary
+        let totalOrders = 0;
+        let deliveredAmount = 0;
+        let returnedAmount = 0;
+        let totalDiscount = 0;
+        let totalProductsSold = 0;
 
-        // Create PDF document with improved formatting
-        const doc = new PDFDocument({ 
-            margin: 50,
+        for (const order of filteredOrders) {
+            if (order.status === 'Delivered') {
+                // Count all delivered orders
+                totalOrders++;
+                
+                // Add the final amount of the order (after discounts)
+                deliveredAmount += Number(order.finalAmount) || 0;
+
+                // Calculate returned items amount
+                for (const item of order.items) {
+                    if (item.returnStatus === 'Approved') {
+                        // For returned items, calculate the actual refund amount
+                        const itemPrice = Number(item.totalPrice) || 0;
+                        const orderTotal = Number(order.totalAmount) || 1; // Prevent division by zero
+                        
+                        // Calculate proportional discount for the returned item
+                        const itemPercentage = itemPrice / orderTotal;
+                        const itemDiscount = order.coupon ? 
+                            (Number(order.coupon.discountedAmount) * itemPercentage) || 0 : 0;
+                        
+                        // Add to returned amount (price minus proportional discount)
+                        returnedAmount += (itemPrice - itemDiscount);
+                    } else {
+                        // Count non-returned products
+                        totalProductsSold += Number(item.quantity) || 0;
+                    }
+                }
+
+                // Track coupon usage
+                if (order.coupon && order.coupon.discountedAmount) {
+                    totalDiscount += Number(order.coupon.discountedAmount) || 0;
+                }
+            }
+        }
+
+        // Create PDF document with proper configuration
+        const doc = new PDFDocument({
+            autoFirstPage: true,
             size: 'A4',
+            margin: 50,
             bufferPages: true
         });
-        doc.pipe(res);
 
-        // Add title with proper styling
-        doc.fontSize(24)
-           .font('Helvetica-Bold')
+        // Create a buffer to store the PDF
+        let chunks = [];
+        doc.on('data', chunk => chunks.push(chunk));
+        doc.on('end', () => {
+            const result = Buffer.concat(chunks);
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', 'attachment; filename=sales-report.pdf');
+            res.setHeader('Content-Length', Buffer.byteLength(result));
+            res.end(result);
+        });
+
+        // Add title
+        doc.font('Helvetica-Bold')
+           .fontSize(20)
            .text('Sales Report', { align: 'center' });
         doc.moveDown();
 
-        // Add date range with improved formatting
-        const dateRange = startDate && endDate ? 
-            `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}` :
-            period ? `Last ${period}` : 'Current Month';
-        doc.fontSize(12)
-           .font('Helvetica')
-           .text(`Period: ${dateRange}`, { align: 'center' });
-        doc.moveDown(2);
+        // Add date range if applicable
+        if (startDate && endDate) {
+            doc.font('Helvetica')
+               .fontSize(12)
+               .text(`Period: ${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()}`,
+                     { align: 'center' });
+            doc.moveDown();
+        }
 
-        // Add summary with improved layout
-        let summary = {
-            totalOrders: orders.length,
-            totalAmount: 0,
-            totalDiscount: 0
-        };
-
-        orders.forEach(order => {
-            if (order.status !== 'Cancelled' && order.status !== 'Returned') {
-                summary.totalAmount += order.totalAmount || 0;
-                if (order.coupon && order.coupon.discountedAmount) {
-                    summary.totalDiscount += order.coupon.discountedAmount;
-                }
-            }
-        });
-
-        doc.fontSize(14)
-           .font('Helvetica-Bold')
+        // Add summary
+        doc.font('Helvetica-Bold')
+           .fontSize(14)
            .text('Summary', { underline: true });
         doc.moveDown(0.5);
-        
-        doc.fontSize(12)
-           .font('Helvetica')
-           .text(`Total Orders: ${summary.totalOrders}`)
-           .text(`Total Amount: ₹${summary.totalAmount.toFixed(2)}`)
-           .text(`Total Discounts: ₹${summary.totalDiscount.toFixed(2)}`);
-        doc.moveDown(2);
 
-        // Table settings
-        const tableTop = doc.y;
-        const colWidths = {
-            orderId: 180,    // Increased for full order ID
-            date: 100,
-            customer: 70,   // Reduced customer width
-            amount: 50,
-            status: 90
-        };
-        const colPositions = {
-            orderId: 80,
-            date: 270,       // Adjusted based on new orderId width
-            customer: 320,    // Adjusted position
-            amount: 370,     // Reduced gap
-            status: 470
-        };
-        let yPosition = tableTop;
+        doc.font('Helvetica')
+           .fontSize(12)
+           .text(`Total Orders: ${totalOrders}`)
+           .text(`Total Revenue: ₹${(deliveredAmount - returnedAmount).toFixed(2)}`)
+           .text(`Total Discount: ₹${totalDiscount.toFixed(2)}`)
+           .text(`Returned Amount: ₹${returnedAmount.toFixed(2)}`)
+           .text(`Total Products Sold: ${totalProductsSold}`);
+        doc.moveDown();
 
-        // Add table headers with background
-        const addTableHeaders = () => {
-            doc.fillColor('#E9ECEF')
-               .rect(50, yPosition, 490, 20)
+        // Add orders table
+        doc.font('Helvetica-Bold')
+           .fontSize(14)
+           .text('Order Details', { underline: true });
+        doc.moveDown(0.5);
+
+        // Table configuration
+        const pageWidth = doc.page.width - 2 * doc.page.margins.left;
+        const columns = {
+            orderId: { x: 50, width: 150, header: 'Order ID' },
+            date: { x: 200, width: 80, header: 'Date' },
+            customer: { x: 280, width: 100, header: 'Customer' },
+            amount: { x: 380, width: 90, header: 'Amount' },
+            status: { x: 490, width: 70, header: 'Status' }  // Moved status column to the right
+        };
+
+        // Draw table header
+        const drawTableHeader = () => {
+            const headerHeight = 20;
+            const currentY = doc.y;
+
+            // Draw header background
+            doc.fillColor('#f4f4f4')
+               .rect(doc.page.margins.left, currentY, pageWidth, headerHeight)
                .fill();
-            
+
+            // Draw all headers on the same line
             doc.fillColor('#000')
-               .fontSize(10)
-               .font('Helvetica-Bold');
+               .font('Helvetica-Bold')
+               .fontSize(10);
 
-            doc.text('Order ID', colPositions.orderId, yPosition + 5, { width: colWidths.orderId })
-               .text('Date', colPositions.date, yPosition + 5, { width: colWidths.date })
-               .text('Customer', colPositions.customer, yPosition + 5, { width: colWidths.customer })
-               .text('Amount', colPositions.amount, yPosition + 5, { width: colWidths.amount, align: 'right' })
-               .text('Status', colPositions.status, yPosition + 5, { width: colWidths.status });
+            // Draw each header text
+            Object.values(columns).forEach(column => {
+                doc.text(
+                    column.header,
+                    column.x,
+                    currentY + 5,
+                    {
+                        width: column.width,
+                        align: column.header === 'Amount' ? 'right' : 'left'
+                    }
+                );
+            });
 
-            yPosition += 25;
-            doc.font('Helvetica');
+            // Draw vertical lines for column separation
+            doc.strokeColor('#cccccc')
+               .lineWidth(0.5);
+            Object.values(columns).forEach(column => {
+                doc.moveTo(column.x, currentY)
+                   .lineTo(column.x, currentY + headerHeight)
+                   .stroke();
+            });
+            // Close the last column
+            doc.moveTo(columns.status.x + columns.status.width, currentY)
+               .lineTo(columns.status.x + columns.status.width, currentY + headerHeight)
+               .stroke();
+
+            // Move position below header
+            doc.y = currentY + headerHeight;
+            return doc.y;
         };
 
-        addTableHeaders();
-
-        // Add orders with alternating background
-        orders.forEach((order, index) => {
-            if (yPosition > 700) {
-                doc.addPage();
-                yPosition = 50;
-                addTableHeaders();
-            }
-
-            if (index % 2 === 1) {
-                doc.fillColor('#F8F9FA')
-                   .rect(50, yPosition - 5, 490, 20)
-                   .fill();
-            }
-
-            const finalAmount = ((order.coupon && order.coupon.discountedAmount) ? 
-                (order.totalAmount - order.coupon.discountedAmount) : 
-                order.totalAmount).toFixed(2);
-
-            doc.fillColor('#000')
-               .fontSize(9);
-
-            // Order ID - no truncation
-            doc.text(order.orderId, colPositions.orderId, yPosition, { 
-                width: colWidths.orderId
-            });
-
-            // Date
-            doc.text(new Date(order.orderDate).toLocaleDateString(), 
-                colPositions.date, yPosition, { 
-                    width: colWidths.date 
-                });
-
-            // Customer name (truncate if too long)
-            const truncatedName = order.shippingAddress.name.length > 15 ? 
-                order.shippingAddress.name.substring(0, 14) + '...' : 
-                order.shippingAddress.name;
-            doc.text(truncatedName, colPositions.customer, yPosition, { 
-                width: colWidths.customer
-            });
-
-            // Amount (right-aligned)
-            doc.text(`₹${finalAmount}`, colPositions.amount, yPosition, { 
-                width: colWidths.amount,
-                align: 'right'
-            });
-
-            // Status
-            doc.text(order.status, colPositions.status, yPosition, { 
-                width: colWidths.status 
-            });
-
-            yPosition += 20;
-        });
-
-        // Draw table borders
-        doc.lineWidth(0.5)
-           .moveTo(50, tableTop)
-           .lineTo(540, tableTop)
-           .stroke();
-
-        // Vertical lines
-        Object.values(colPositions).forEach(x => {
-            doc.moveTo(x, tableTop)
-               .lineTo(x, yPosition)
+        // Draw horizontal line
+        const drawLine = (y) => {
+            doc.strokeColor('#cccccc')
+               .lineWidth(0.5)
+               .moveTo(doc.page.margins.left, y)
+               .lineTo(doc.page.margins.left + pageWidth, y)
                .stroke();
-        });
-        
-        // Close right border
-        doc.moveTo(540, tableTop)
-           .lineTo(540, yPosition)
-           .stroke();
+        };
 
-        // Bottom border
-        doc.moveTo(50, yPosition)
-           .lineTo(540, yPosition)
-           .stroke();
+        // Draw vertical lines for a row
+        const drawVerticalLines = (y, height) => {
+            doc.strokeColor('#cccccc')
+               .lineWidth(0.5);
+            Object.values(columns).forEach(column => {
+                doc.moveTo(column.x, y)
+                   .lineTo(column.x, y + height)
+                   .stroke();
+            });
+            // Close the last column
+            doc.moveTo(columns.status.x + columns.status.width, y)
+               .lineTo(columns.status.x + columns.status.width, y + height)
+               .stroke();
+        };
+
+        let yPosition = drawTableHeader();
+        let rowHeight = 25;
+        let alternateRow = false;
+
+        for (const order of filteredOrders) {
+            // Check if we need a new page
+            if (yPosition > doc.page.height - rowHeight - 50) {
+                doc.addPage();
+                yPosition = drawTableHeader();
+            }
+
+            try {
+                // Draw row background for alternate rows
+                if (alternateRow) {
+                    doc.fillColor('#f9f9f9')
+                       .rect(doc.page.margins.left, yPosition, pageWidth, rowHeight)
+                       .fill();
+                }
+                doc.fillColor('#000');
+
+                // Draw row content
+                doc.font('Helvetica')
+                   .fontSize(9);
+
+                // Order ID (full display)
+                doc.text(order._id.toString(), 
+                    columns.orderId.x + 2, yPosition + 5, 
+                    { width: columns.orderId.width - 4 });
+
+                // Date
+                doc.text(new Date(order.orderDate).toLocaleDateString(),
+                    columns.date.x + 2, yPosition + 5,
+                    { width: columns.date.width - 4 });
+
+                // Customer
+                doc.text(order.shippingAddress ? order.shippingAddress.name : 'N/A',
+                    columns.customer.x + 2, yPosition + 5,
+                    { width: columns.customer.width - 4 });
+
+                // Amount (right-aligned)
+                doc.text(`₹${Number(order.finalAmount).toFixed(2)}`,
+                    columns.amount.x + 2, yPosition + 5,
+                    { width: columns.amount.width - 4, align: 'right' });
+
+                // Status
+                doc.text(order.status,
+                    columns.status.x + 2, yPosition + 5,
+                    { width: columns.status.width - 4 });
+
+                // Draw vertical lines for the row
+                drawVerticalLines(yPosition, rowHeight);
+                
+                // Draw horizontal line after each row
+                drawLine(yPosition + rowHeight);
+
+                yPosition += rowHeight;
+                alternateRow = !alternateRow;
+
+                // Add product details in smaller font
+                if (order.items && order.items.length > 0) {
+                    const products = order.items
+                        .filter(item => item.productId)
+                        .map(item => `${item.productId.productName} (${item.quantity})`)
+                        .join(', ');
+
+                    if (products) {
+                        const productRowHeight = 20;
+                        
+                        if (alternateRow) {
+                            doc.fillColor('#f9f9f9')
+                               .rect(doc.page.margins.left, yPosition, pageWidth, productRowHeight)
+                               .fill();
+                        }
+                        
+                        doc.fillColor('#000')
+                           .fontSize(8)
+                           .text('Products: ' + products,
+                                columns.orderId.x + 2, yPosition + 2,
+                                { width: pageWidth - 4 });
+                        
+                        // Draw vertical lines for product row
+                        drawVerticalLines(yPosition, productRowHeight);
+                        yPosition += productRowHeight;
+                        drawLine(yPosition);
+                    }
+                }
+
+            } catch (err) {
+                console.error(`Error processing order ${order._id}:`, err);
+                continue;
+            }
+        }
 
         // End the document
         doc.end();
 
     } catch (error) {
         console.error('Error generating PDF report:', error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
-            message: 'Error generating PDF report'
+            message: 'Error generating PDF report',
+            error: error.message
         });
     }
 };
@@ -1015,16 +1109,11 @@ const loadSalesReport = async (req, res) => {
 
         // Handle date filtering with proper timezone handling
         if (startDate && endDate) {
-            // Create new date objects and handle timezone
             const start = new Date(new Date(startDate).setHours(0, 0, 0, 0));
             const end = new Date(new Date(endDate).setHours(23, 59, 59, 999));
-
-            query.orderDate = {
-                $gte: start,
-                $lte: end
-            };
+            query.orderDate = { $gte: start, $lte: end };
         } else if (period) {
-            const endDate = new Date();  // Current date/time
+            const endDate = new Date();
             endDate.setHours(23, 59, 59, 999);
             let startDate;
 
@@ -1051,17 +1140,7 @@ const loadSalesReport = async (req, res) => {
             }
 
             startDate.setHours(0, 0, 0, 0);
-            query.orderDate = {
-                $gte: startDate,
-                $lte: endDate
-            };
-
-            console.log('Period Query:', {
-                period,
-                startDate,
-                endDate,
-                query: query.orderDate
-            });
+            query.orderDate = { $gte: startDate, $lte: endDate };
         }
 
         console.log('Date Query:', {
