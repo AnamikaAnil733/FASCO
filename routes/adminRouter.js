@@ -57,6 +57,7 @@ router.get("/unblockCustomer",adminAuth,customerController.customerunBlocked)
 
 // Category routes
 router.get("/category",adminAuth,categoryController.categoryInfo)
+router.post("/addCategory",adminAuth,categoryController.addCategory)
 router.get("/listCategory",adminAuth,categoryController.getListCategory);
 router.get("/unlistCategory",adminAuth,categoryController.getUnListCategory)
 router.get("/editCategory",adminAuth,categoryController.getEditCategory)
