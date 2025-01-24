@@ -709,6 +709,60 @@
             e.preventDefault();
             console.log('Form submission started');
 
+            // Reset all image validation states
+            document.querySelectorAll('.preview-box').forEach(box => {
+                box.style.border = '2px dashed #ddd';
+            });
+
+            // Validate main product images
+            const mainImageBoxes = document.querySelectorAll('.main-preview-box');
+            let mainImagesValid = true;
+            mainImageBoxes.forEach(box => {
+                if (!box.querySelector('img.preview-image')) {
+                    box.style.border = '2px solid red';
+                    mainImagesValid = false;
+                }
+            });
+
+            if (!mainImagesValid) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Image Required',
+                    text: 'Please upload all required main product images'
+                });
+                return;
+            }
+
+            // Validate variant images
+            const variantBoxes = document.querySelectorAll('.variant-item');
+            let variantImagesValid = true;
+
+            variantBoxes.forEach(variant => {
+                const previewBoxes = variant.querySelectorAll('.variant-preview-box');
+                let validImageCount = 0;
+                
+                previewBoxes.forEach(box => {
+                    if (box.querySelector('img.preview-image')) {
+                        validImageCount++;
+                    } else {
+                        box.style.border = '2px solid red';
+                    }
+                });
+
+                if (validImageCount !== 3) {
+                    variantImagesValid = false;
+                }
+            });
+
+            if (!variantImagesValid) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Images Required',
+                    text: 'Please upload exactly 3 images for each color variant'
+                });
+                return;
+            }
+
             try {
                 const formData = new FormData();
                 
