@@ -214,11 +214,8 @@ const verifyOtp = async (req, res) => {
     // Save the new user to the database
     await saveUserData.save();
   
-    // Store the user ID in the session
-    req.session.user = saveUserData._id;
-  
     // Respond with success
-    res.json({ success: true, redirectUrl: "/" });
+    res.json({ success: true, redirectUrl: "/login" });
   } catch (error) {
     console.error("Error Verifying OTP:", error.message);
     res.status(500).json({ success: false, message: "An error occurred" });
