@@ -663,6 +663,21 @@
             setupVariantImageHandlers(variant);
         });
 
+        // Add remove variant functionality
+        function initializeVariantRemoval() {
+            document.querySelectorAll('.remove-variant').forEach(button => {
+                button.addEventListener('click', function() {
+                    const variantItem = this.closest('.variant-item');
+                    if (variantItem) {
+                        variantItem.remove();
+                    }
+                });
+            });
+        }
+
+        // Initialize remove buttons for existing variants
+        initializeVariantRemoval();
+
         // Add new variant handler
         document.getElementById('addVariant').addEventListener('click', function() {
             const template = document.getElementById('variantTemplate');
