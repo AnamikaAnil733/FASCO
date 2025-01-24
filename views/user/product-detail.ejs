@@ -52,6 +52,7 @@
             <!-- Product Info -->
             <div class="product-info">
                 <h1 class="product-title"><%= product.productName %></h1>
+               
                 
                 <!-- Price -->
                 <div class="price-section">
@@ -156,13 +157,15 @@
                                     <a href="/product/<%= relatedProduct._id %>" class="stext-104 cl4 hov-cl1 trans-04 js-name-b2 p-b-6">
                                         <%= relatedProduct.productName %>
                                     </a>
-
-                                    <span class="stext-105 cl3">
-                                        ₹<%= relatedProduct.salesPrice %>
-                                        <% if (relatedProduct.regularPrice > relatedProduct.salesPrice) { %>
-                                            <span class="stext-109 cl4 text-decoration-line-through ms-2">₹<%= relatedProduct.regularPrice %></span>
+                                    <div class="price-section">
+                                        <div class="current-price">₹<%= product.salesPrice %></div>
+                                        <% if (product.regularPrice > product.salesPrice) { %>
+                                            <div class="original-price">₹<%= product.regularPrice %></div>
+                                            <div class="discount-badge">
+                                                <%= Math.round((product.regularPrice - product.salesPrice) / product.regularPrice * 100) %>% OFF
+                                            </div>
                                         <% } %>
-                                    </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>

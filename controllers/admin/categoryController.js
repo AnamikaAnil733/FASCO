@@ -129,6 +129,7 @@ const editCategory = async(req,res)=>{
         // Check for duplicate category name, excluding the current category
         const existingCategory = await Category.findOne({
             name: { $regex: new RegExp(`^${categoryName}$`, 'i') }, // Case-insensitive match
+            _id: { $ne: id },
             
         });
 
