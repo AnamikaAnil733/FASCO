@@ -657,23 +657,6 @@
                     </div>
                 </div>
 
-                <% if (order.status === 'Delivered' && order.invoiceNumber) { %>
-                    <div class="info-section mt-4">
-                        <h3 class="info-title">Invoice Details</h3>
-                        <div class="invoice-section">
-                            <p><strong>Invoice Number:</strong> <%= order.invoiceNumber %></p>
-                            <p><strong>Invoice Date:</strong> <%= new Date(order.invoiceDate).toLocaleDateString('en-IN', { 
-                                year: 'numeric', 
-                                month: 'long', 
-                                day: 'numeric' 
-                            }) %></p>
-                            <a href="/orders/<%= order._id %>/invoice" class="btn" target="_blank">
-                                <i class="fas fa-download me-2"></i>Download Invoice
-                            </a>
-                        </div>
-                    </div>
-                <% } %>
-
                 <div class="info-section">
                     <h3 class="info-title">Order Timeline</h3>
                     <div class="timeline">

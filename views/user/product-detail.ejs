@@ -2,6 +2,7 @@
 <!-- Add SweetAlert2 CSS and JS -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-material-ui/material-ui.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <div class="product-detail">
     <!-- Breadcrumb -->
     <div class="container">
@@ -51,7 +52,12 @@
 
             <!-- Product Info -->
             <div class="product-info">
-                <h1 class="product-title"><%= product.productName %></h1>
+                <h1 class="product-title">
+                    <%= product.productName %>
+                    <button id="wishlistBtn" class="wishlist-btn" onclick="toggleWishlist('<%= product._id %>')">
+                        <i class="far fa-heart" id="wishlistIcon"></i>
+                    </button>
+                </h1>
                
                 
                 <!-- Price -->
@@ -157,6 +163,9 @@
                                     <a href="/product/<%= relatedProduct._id %>" class="stext-104 cl4 hov-cl1 trans-04 js-name-b2 p-b-6">
                                         <%= relatedProduct.productName %>
                                     </a>
+                                    <button class="wishlist-btn-small" onclick="toggleWishlist('<%= relatedProduct._id %>', true)">
+                                        <i class="far fa-heart wishlist-icon" data-product-id="<%= relatedProduct._id %>"></i>
+                                    </button>
                                     <div class="price-section">
                                         <div class="current-price">₹<%= product.salesPrice %></div>
                                         <% if (product.regularPrice > product.salesPrice) { %>
@@ -551,6 +560,85 @@
         100% { left: 100%; }
     }
 
+    .wishlist-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 5px;
+        margin-left: 10px;
+        transition: all 0.3s ease;
+    }
+
+    .wishlist-btn i {
+        font-size: 24px;
+        color: #666;
+    }
+
+    .wishlist-btn i.fas {
+        color: #ff4444;
+    }
+
+    .wishlist-btn:hover i {
+        transform: scale(1.1);
+    }
+
+
+    .wishlist-btn-small {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    transition: all 0.3s ease;
+}
+
+.wishlist-btn-small i {
+    font-size: 18px;
+    color: #666;
+}
+
+.wishlist-btn-small i.fas {
+    color: #ff4444;
+}
+
+.wishlist-btn-small:hover i {
+    transform: scale(1.1);
+}
+
+    /* Toast notification styles */
+    .colored-toast.swal2-icon-success {
+        background-color: #a5dc86 !important;
+        color: white !important;
+    }
+
+    .colored-toast.swal2-icon-error {
+        background-color: #f27474 !important;
+        color: white !important;
+    }
+
+    .colored-toast .swal2-title {
+        color: white !important;
+    }
+
+    .colored-toast .swal2-close {
+        color: white !important;
+    }
+
+    .colored-toast .swal2-html-container {
+        color: white !important;
+    }
+
+    .swal2-container {
+        z-index: 9999;
+    }
+
+    .swal2-popup.swal2-toast {
+        padding: 0.5em 1em;
+        margin-top: 15px;
+        margin-right: 15px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        border-radius: 8px;
+    }
+
     @media (max-width: 992px) {
         .product-container {
             grid-template-columns: 1fr;
@@ -699,9 +787,140 @@ async function addToCart() {
         });
     }
 }
+// Function to handle wishlist toggle for both main and related products
+async function toggleWishlist(productId, isRelated = false) {
+    try {
+        // Get the correct icon based on whether it's a related product or main product
+        const icon = isRelated ? 
+            document.querySelector(`.wishlist-icon[data-product-id="${productId}"]`) : 
+            document.getElementById('wishlistIcon');
+            
+        if (!icon) {
+            console.error('Wishlist icon not found');
+            return;
+        }
 
+        const isInWishlist = icon.classList.contains('fas');
+        
+        const response = await fetch(isInWishlist ? `/wishlist/remove/${productId}` : '/wishlist/add', {
+            method: isInWishlist ? 'DELETE' : 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ productId })
+        });
 
+        const result = await response.json();
+        
+        if (result.success) {
+            // Toggle heart icon
+            icon.classList.toggle('far');
+            icon.classList.toggle('fas');
+            
+            // Show success message
+            Swal.fire({
+                icon: 'success',
+                title: result.message,
+                showConfirmButton: false,
+                timer: 1500,
+                position: 'top-end',
+                toast: true
+            });
+            
+            // Update wishlist count in header
+            updateWishlistCount();
+        } else {
+            // Don't show error for "already in wishlist" message
+            if (result.message === 'Product already in wishlist') {
+                return;
+            }
+            
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: result.message || 'Something went wrong!',
+                position: 'top-end',
+                toast: true,
+                timer: 3000
+            });
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Oops...',
+            text: 'Something went wrong!',
+            position: 'top-end',
+            toast: true,
+            timer: 3000
+        });
+    }
+}
 
+// Function to update wishlist count in header
+async function updateWishlistCount() {
+    try {
+        const response = await fetch('/wishlist/count');
+        const result = await response.json();
+        
+        if (result.success) {
+            // Update desktop wishlist icon
+            const wishlistIcon = document.getElementById('wishlist-icon');
+            if (wishlistIcon) {
+                wishlistIcon.setAttribute('data-notify', result.count);
+            }
+            
+            // Update mobile wishlist icon
+            const wishlistIconMobile = document.getElementById('wishlist-icon-mobile');
+            if (wishlistIconMobile) {
+                wishlistIconMobile.setAttribute('data-notify', result.count);
+            }
+        }
+    } catch (error) {
+        console.error('Error updating wishlist count:', error);
+    }
+}
+
+// Function to initialize wishlist status for both main and related products
+async function initializeWishlistStatus() {
+    try {
+        // Initialize main product wishlist status
+        const mainProductId = '<%= product._id %>';
+        if (mainProductId) {
+            const mainResponse = await fetch(`/check-wishlist-status/${mainProductId}`);
+            const mainResult = await mainResponse.json();
+            
+            const mainIcon = document.getElementById('wishlistIcon');
+            if (mainIcon && mainResult.isInWishlist) {
+                mainIcon.classList.remove('far');
+                mainIcon.classList.add('fas');
+            }
+        }
+
+        // Initialize related products wishlist status
+        const relatedIcons = document.querySelectorAll('.wishlist-icon[data-product-id]');
+        for (const icon of relatedIcons) {
+            const relatedProductId = icon.dataset.productId;
+            if (relatedProductId) {
+                const relatedResponse = await fetch(`/check-wishlist-status/${relatedProductId}`);
+                const relatedResult = await relatedResponse.json();
+                
+                if (relatedResult.isInWishlist) {
+                    icon.classList.remove('far');
+                    icon.classList.add('fas');
+                }
+            }
+        }
+
+        // Initialize wishlist count
+        updateWishlistCount();
+    } catch (error) {
+        console.error('Error initializing wishlist status:', error);
+    }
+}
+
+// Initialize everything when the page loads
+document.addEventListener('DOMContentLoaded', initializeWishlistStatus);
 function validateQuantity(input) {
     const maxStock = parseInt(document.getElementById('current-stock').textContent);
     const maxLimit = 5;
@@ -774,6 +993,8 @@ function updateMainImage(src, variantIndex) {
     document.getElementById('zoomResult').style.backgroundImage = `url(${src})`;
     currentVariant = variantIndex;
 }
+
+
 </script>
 
 <script src="/js/zoom.js"></script>

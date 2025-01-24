@@ -2049,6 +2049,23 @@ const removeFromWishlist = async (req, res) => {
   }
 };
 
+// Check if product is in wishlist
+const checkWishlistStatus = async (req, res) => {
+    try {
+        const userId = req.session.user._id;
+        const productId = req.params.productId;
+
+        const wishlist = await Wishlist.findOne({ userId });
+        const isInWishlist = wishlist ? 
+            wishlist.products.some(item => item.productId.toString() === productId) : 
+            false;
+
+        res.json({ isInWishlist });
+    } catch (error) {
+        console.error("Error checking wishlist status:", error);
+        res.status(500).json({ error: "Server error" });
+    }
+};
 
 // Validate coupon
 const validateCoupon = async (req, res) => {
@@ -2444,5 +2461,6 @@ module.exports = {
     getAvailableCoupons,
     getWallet,
     downloadInvoice,
-    getWishlistCount
+    getWishlistCount,
+    checkWishlistStatus
 };

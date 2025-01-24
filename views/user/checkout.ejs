@@ -1039,7 +1039,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const createdOrderId = result.orderId;
 
                 if (selectedPayment.value === 'COD') {
-                    window.location.href = `/orders`;
+                    window.location.href =  `/order/success/${result.orderId}`;
                     return;
                 }
 
@@ -1080,7 +1080,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             console.log('Payment verification response:', verifyResult);
                             
                             if (verifyResult.success) {
-                                window.location.href = `/orders`;
+                                window.location.href =  `/order/success/${result.orderId}`;
                             } else {
                                 throw new Error(verifyResult.message || 'Payment verification failed');
                             }
