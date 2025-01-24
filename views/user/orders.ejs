@@ -264,6 +264,10 @@
                                             <button onclick="cancelOrder('<%= order._id %>')" class="btn btn-cancel">Cancel Order</button>
                                         <% } %>
                                     </div>
+                                    <div class="info-item">
+                                        <div class="info-label">Payment Method</div>
+                                        <div class="info-value"><%= order.paymentMethod %></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

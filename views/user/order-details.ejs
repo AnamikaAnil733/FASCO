@@ -541,6 +541,7 @@
                             <h3 class="info-title">Order Information</h3>
                             <div class="info-content">
                                 Status: <%= order.status || 'Processing' %><br>
+                                Payment Method: <%= order.paymentMethod %><br>
                                 Order Date: <%= new Date(order.createdAt).toLocaleDateString('en-US', {
                                     year: 'numeric',
                                     month: 'long',
