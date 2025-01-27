@@ -176,10 +176,14 @@ const getSalesData = async (period) => {
                 break;
             default:
                 startDate = new Date(today);
-                startDate.setDate(today.getDate() - 30);
-                startDate.setHours(0, 0, 0, 0);
-                dateFormat = '%Y-%m-%d';
-                groupBy = { $dateToString: { format: dateFormat, date: '$orderDate' } };
+                startDate.setDate(today.getDate() - 1); // Subtract 1 day
+                startDate.setHours(0, 0, 0, 0); // Start of the previous day
+                dateFormat = '%Y-%m-%d %H:%M'; // Include time for daily granularity
+                groupBy = { 
+                    $dateToString: { format: dateFormat, date: '$orderDate' } 
+                };
+                break;
+              
         }
 
         // Aggregate sales data with proper handling of returns
@@ -210,7 +214,7 @@ const getSalesData = async (period) => {
             }
         ]);
 
-        // Process data for chart
+        // Process data for chartl
         const labels = [];
         const values = [];
         const productCounts = [];

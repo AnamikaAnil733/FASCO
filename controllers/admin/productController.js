@@ -1,6 +1,7 @@
 const Product = require("../../models/productSchema");
 const Category = require("../../models/categorySchema");
 const User = require("../../models/userSchema");
+const Cart = require("../../models/cartSchema"); // Added Cart model
 const fs = require("fs");
 const path = require("path");
 const sharp = require("sharp");
@@ -200,7 +201,18 @@ const blockProduct = async (req, res) => {
             return res.status(404).json({ error: "Product not found" });
         }
 
+        // Block the product
         await Product.findByIdAndUpdate(id, { isBlocked: true });
+
+        // Remove the product from all users' carts
+        const carts = await Cart.find({ "items.productId": id });
+        
+        for (const cart of carts) {
+            // Remove all instances of the blocked product
+            cart.items = cart.items.filter(item => item.productId.toString() !== id);
+            await cart.save();
+        }
+
         res.redirect("/admin/products");
     } catch (error) {
         console.error("Error blocking product:", error);
