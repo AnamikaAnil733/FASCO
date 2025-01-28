@@ -325,12 +325,7 @@ const getTopProducts = async () => {
 const getTopCategories = async () => {
     return await Order.aggregate([
         {
-            $match: {
-                $or: [
-                    { status: 'Delivered' },
-                    {returnStatus: 'Approved' }
-                ]
-            }
+            $match: {status: 'Delivered' }        
         },
         { $unwind: '$items' },
         {
