@@ -176,13 +176,11 @@ const getSalesData = async (period) => {
                 break;
             default:
                 startDate = new Date(today);
-                startDate.setDate(today.getDate() - 1); // Subtract 1 day
-                startDate.setHours(0, 0, 0, 0); // Start of the previous day
-                dateFormat = '%Y-%m-%d %H:%M'; // Include time for daily granularity
-                groupBy = { 
-                    $dateToString: { format: dateFormat, date: '$orderDate' } 
-                };
-                break;
+                startDate.setDate(today.getDate() - 1);
+                startDate.setHours(0, 0, 0, 0);
+                dateFormat = '%Y-%m-%d';
+                groupBy = { $dateToString: { format: dateFormat, date: '$orderDate' } };
+               
               
         }
 
@@ -258,12 +256,7 @@ const getSalesData = async (period) => {
 const getTopProducts = async () => {
     return await Order.aggregate([
         {
-            $match: {
-                $or: [
-                    { status: 'Delivered' },
-                    { status: 'Returned' }
-                ]
-            }
+            $match: { status: 'Delivered'}
         },
         { $unwind: '$items' },
         {
