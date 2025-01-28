@@ -78,7 +78,7 @@ router.post("/updateProductOffer", adminAuth, productController.updateProductOff
 router.post("/removeProductOffer", adminAuth, productController.removeProductOffer);
 
 // Order Management Routes
-router.get('/orderList', adminAuth, orderController.getAllOrders);  // Keep the old route for compatibility
+router.get('/orderList', adminAuth, orderController.getAllOrders); 
 router.get('/orders', adminAuth, orderController.getAllOrders);
 router.get('/orders/:orderId', adminAuth, orderController.getOrderDetails);
 router.post('/orders/update-status', adminAuth, orderController.updateOrderStatus);
