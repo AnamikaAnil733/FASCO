@@ -32,7 +32,6 @@ const adminAuth = (req,res,next)=>{
             res.redirect('/admin/login')
         }
     }
-// };
 
 
 

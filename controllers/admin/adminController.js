@@ -143,7 +143,7 @@ const loadDashbord = async (req, res) => {
     }
 };
 
-const getSalesData = async (period) => {
+const getSalesData = async (period, customRange = {}) => {
     try {
         const today = new Date();
         today.setHours(23, 59, 59, 999);
@@ -174,21 +174,48 @@ const getSalesData = async (period) => {
                 dateFormat = '%Y-%m';
                 groupBy = { $dateToString: { format: dateFormat, date: '$orderDate' } };
                 break;
+            case 'custom':
+                if (customRange && customRange.startDate && customRange.endDate) {
+                    console.log('Custom range received:', customRange);
+                    startDate = new Date(customRange.startDate);
+                    startDate.setHours(0, 0, 0, 0);
+                    today.setTime(customRange.endDate.getTime());
+                    today.setHours(23, 59, 59, 999);
+                    console.log('Processed dates:', {
+                        startDate: startDate.toISOString(),
+                        endDate: today.toISOString()
+                    });
+                } else {
+                    throw new Error("Start and end date must be provided for custom period.");
+                }
+                dateFormat = '%Y-%m-%d';
+                groupBy = { $dateToString: { format: dateFormat, date: '$orderDate' } };
+                break;
             default:
                 startDate = new Date(today);
                 startDate.setDate(today.getDate() - 1);
                 startDate.setHours(0, 0, 0, 0);
                 dateFormat = '%Y-%m-%d';
                 groupBy = { $dateToString: { format: dateFormat, date: '$orderDate' } };
-               
-              
         }
 
+        console.log('Date Range:', { startDate, endDate: today }); // Add this for debugging
+
         // Aggregate sales data with proper handling of returns
+        console.log('MongoDB Query Parameters:', {
+            startDate: startDate.toISOString(),
+            endDate: today.toISOString(),
+            period,
+            dateFormat
+        });
+
         const salesData = await Order.aggregate([
             {
                 $match: {
-                    orderDate: { $gte: startDate, $lte: today },
+                    orderDate: { 
+                        $gte: startDate,
+                        $lte: today
+                    },
                     status: 'Delivered'  // Only include delivered orders
                 }
             },
@@ -212,7 +239,12 @@ const getSalesData = async (period) => {
             }
         ]);
 
-        // Process data for chartl
+        console.log('MongoDB Results:', {
+            count: salesData.length,
+            data: salesData
+        });
+
+        // Process data for chart
         const labels = [];
         const values = [];
         const productCounts = [];
@@ -241,6 +273,12 @@ const getSalesData = async (period) => {
             }
         }
 
+        console.log('Processed Chart Data:', {
+            labels,
+            valueCount: values.length,
+            productCount: productCounts.length
+        });
+
         return {
             labels,
             values,
@@ -248,7 +286,7 @@ const getSalesData = async (period) => {
         };
 
     } catch (error) {
-        console.error('Error getting sales data:', error);
+        console.error('Error in getSalesData:', error);
         throw error;
     }
 };
@@ -459,8 +497,28 @@ const getDashboardSummary = async () => {
 
 const getSalesDataAPI = async (req, res) => {
     try {
-        const { period } = req.query;
-        const data = await getSalesData(period);
+        const { period, startDate, endDate } = req.query;
+        console.log('API Request:', { period, startDate, endDate }); // Debug log
+        
+        let data;
+        if (period === 'custom' && startDate && endDate) {
+            console.log('Before parsing dates:', { startDate, endDate });
+            const parsedStart = new Date(startDate);
+            const parsedEnd = new Date(endDate);
+            console.log('After parsing dates:', { 
+                parsedStart: parsedStart.toISOString(),
+                parsedEnd: parsedEnd.toISOString()
+            });
+            
+            data = await getSalesData(period, { 
+                startDate: parsedStart,
+                endDate: parsedEnd
+            });
+        } else {
+            data = await getSalesData(period);
+        }
+        
+        console.log('Final data:', data); // Debug log
         res.json(data);
     } catch (error) {
         console.error('Error in sales data API:', error);
@@ -517,8 +575,8 @@ const downloadSalesReport = async (req, res) => {
         if (startDate && endDate) {
             dateQuery = {
                 orderDate: {
-                    $gte: new Date(startDate),
-                    $lte: new Date(endDate)
+                    $gte: new Date(startDate.toISOString().split('T')[0]), 
+                    $lte: new Date(endDate.toISOString().split('T')[0] + 'T23:59:59.999Z')
                 }
             };
         } else if (period) {
