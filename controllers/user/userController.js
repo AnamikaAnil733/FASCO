@@ -737,14 +737,26 @@ const deleteAddress = async (req, res) => {
 const getOrders = async (req, res) => {
   try {
     const userId = req.session.user._id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = 10; // Number of orders per page
+    const skip = (page - 1) * limit;
+
+    // Get total count of orders
+    const totalOrders = await Order.countDocuments({ userId });
+    const totalPages = Math.ceil(totalOrders / limit);
+
+    // Get paginated orders
     const orders = await Order.find({ userId })
       .populate({
         path: 'items.productId',
-        select: 'productName brand variants regularPrice salesPrice',
+        select: 'productName variants images',
         model: 'Product'
       })
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
+ 
     // Add default value for totalAmount if undefined and calculate finalAmount
     const processedOrders = orders.map(order => {
       const orderObj = order.toObject();
@@ -762,11 +774,18 @@ const getOrders = async (req, res) => {
 
     res.render('orders', {
       orders: processedOrders,
-      message: req.session.user
+      message: req.session.user,
+      currentPage: page,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
+      nextPage: page + 1,
+      previousPage: page - 1,
+      lastPage: totalPages
     });
   } catch (error) {
     console.error('Error fetching orders:', error);
-    res.status(500).send('Server error');
+    res.status(500).render('500');
   }
 };
 
@@ -1492,7 +1511,7 @@ const verifyPayment = async (req, res) => {
         console.log('Order found:', order ? 'Yes' : 'No');
         
         if (!order) {
-            console.log('Order not found with ID:', orderId);
+            console.log('Order not found:', orderId);
             return res.status(404).json({
                 success: false,
                 message: 'Order not found'
@@ -1601,11 +1620,7 @@ const retryPayment = async (req, res) => {
         }
 
         if (order.userId.toString() !== req.session.user._id.toString()) {
-            console.log('Unauthorized access:', {
-                orderId,
-                orderUserId: order.userId,
-                sessionUserId: req.session.user._id
-            });
+            console.log('Unauthorized access attempt');
             return res.status(403).json({
                 success: false,
                 message: 'Unauthorized'
@@ -1920,20 +1935,8 @@ const loadWishlist = async (req, res) => {
 
           const now = new Date();
           let effectiveOffer = 0;
+           effectiveOffer = Math.max(product.productOffer || 0, product.category.categoryOffer || 0);
 
-          // Check product offer
-          if (product.productOffer && product.offerStartDate && product.offerEndDate) {
-            if (now >= new Date(product.offerStartDate) && now <= new Date(product.offerEndDate)) {
-              effectiveOffer = product.productOffer;
-            }
-          }
-
-          // Check category offer
-          if (product.category.categoryOffer && product.category.offerStartDate && product.category.offerEndDate) {
-            if (now >= new Date(product.category.offerStartDate) && now <= new Date(product.category.offerEndDate)) {
-              effectiveOffer = Math.max(effectiveOffer, product.category.categoryOffer);
-            }
-          }
 
           // Calculate final price
           const finalPrice = Math.round(product.regularPrice - (product.regularPrice * effectiveOffer / 100));
@@ -1961,7 +1964,6 @@ const loadWishlist = async (req, res) => {
       item.productId.category && 
       item.productId.category.isListed
     ) : [];
-
     res.render('wishlist', {
       message: req.session.user,
       products: validProducts

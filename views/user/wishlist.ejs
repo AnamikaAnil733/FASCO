@@ -49,13 +49,14 @@
                                         </a>
 
                                         <div class="price-section">
-                                            <div class="current-price">₹<%= item.productId.salesPrice %></div>
+                                           
                                             <% if (item.productId.regularPrice > item.productId.salesPrice) { %>
                                                 <div class="original-price">₹<%= item.productId.regularPrice %></div>
                                                 <div class="discount-badge">
                                                     <%= Math.round((item.productId.regularPrice - item.productId.salesPrice) / item.productId.regularPrice * 100) %>% OFF
                                                 </div>
                                             <% } %>
+                                             <div class="current-price">₹<%= item.productId.salesPrice %></div>
                                         </div>
                                     </div>
                                 </div>
