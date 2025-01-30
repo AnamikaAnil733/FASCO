@@ -1626,11 +1626,7 @@ const retryPayment = async (req, res) => {
         }
 
         // Create new Razorpay order
-        console.log('Creating Razorpay order:', {
-            amount: order.finalAmount,
-            receipt: order._id.toString()
-        });
-
+        console.log('Creating Razorpay order for amount:', order.finalAmount * 100);
         const razorpayOrder = await razorpay.orders.create({
             amount: Math.round(order.finalAmount * 100), // amount in paise
             currency: 'INR',
@@ -1657,7 +1653,7 @@ const retryPayment = async (req, res) => {
             order_id: razorpayOrder.id
         });
 
-    } catch (error) {
+      } catch (error) {
         console.error('Error in retry payment:', {
             error: error.message,
             stack: error.stack
@@ -1710,18 +1706,18 @@ const cancelOrder = async (req, res) => {
           }
 
           // Update the quantity
-          const currentQuantity = product.variants[variantIndex].quantity || 0;
-          product.variants[variantIndex].quantity = currentQuantity + parseInt(item.quantity);
-          await product.save();
-          
-          console.log(`Restocked product ${product._id}, variant ${variantIndex}, new quantity: ${product.variants[variantIndex].quantity}`);
+              const currentQuantity = product.variants[variantIndex].quantity || 0;
+              product.variants[variantIndex].quantity = currentQuantity + parseInt(item.quantity);
+              await product.save();
+              
+              console.log(`Restocked product ${product._id}, variant ${variantIndex}, new quantity: ${product.variants[variantIndex].quantity}`);
+            }
+          } catch (err) {
+            console.error('Error restocking product:', err);
+          }
         }
-      } catch (err) {
-        console.error('Error restocking product:', err);
-      }
-    }
 
-    // Update order status
+            // Update order status
     order.status = 'Cancelled';
     order.cancelledAt = new Date();
     await order.save();
@@ -1738,10 +1734,7 @@ const cancelOrder = async (req, res) => {
         
         const user = await User.findById(userId);
         if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found'
-            });
+            return res.status(404).json({ message: 'User not found' });
         }
 
         // Calculate refund amount
@@ -2414,29 +2407,158 @@ const getWishlistCount = async (req, res) => {
     }
 };
 
+// Add at the end of your routes
+const handleWalletPayment = async (req, res) => {
+    try {
+        const { addressId, amount, couponCode, orderId } = req.body;
+        console.log('Received wallet payment request:', { addressId, amount, couponCode, orderId });
+
+        // Find user and check balance
+        const user = await User.findById(req.user._id);
+        console.log('Current wallet balance:', user.wallet.balance);
+
+        if (user.wallet.balance < amount) {
+            console.log('Insufficient balance:', { required: amount, available: user.wallet.balance });
+            return res.json({ 
+                success: false, 
+                message: 'Insufficient wallet balance' 
+            });
+        }
+
+        // Find the existing order
+        const order = await Order.findById(orderId);
+        if (!order) {
+            console.log('Order not found:', orderId);
+            return res.json({
+                success: false,
+                message: 'Order not found'
+            });
+        }
+
+        try {
+            // Update order status
+            order.paymentMethod = 'WALLET';
+            order.paymentStatus = 'COMPLETED';
+            order.status = 'Processing';
+            await order.save();
+            console.log('Order updated:', order._id);
+
+            // Update wallet balance atomically
+            const updatedUser = await User.findOneAndUpdate(
+                { _id: user._id, 'wallet.balance': { $gte: amount } },
+                {
+                    $inc: { 'wallet.balance': -amount },
+                    $push: {
+                        'wallet.transactions': {
+                            amount: -amount,
+                            type: 'debit',
+                            description: `Payment for order #${order._id}`,
+                            date: new Date()
+                        }
+                    }
+                },
+                { new: true }
+            );
+
+            if (!updatedUser) {
+                throw new Error('Failed to update wallet balance');
+            }
+
+            console.log('Wallet updated:', {
+                oldBalance: user.wallet.balance,
+                newBalance: updatedUser.wallet.balance,
+                deducted: amount
+            });
+
+            // Update product quantities
+            for (const item of order.items) {
+                const product = await Product.findById(item.productId);
+                if (!product || !product.variants[item.variantIndex]) {
+                    console.log('Product or variant not found:', item.productId);
+                    continue;
+                }
+
+                const updatedProduct = await Product.findOneAndUpdate(
+                    { 
+                        _id: item.productId,
+                        'variants.quantity': { $gte: item.quantity }
+                    },
+                    {
+                        $inc: {
+                            [`variants.${item.variantIndex}.quantity`]: -item.quantity
+                        }
+                    },
+                    { new: true }
+                );
+
+                if (!updatedProduct) {
+                    throw new Error(`Failed to update quantity for product ${item.productId}`);
+                }
+
+                console.log('Product quantity updated:', {
+                    productId: item.productId,
+                    oldQuantity: updatedProduct.variants[item.variantIndex].quantity + item.quantity,
+                    newQuantity: updatedProduct.variants[item.variantIndex].quantity,
+                    deducted: item.quantity
+                });
+            }
+
+            // Clear cart
+            await Cart.findOneAndUpdate(
+                { userId: order.userId },
+                { $set: { items: [] } }
+            );
+            console.log('Cart cleared for user:', order.userId);
+
+            res.json({ 
+                success: true, 
+                orderId: order._id,
+                message: 'Order placed successfully'
+            });
+        } catch (error) {
+            // Rollback order status if any operation fails
+            order.paymentStatus = 'FAILED';
+            await order.save();
+            throw error;
+        }
+    } catch (error) {
+        console.error('Wallet payment error details:', {
+            error: error.message,
+            stack: error.stack,
+            user: req.user?._id
+        });
+        res.json({ 
+            success: false, 
+            message: error.message || 'Payment failed. Please try again.' 
+        });
+    }
+};
+
 module.exports = {
     loadHomepage,
     loadShop,
     loadSignup,
     Signup,
-    pageNotFound,
     verifyOtp,
     resendOtp,
     loadLogin,
     login,
     logout,
     loadProductDetails,
+    loadAccount,
+    handleWalletPayment,
+    updateProfile,
+    changePassword,
+    loadAddresses,
+    pageNotFound,
     loadForgotPassword,
     forgotPassword,
     loadResetPassword,
     resetPassword,
-    loadAccount,
-    updateProfile,
-    changePassword,
-    loadAddresses,
     addAddress,
     editAddress,
     deleteAddress,
+    getWallet,
     getOrders,
     getOrderDetails,
     getOrderSuccess,
@@ -2456,7 +2578,6 @@ module.exports = {
     removeFromWishlist,
     validateCoupon,
     getAvailableCoupons,
-    getWallet,
     downloadInvoice,
     getWishlistCount,
     checkWishlistStatus

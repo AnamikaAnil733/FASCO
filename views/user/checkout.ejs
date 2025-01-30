@@ -501,6 +501,18 @@
                     <h4 class="mb-4">Payment Method</h4>
                     <div class="form-check mb-3">
                         <input class="form-check-input" type="radio" name="paymentMethod" 
+                            id="wallet" value="WALLET">
+                        <label class="form-check-label" for="wallet">
+                            <i class="fas fa-wallet me-2"></i>
+                            Wallet Balance (₹<%= user.wallet.balance.toFixed(2) %>)
+                            <% if ((Number(user.wallet?.balance) || 0) < total) { %>
+                                <small class="text-danger d-block">Insufficient balance</small>
+                            <% } %>
+                        </label>
+                    </div>
+                   
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="radio" name="paymentMethod" 
                             id="razorpay" value="RAZORPAY" checked>
                         <label class="form-check-label" for="razorpay">
                             <img src="https://razorpay.com/assets/razorpay-logo.svg" alt="Razorpay" height="25">
@@ -1043,89 +1055,135 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
 
-                // Handle Razorpay payment
-                const razorpayAmount = Math.round(finalAmount * 100); // Convert to paise
-                console.log('Razorpay amount (in paise):', razorpayAmount);
+                if (selectedPayment.value === 'WALLET') {
+                    try {
+                        console.log('Sending wallet payment request:', {
+                            addressId: selectedAddress.value,
+                            amount: finalAmount,
+                            couponCode: appliedCoupon ? appliedCoupon.code : null,
+                            orderId: result.orderId
+                        });
 
-                const options = {
-                    key: '<%= process.env.RAZORPAY_KEY_ID %>',
-                    amount: razorpayAmount,
-                    currency: "INR",
-                    name: "Fasco Fashion Store",
-                    description: "Fashion Store Purchase",
-                    order_id: result.razorpayOrderId,
-                    handler: async function (response) {
-                        try {
-                            console.log('Payment successful:', response);
-                            
-                            const verifyData = {
-                                orderId: result.orderId,
-                                razorpay_payment_id: response.razorpay_payment_id,
-                                razorpay_order_id: response.razorpay_order_id,
-                                razorpay_signature: response.razorpay_signature,
-                                amount: finalAmount
-                            };
+                        const response = await fetch('/checkout/wallet-payment', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                addressId: selectedAddress.value,
+                                amount: finalAmount,
+                                couponCode: appliedCoupon ? appliedCoupon.code : null,
+                                orderId: result.orderId
+                            })
+                        });
 
-                            console.log('Sending verification data:', verifyData);
+                        const walletResult = await response.json();
+                        console.log('Wallet payment response:', walletResult);
 
-                            const verifyResponse = await fetch('/order/verify-payment', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify(verifyData)
-                            });
-
-                            const verifyResult = await verifyResponse.json();
-                            console.log('Payment verification response:', verifyResult);
-                            
-                            if (verifyResult.success) {
-                                window.location.href =  `/order/success/${result.orderId}`;
-                            } else {
-                                throw new Error(verifyResult.message || 'Payment verification failed');
-                            }
-                        } catch (error) {
-                            console.error('Payment verification error:', error);
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Payment Verification Failed',
-                                text: error.message || 'Could not verify payment. Please contact support.'
-                            });
-                        }
-                    },
-                    modal: {
-                        ondismiss: function() {
-                            console.log('Razorpay modal closed');
+                        if (walletResult.success) {
+                            window.location.href = `/order/success/${walletResult.orderId}`;
+                        } else {
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Payment Failed',
-                                text: 'Payment was cancelled or failed. Would you like to view your order details?',
-                                showCancelButton: true,
-                                confirmButtonText: 'View Order Details',
-                                cancelButtonText: 'Close',
-                                confirmButtonColor: '#6c5ce7',
-                                cancelButtonColor: '#64748b'
-                            }).then((result) => {
-                                if (result.isConfirmed) {
-                                    window.location.href = `/orders`;
-                                }
+                                text: walletResult.message || 'Something went wrong'
                             });
                         }
-                    },
-
-                    prefill: {
-                        name: '<%= user.name %>',
-                        email: '<%= user.email %>',
-                    },
-                    theme: {
-                        color: "#3399cc"
+                        return;
+                    } catch (error) {
+                        console.error('Wallet payment error:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Payment Failed',
+                            text: error.message || 'Something went wrong. Please try again.'
+                        });
+                        return;
                     }
-                };
+                } else {
+                    // Handle Razorpay payment
+                    const razorpayAmount = Math.round(finalAmount * 100); // Convert to paise
+                    console.log('Razorpay amount (in paise):', razorpayAmount);
 
-                console.log('Razorpay options:', options);
-                const rzp = new Razorpay(options);
-                rzp.open();
+                    const options = {
+                        key: '<%= process.env.RAZORPAY_KEY_ID %>',
+                        amount: razorpayAmount,
+                        currency: "INR",
+                        name: "Fasco Fashion Store",
+                        description: "Fashion Store Purchase",
+                        order_id: result.razorpayOrderId,
+                        handler: async function (response) {
+                            try {
+                                console.log('Payment successful:', response);
+                                
+                                const verifyData = {
+                                    orderId: result.orderId,
+                                    razorpay_payment_id: response.razorpay_payment_id,
+                                    razorpay_order_id: response.razorpay_order_id,
+                                    razorpay_signature: response.razorpay_signature,
+                                    amount: finalAmount
+                                };
 
+                                console.log('Sending verification data:', verifyData);
+
+                                const verifyResponse = await fetch('/order/verify-payment', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify(verifyData)
+                                });
+
+                                const verifyResult = await verifyResponse.json();
+                                console.log('Payment verification response:', verifyResult);
+                                
+                                if (verifyResult.success) {
+                                    window.location.href =  `/order/success/${result.orderId}`;
+                                } else {
+                                    throw new Error(verifyResult.message || 'Payment verification failed');
+                                }
+                            } catch (error) {
+                                console.error('Payment verification error:', error);
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Payment Verification Failed',
+                                    text: error.message || 'Could not verify payment. Please contact support.'
+                                });
+                            }
+                        },
+                        modal: {
+                            ondismiss: function() {
+                                console.log('Razorpay modal closed');
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Payment Failed',
+                                    text: 'Payment was cancelled or failed. Would you like to view your order details?',
+                                    showCancelButton: true,
+                                    confirmButtonText: 'View Order Details',
+                                    cancelButtonText: 'Close',
+                                    confirmButtonColor: '#6c5ce7',
+                                    cancelButtonColor: '#64748b'
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        window.location.href = `/orders`;
+                                    }
+                                });
+                            }
+                        },
+
+                        prefill: {
+                            name: '<%= user.name %>',
+                            email: '<%= user.email %>',
+                        },
+                        theme: {
+                            color: "#3399cc"
+                        }
+                    };
+
+                    console.log('Razorpay options:', options);
+                    const rzp = new Razorpay(options);
+                    rzp.open();
+
+                }
             } catch (error) {
                 console.error('Order creation error:', error);
                 Swal.fire({
@@ -1546,7 +1604,33 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+router.post('/checkout/wallet-payment', async (req, res) => {
+    try {
+        const { addressId, amount, couponCode, orderId } = req.body;
+        const user = await User.findById(req.user._id);
 
+        if (user.wallet < amount) {
+            return res.json({ success: false, message: 'Insufficient wallet balance' });
+        }
+
+        // Deduct from wallet
+        user.wallet -= amount;
+        await user.save();
+
+        // Update order status
+        const order = await Order.findById(orderId);
+        order.paymentStatus = 'COMPLETED';
+        await order.save();
+
+        // Clear cart
+        req.session.cart = null;
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Wallet payment error:', error);
+        res.json({ success: false, message: 'Payment failed' });
+    }
+});
 </script>
 
 <!-- Space before footer -->

@@ -75,6 +75,9 @@ router.get('/check-wishlist-status/:productId', userAuth, userController.checkWi
 
 router.get('/wallet', userAuth, userController.getWallet);
 
+// Wallet payment route
+router.post('/checkout/wallet-payment', userAuth, userController.handleWalletPayment);
+
 // Check authentication status endpoint
 router.get('/check-auth', (req, res) => {
     res.json({ isLoggedIn: req.session.user ? true : false });
