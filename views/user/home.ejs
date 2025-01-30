@@ -23,6 +23,9 @@
 	<link rel="stylesheet" type="text/css" href="css/util.css">
 	<link rel="stylesheet" type="text/css" href="css/main.css">
 	<link rel="stylesheet" type="text/css" href="css/custom-styles.css">
+	<!-- Add SweetAlert2 -->
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
+	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
 <style>
 	.dropdown {
 position: relative;
@@ -758,6 +761,14 @@ display: inline-block;
 															</div>
 														<% } %>
 													</div>
+												<% if (newArrivals[j].variants && newArrivals[j].variants[0].quantity > 0) { %>
+													<button class="add-to-cart-btn flex-c-m stext-103 cl2 size-102 bg0 bor2 hov-btn1 p-lr-15 trans-04 mt-2" 
+															data-product-id="<%= newArrivals[j]._id %>">
+														Add to Cart
+													</button>
+												<% } else { %>
+													<p class="out-of-stock">Out of Stock</p>
+												<% } %>
 												</div>
 
 												<div class="block2-txt-child2 flex-r p-t-3">
@@ -826,6 +837,14 @@ display: inline-block;
 															</div>
 														<% } %>
 													</div>
+												<% if (topSellingProducts[j].variants && topSellingProducts[j].variants[0].quantity > 0) { %>
+													<button class="add-to-cart-btn flex-c-m stext-103 cl2 size-102 bg0 bor2 hov-btn1 p-lr-15 trans-04 mt-2" 
+															data-product-id="<%= topSellingProducts[j]._id %>">
+														Add to Cart
+													</button>
+												<% } else { %>
+													<p class="out-of-stock">Out of Stock</p>
+												<% } %>
 												</div>
 
 												<div class="block2-txt-child2 flex-r p-t-3">
@@ -907,6 +926,29 @@ display: inline-block;
     position: relative;
     padding: 0;
 }
+/* Add to Cart Button Styles */
+.add-to-cart-btn {
+	width: 100%;
+	background-color: #fff;
+	border: 1px solid #333;
+	color: #333;
+	transition: all 0.3s ease;
+	margin-top: 10px;
+	padding: 8px 15px;
+	border-radius: 4px;
+	cursor: pointer;
+}
+
+.add-to-cart-btn:hover {
+	background-color: #333;
+	color: #fff;
+}
+
+.out-of-stock {
+	color: #dc3545;
+	font-weight: 600;
+	margin-top: 10px;
+}
 		</style>
 		<script>
 			// Initialize carousels with custom interval
@@ -945,7 +987,57 @@ display: inline-block;
             .catch(error => console.error('Error updating cart count:', error));
     }
 </script>
+<script>
+	document.addEventListener('DOMContentLoaded', function() {
+		console.log('DOM loaded, looking for add-to-cart buttons');
+		const buttons = document.querySelectorAll('.add-to-cart-btn');
+		console.log('Found buttons:', buttons.length);
+		
+		buttons.forEach(button => {
+			button.addEventListener('click', async function() {
+				console.log('Button clicked, productId:', this.dataset.productId);
+				const productId = this.dataset.productId;
+				try {
+					const response = await fetch('/cart/add', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify({
+							productId: productId,
+							quantity: 1,
+							variantIndex: 0
+						})
+					});
 
+					console.log('Response:', response);
+					const data = await response.json();
+					console.log('Data:', data);
+
+					if (response.ok) {
+						Swal.fire({
+							icon: 'success',
+							title: 'Success',
+							text: 'Product added to cart!',
+							showConfirmButton: false,
+							timer: 1500
+						});
+						updateCartCount();
+					} else {
+						throw new Error(data.message || 'Failed to add product to cart');
+					}
+				} catch (error) {
+					console.error('Error:', error);
+					Swal.fire({
+						icon: 'error',
+						title: 'Oops...',
+						text: error.message || 'Something went wrong!'
+					});
+				}
+			});
+		});
+	});
+</script>
 <!-- Add Isotope.js library -->
 <script src="https://unpkg.com/isotope-layout@3/dist/isotope.pkgd.min.js"></script>
 

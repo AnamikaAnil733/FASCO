@@ -227,6 +227,48 @@
             flex: 1;
         }
     }
+
+    .pagination {
+        margin: 0;
+        display: flex;
+        padding-left: 0;
+        list-style: none;
+        border-radius: 0.25rem;
+    }
+
+    .page-link {
+        position: relative;
+        display: block;
+        padding: 0.5rem 0.75rem;
+        margin-left: -1px;
+        line-height: 1.25;
+        color: #007bff;
+        background-color: #fff;
+        border: 1px solid #dee2e6;
+    }
+
+    .page-link:hover {
+        z-index: 2;
+        color: #0056b3;
+        text-decoration: none;
+        background-color: #e9ecef;
+        border-color: #dee2e6;
+    }
+
+    .page-item.active .page-link {
+        z-index: 3;
+        color: #fff;
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+
+    .page-item.disabled .page-link {
+        color: #6c757d;
+        pointer-events: none;
+        cursor: auto;
+        background-color: #fff;
+        border-color: #dee2e6;
+    }
 </style>
 
 <section class="orders-section">
@@ -279,6 +321,37 @@
                 <h4>No Orders Yet</h4>
                 <p>Looks like you haven't placed any orders. Start shopping to see your orders here!</p>
                 <a href="/" class="btn btn-shop">Start Shopping</a>
+            </div>
+        <% } %>
+
+        <!-- Pagination -->
+        <% if (totalPages > 1) { %>
+            <div class="d-flex justify-content-center mt-4">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination">
+                        <% if (hasPreviousPage) { %>
+                            <li class="page-item">
+                                <a class="page-link" href="/orders?page=<%= previousPage %>" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                        <% } %>
+
+                        <% for(let i = 1; i <= totalPages; i++) { %>
+                            <li class="page-item <%= i === currentPage ? 'active' : '' %>">
+                                <a class="page-link" href="/orders?page=<%= i %>"><%= i %></a>
+                            </li>
+                        <% } %>
+
+                        <% if (hasNextPage) { %>
+                            <li class="page-item">
+                                <a class="page-link" href="/orders?page=<%= nextPage %>" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                        <% } %>
+                    </ul>
+                </nav>
             </div>
         <% } %>
     </div>
