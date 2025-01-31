@@ -159,7 +159,7 @@ const orderController = {
                             product.variants[variantIndex].quantity = currentQuantity + parseInt(item.quantity);
                             await product.save();
                             
-                            console.log(`Restocked product ${product._id}, variant ${variantIndex}, new quantity: ${product.variants[variantIndex].quantity}`);
+
                         }
                     } catch (err) {
                         console.error('Error restocking product:', err);
@@ -250,7 +250,7 @@ const orderController = {
                 });
             }
 
-            console.log('Processing cancellation for order items:', order.items);
+        
             
             // Restock the products
             for (const item of order.items) {

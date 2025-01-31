@@ -1651,8 +1651,6 @@ const retryPayment = async (req, res) => {
             }
         });
 
-        console.log('Created Razorpay order:', razorpayOrder);
-
         // Update order with new Razorpay order ID
         order.razorpayOrderId = razorpayOrder.id;
         await order.save();
@@ -1865,9 +1863,7 @@ const loadShop = async (req, res) => {
       ];
     }
 
-    console.log('Search Query:', search);
-    console.log('MongoDB Query:', JSON.stringify(query, null, 2));
-
+  
     // Get products with filters
     const products = await Product.find(query)
       .populate('category')

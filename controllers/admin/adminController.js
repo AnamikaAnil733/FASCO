@@ -498,11 +498,11 @@ const getDashboardSummary = async () => {
 const getSalesDataAPI = async (req, res) => {
     try {
         const { period, startDate, endDate } = req.query;
-        console.log('API Request:', { period, startDate, endDate }); // Debug log
+      
         
         let data;
         if (period === 'custom' && startDate && endDate) {
-            console.log('Before parsing dates:', { startDate, endDate });
+
             const parsedStart = new Date(startDate);
             const parsedEnd = new Date(endDate);
             console.log('After parsing dates:', { 
@@ -518,10 +518,9 @@ const getSalesDataAPI = async (req, res) => {
             data = await getSalesData(period);
         }
         
-        console.log('Final data:', data); // Debug log
         res.json(data);
     } catch (error) {
-        console.error('Error in sales data API:', error);
+
         res.status(500).json({ error: 'Error fetching sales data' });
     }
 };
@@ -530,14 +529,14 @@ const logout = async(req,res)=>{
     try {
         req.session.destroy(err=>{
             if(err){
-                console.log("Error destroying session",err)
+
                 return res.redirect("/admin/pageerror")
             }
             res.redirect("/admin/login")
         })
         
     } catch (error) {
-        console.log("Unexpected error during logout:", error)
+
         res.redirect("/admin/pageerror")
     }
 }
@@ -560,7 +559,7 @@ const loadAddProduct = async (req, res) => {
         res.render("product-add", { categories });
         
     } catch (error) {
-        console.error("Error loading add product page:", error);
+ 
         res.redirect("/admin/pageerror");
     }
 };
@@ -646,7 +645,7 @@ const downloadSalesReport = async (req, res) => {
         res.send(csvContent);
 
     } catch (error) {
-        console.error('Error downloading sales report:', error);
+      
         res.status(500).json({
             success: false,
             message: 'Error downloading sales report'
@@ -801,7 +800,7 @@ const downloadExcelReport = async (req, res) => {
         res.end();
 
     } catch (error) {
-        console.error('Error generating Excel report:', error);
+     
         res.status(500).json({
             success: false,
             message: 'Error generating Excel report',

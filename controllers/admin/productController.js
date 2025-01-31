@@ -117,7 +117,6 @@ const addProducts = async (req, res) => {
         });
 
         await newProduct.save();
-        console.log('Product saved successfully');
         
         res.status(200).json({
             success: true,
@@ -171,8 +170,7 @@ const getAllProducts = async (req, res) => {
         // Fetch listed categories
         const category = await Category.find({ isListed: true });
 
-        // Log product data for debugging
-        console.log('Product Data:', JSON.stringify(productData, null, 2));
+     
 
         // Render products page without admin prefix
         res.render("products", {

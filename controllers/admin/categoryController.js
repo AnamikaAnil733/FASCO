@@ -239,7 +239,7 @@ const updateCategoryOffer = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Error updating category offer:", error);
+    
         return res.status(500).json({ error: "Internal server error" });
     }
 };
@@ -291,7 +291,7 @@ const removeCategoryOffer = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Error removing category offer:", error);
+      
         return res.status(500).json({ error: "Internal server error" });
     }
 };

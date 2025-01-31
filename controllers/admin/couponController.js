@@ -30,7 +30,7 @@ const getAllCoupons = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Error fetching coupons:', error);
+      
         res.status(500).json({
             success: false,
             message: 'Error fetching coupons'
@@ -41,7 +41,7 @@ const getAllCoupons = async (req, res) => {
 // Create new coupon
 const createCoupon = async (req, res) => {
     try {
-        console.log('Received coupon data:', req.body);  
+      
 
         const {
             code,
@@ -155,11 +155,10 @@ const createCoupon = async (req, res) => {
             isActive: true
         };
         
-        console.log('Creating coupon with data:', couponData);  
+   
         const newCoupon = new Coupon(couponData);
         await newCoupon.save();
-
-        console.log('Coupon created successfully:', newCoupon);  
+  
         res.status(201).json({
             success: true,
             message: 'Coupon created successfully',
@@ -167,7 +166,7 @@ const createCoupon = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Detailed error in coupon creation:', error);  
+     
         res.status(500).json({
             success: false,
             message: 'Error creating coupon: ' + error.message
@@ -197,7 +196,7 @@ const deleteCoupon = async (req, res) => {
 
         await Coupon.findByIdAndDelete(id);
 
-        console.log('Coupon deleted successfully:', id);
+      
         
         // Set content type header explicitly
         res.setHeader('Content-Type', 'application/json');
@@ -207,7 +206,7 @@ const deleteCoupon = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error in coupon deletion:', error);
+     
         // Set content type header explicitly
         res.setHeader('Content-Type', 'application/json');
         return res.status(500).json({

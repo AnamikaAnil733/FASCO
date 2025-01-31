@@ -167,11 +167,11 @@
                                         <i class="far fa-heart wishlist-icon" data-product-id="<%= relatedProduct._id %>"></i>
                                     </button>
                                     <div class="price-section">
-                                        <div class="current-price">₹<%= product.salesPrice %></div>
-                                        <% if (product.regularPrice > product.salesPrice) { %>
-                                            <div class="original-price">₹<%= product.regularPrice %></div>
+                                        <div class="current-price">₹<%= relatedProduct.salesPrice %></div>
+                                        <% if (relatedProduct.regularPrice > relatedProduct.salesPrice) { %>
+                                            <div class="original-price">₹<%= relatedProduct.regularPrice %></div>
                                             <div class="discount-badge">
-                                                <%= Math.round((product.regularPrice - product.salesPrice) / product.regularPrice * 100) %>% OFF
+                                                <%= Math.round((relatedProduct.regularPrice - relatedProduct.salesPrice) / relatedProduct.regularPrice * 100) %>% OFF
                                             </div>
                                         <% } %>
                                     </div>
@@ -680,7 +680,7 @@
         }
     }
 </style>
-
+<script src="/js/zoom.js"></script>
 <script>
 const variants = <%- JSON.stringify(product.variants) %>;
 let currentVariant = 0;
@@ -997,6 +997,5 @@ function updateMainImage(src, variantIndex) {
 
 </script>
 
-<script src="/js/zoom.js"></script>
 
-<%- include("../../views/partials/user/footer") %>
+<%-include("../../views/partials/user/footer")%>
