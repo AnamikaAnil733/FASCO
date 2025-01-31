@@ -130,7 +130,7 @@
                         <label class="form-label">Discount Type</label>
                         <select class="form-control" name="discountType" required onchange="updateDiscountValidation()">
                             <option value="percentage">Percentage</option>
-                            <option value="fixed">Fixed Amount</option>
+                           
                         </select>
                     </div>
                     <div class="mb-3">
@@ -283,10 +283,6 @@ function updateDiscountValidation() {
         discountInput.min = 1;
         discountInput.max = 90;
         feedback.textContent = 'Percentage discount must be between 1 and 90';
-    } else {
-        discountInput.min = 1;
-        discountInput.max = 10000;
-        feedback.textContent = 'Fixed discount must be between ₹1 and ₹10,000';
     }
 }
 

@@ -82,5 +82,9 @@ router.post('/checkout/wallet-payment', userAuth, userController.handleWalletPay
 router.get('/check-auth', (req, res) => {
     res.json({ isLoggedIn: req.session.user ? true : false });
 });
+// Add this line to your existing routes in userController.js
+router.get('/about', (req, res) => {
+    res.render('about'); // Adjust the path if necessary
+});
 
 module.exports = router;
