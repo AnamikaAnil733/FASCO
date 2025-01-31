@@ -58,6 +58,21 @@
                                             <% } %>
                                              <div class="current-price">₹<%= item.productId.salesPrice %></div>
                                         </div>
+                                        <% if (item.productId.variants[0].quantity == 0) { %>
+                                            <p class="out-of-stock">Out of Stock</p>
+                                        <% } else { %>
+                                            <button class="add-to-cart-btn flex-c-m stext-103 cl2 size-102 bg0 bor2 hov-btn1 p-lr-15 trans-04 mt-2" 
+                                                    data-product-id="<%= item.productId._id %>">
+                                                Add to Cart
+                                            </button>
+                                        <% } %>
+                                        <% if (item.productId.variants && item.productId.variants.length > 0) { %>
+                                            <div class="variant-colors mt-2">
+                                                <% item.productId.variants.forEach(variant => { %>
+                                                    <span class="color-dot" style="background-color: <%= variant.color %>" title="<%= variant.color %>"></span>
+                                                <% }); %>
+                                            </div>
+                                        <% } %>
                                     </div>
                                 </div>
                             </div>
@@ -270,6 +285,30 @@
             grid-template-columns: repeat(1, 1fr);
         }
     }
+
+    /* Add to Cart Button Styles */
+    .add-to-cart-btn {
+        width: 100%;
+        background-color: #fff;
+        border: 1px solid #333;
+        color: #333;
+        transition: all 0.3s ease;
+        margin-top: 10px;
+        padding: 8px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .add-to-cart-btn:hover {
+        background-color: #333;
+        color: #fff;
+    }
+
+    .out-of-stock {
+        color: #dc3545;
+        font-weight: 600;
+        margin-top: 10px;
+    }
 </style>
 
 <script>
@@ -334,6 +373,59 @@ else {
 
             }
         });
+    });
+
+
+     // Function to initialize Add to Cart buttons
+     function initializeAddToCartButtons() {
+        console.log('Initializing Add to Cart buttons');
+        document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+            button.addEventListener('click', async function() {
+                console.log('Add to Cart button clicked');
+                const productId = this.dataset.productId;
+                try {
+                    const response = await fetch('/cart/add', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            productId: productId,
+                            quantity: 1,
+                            variantIndex: 0
+                        })
+                    });
+
+                    const data = await response.json();
+                    console.log('Add to cart response:', data);
+
+                    if (response.ok) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: 'Product added to cart!',
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
+                        updateCartCount();
+                    } else {
+                        throw new Error(data.message || 'Failed to add product to cart');
+                    }
+                } catch (error) {
+                    console.error('Error adding to cart:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Oops...',
+                        text: error.message || 'Something went wrong!'
+                    });
+                }
+            });
+        });
+    }
+
+    // Initialize Add to Cart buttons on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeAddToCartButtons();
     });
 </script>
 
