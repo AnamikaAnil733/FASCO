@@ -899,6 +899,7 @@ const addToCart = async (req, res) => {
   try {
     console.log('Add to cart request body:', req.body);
     const userId = req.session.user._id;
+
     const { productId, quantity, variantIndex } = req.body;
     
     // Get product details
@@ -1742,7 +1743,7 @@ const cancelOrder = async (req, res) => {
         orderId: order.orderId
     });
 
-    if (order.paymentMethod === 'RAZORPAY' && order.paymentStatus === 'COMPLETED') {
+    if (order.paymentMethod === 'RAZORPAY' && order.paymentStatus === 'COMPLETED'||order.paymentMethod === 'WALLET' && order.paymentStatus === 'COMPLETED') {
         console.log('Processing refund for Razorpay payment');
         
         const user = await User.findById(userId);
@@ -2405,7 +2406,6 @@ const getWishlistCount = async (req, res) => {
     }
 };
 
-// Add at the end of your routes
 const handleWalletPayment = async (req, res) => {
     try {
         const { addressId, amount, couponCode, orderId } = req.body;
@@ -2461,7 +2461,7 @@ const handleWalletPayment = async (req, res) => {
             if (!updatedUser) {
                 throw new Error('Failed to update wallet balance');
             }
-
+            req.session.user.wallet.balance = updatedUser.wallet.balance;
             console.log('Wallet updated:', {
                 oldBalance: user.wallet.balance,
                 newBalance: updatedUser.wallet.balance,

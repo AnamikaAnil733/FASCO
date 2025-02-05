@@ -775,8 +775,34 @@
                             variantIndex: 0
                         })
                     });
+                   
+                    const auth= await fetch('/check-auth');
+                    const data = await auth.json();
+                console.log('Add to cart response:', data);
 
-                    const data = await response.json();
+                // Check if the user is logged in
+                if (!data.isLoggedIn) {
+                    // Show login prompt with Sweet Alert
+                    Swal.fire({
+                        title: 'Not Logged In',
+                        text: 'Please log in to add items to your cart',
+                        icon: 'info',
+                        showCancelButton: true,
+                        confirmButtonText: 'Login',
+                        cancelButtonText: 'Cancel',
+                        confirmButtonColor: '#4f46e5',
+                        cancelButtonColor: '#6b7280',
+                        customClass: {
+                            confirmButton: 'swal2-confirm btn-primary',
+                            cancelButton: 'swal2-cancel btn-secondary'
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = '/login'; // Redirect to login page
+                        }
+                    });
+                    return; // Exit the function if not logged in
+                }
                     console.log('Add to cart response:', data);
 
                     if (response.ok) {
