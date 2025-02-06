@@ -322,7 +322,7 @@ const updateProduct = async (req, res) => {
                             const filepath = path.join(productImagesDir, filename);
 
                             try {
-                                // Process and save the new image
+                                //  Process and save the new image
                                 await sharp(file.buffer)
                                     .resize(800, 800, {
                                         fit: 'contain',
