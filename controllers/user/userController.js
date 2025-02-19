@@ -265,10 +265,14 @@ const login = async(req,res)=>{
   try{
     const {email,password} = req.body;
     const findUser = await User.findOne({isAdmin:0,email:email});
-    if(!findUser){
-      req.session.loginError = "User not found";
-      return res.redirect("/login")
-    }
+    
+    if (!findUser) {
+      return res.render("login", { 
+          message: "User not found", 
+          success: false 
+      });
+  }
+  
     if(findUser.isBlocked){
       return res.render("login",{message:"User is blocked by admin", success: false})
     }
@@ -1214,6 +1218,8 @@ const loadCheckout = async (req, res) => {
       }));
     }
 
+    const user = await  User.findById(req.session.user._id)
+    req.session.user = user;
     console.log('Processed addresses:', JSON.stringify(addresses, null, 2));
     
     // Pass data to view
@@ -1222,7 +1228,7 @@ const loadCheckout = async (req, res) => {
       cart,
       addresses,
       total,
-      user: req.session.user
+      user: user
     });
   } catch (error) {
     console.error('Error loading checkout:', error);
@@ -2461,6 +2467,11 @@ const handleWalletPayment = async (req, res) => {
             if (!updatedUser) {
                 throw new Error('Failed to update wallet balance');
             }
+
+            // Update session after wallet balance change
+req.session.user.wallet.balance = updatedUser.wallet.balance;
+await req.session.save();  // ✅ Ensure session is saved
+
             req.session.user.wallet.balance = updatedUser.wallet.balance;
             console.log('Wallet updated:', {
                 oldBalance: user.wallet.balance,
@@ -2509,10 +2520,12 @@ const handleWalletPayment = async (req, res) => {
             console.log('Cart cleared for user:', order.userId);
 
             res.json({ 
-                success: true, 
-                orderId: order._id,
-                message: 'Order placed successfully'
-            });
+              success: true, 
+              orderId: order._id,
+              updatedWalletBalance: updatedUser.wallet.balance,  
+              message: 'Order placed successfully'
+          });
+          
         } catch (error) {
             // Rollback order status if any operation fails
             order.paymentStatus = 'FAILED';

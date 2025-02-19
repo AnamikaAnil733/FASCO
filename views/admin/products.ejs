@@ -62,12 +62,7 @@
                                 <td>
                                     <% if (product.productOffer > 0) { %>
                                         <span class="badge bg-success"><%=product.productOffer%>% OFF</span>
-                                        <% if (product.offerStartDate && product.offerEndDate) { %>
-                                            <small class="d-block text-muted">
-                                                <%= new Date(product.offerStartDate).toLocaleDateString() %> - 
-                                                <%= new Date(product.offerEndDate).toLocaleDateString() %>
-                                            </small>
-                                        <% } %>
+                                       
                                     <% } else { %>
                                         <span class="badge bg-secondary">No Offer</span>
                                     <% } %>

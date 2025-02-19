@@ -33,7 +33,7 @@
                                     <td>
                                         <select class="form-select form-select-sm status-select" 
                                                 data-order-id="<%= order._id %>"
-                                                <%= order.status === 'Delivered' || order.status === 'Cancelled' ? 'disabled' : '' %>>
+                                                <%= order.status === 'Pending' ||order.status === 'Delivered' || order.status === 'Cancelled' ? 'disabled' : '' %>>
                                             <option value="Pending" <%= order.status === 'Pending' ? 'selected' : '' %>>Pending</option>
                                             <option value="Processing" <%= order.status === 'Processing' ? 'selected' : '' %>>Processing</option>
                                             <option value="Shipped" <%= order.status === 'Shipped' ? 'selected' : '' %>>Shipped</option>
